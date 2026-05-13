@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { VoteButtons } from './VoteButtons'
@@ -9,14 +9,15 @@ import { GrammarRule, Expression } from '@/lib/types'
 export function PendingContributions() {
   const [rules, setRules] = useState<GrammarRule[]>([])
   const [expressions, setExpressions] = useState<Expression[]>([])
-  const supabase = createClient()
+  const supabaseRef = useRef(createClient())
 
   useEffect(() => {
-    supabase.from('grammar_rules').select('*').eq('validated', false)
+    const client = supabaseRef.current
+    client.from('grammar_rules').select('*').eq('validated', false)
       .order('created_at', { ascending: false }).limit(10)
       .then(({ data }) => setRules((data ?? []) as GrammarRule[]))
 
-    supabase.from('expressions').select('*').eq('validated', false)
+    client.from('expressions').select('*').eq('validated', false)
       .order('created_at', { ascending: false }).limit(10)
       .then(({ data }) => setExpressions((data ?? []) as Expression[]))
   }, [])

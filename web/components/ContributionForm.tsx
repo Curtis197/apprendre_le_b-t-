@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,7 +10,9 @@ type ContributionType = 'grammar_rule' | 'expression'
 export function ContributionForm() {
   const [type, setType] = useState<ContributionType>('expression')
   const [submitted, setSubmitted] = useState(false)
-  const supabase = createClient()
+  const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const supabaseRef = useRef(createClient())
 
   // Grammar rule fields
   const [category, setCategory] = useState('verb')
@@ -27,23 +29,33 @@ export function ContributionForm() {
   const [exprType, setExprType] = useState<'idiomatic' | 'fixed' | 'proverb'>('idiomatic')
 
   async function handleSubmit() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabaseRef.current.auth.getUser()
     if (!user) { alert('Connectez-vous pour contribuer.'); return }
 
-    if (type === 'grammar_rule') {
-      await supabase.from('grammar_rules').insert({
-        category, pattern_french: patternFr, pattern_bete: patternBete,
-        description, example_french: exFr || null, example_bete: exBete || null,
-        created_by: user.id,
-      })
-    } else {
-      await supabase.from('expressions').insert({
-        french_phrase: frPhrase, bete_phrase: betePhrase,
-        bete_phonetic: betePhonetic, type: exprType,
-        created_by: user.id,
-      })
+    setLoading(true)
+    setSubmitError(null)
+    try {
+      let error
+      if (type === 'grammar_rule') {
+        ({ error } = await supabaseRef.current.from('grammar_rules').insert({
+          category, pattern_french: patternFr, pattern_bete: patternBete,
+          description, example_french: exFr || null, example_bete: exBete || null,
+          created_by: user.id,
+        }))
+      } else {
+        ({ error } = await supabaseRef.current.from('expressions').insert({
+          french_phrase: frPhrase, bete_phrase: betePhrase,
+          bete_phonetic: betePhonetic, type: exprType,
+          created_by: user.id,
+        }))
+      }
+      if (error) throw error
+      setSubmitted(true)
+    } catch (e) {
+      setSubmitError('Erreur lors de l\'envoi. Veuillez réessayer.')
+    } finally {
+      setLoading(false)
     }
-    setSubmitted(true)
   }
 
   if (submitted) return (
@@ -103,8 +115,13 @@ export function ContributionForm() {
         </div>
       )}
 
-      <Button onClick={handleSubmit} disabled={type === 'expression' ? !frPhrase || !betePhrase : !patternFr || !description}>
-        Soumettre la contribution
+      {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+
+      <Button
+        onClick={handleSubmit}
+        disabled={loading || (type === 'expression' ? !frPhrase || !betePhrase : !patternFr || !patternBete || !description)}
+      >
+        {loading ? 'Envoi…' : 'Soumettre la contribution'}
       </Button>
     </div>
   )
