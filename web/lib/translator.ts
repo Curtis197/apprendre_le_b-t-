@@ -122,7 +122,12 @@ French input: ${frenchText}`
   const raw = firstBlock.type === 'text' ? firstBlock.text.trim() : ''
   let llmTokens: { french_word: string; bete_phonetic: string; score: number }[] = []
   try {
-    llmTokens = JSON.parse(raw)
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      llmTokens = parsed
+    } else {
+      throw new Error('LLM response is not an array')
+    }
   } catch {
     // Fallback: direct lookup without LLM
     llmTokens = tokens.map(t => {

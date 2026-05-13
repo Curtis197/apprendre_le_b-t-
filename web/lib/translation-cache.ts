@@ -18,7 +18,12 @@ export async function getCached(
     .eq('input_hash', hash)
     .maybeSingle()
   if (!data) return null
-  return { ...(data.result as TranslationResult), cached: true }
+  const result = data.result
+  // Basic shape validation before trusting cached data
+  if (!result || typeof result !== 'object' || !Array.isArray(result.tokens)) {
+    return null
+  }
+  return { ...(result as TranslationResult), cached: true }
 }
 
 export async function setCached(
