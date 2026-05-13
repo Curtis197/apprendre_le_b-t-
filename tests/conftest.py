@@ -1,4 +1,10 @@
+import os
 import pytest
+
+# Provide dummy env vars so pipeline.config can be imported without a real .env
+os.environ.setdefault("SUPABASE_URL", "https://dummy.supabase.co")
+os.environ.setdefault("SUPABASE_SERVICE_KEY", "dummy-service-key")
+
 
 @pytest.fixture
 def sample_verse():
