@@ -72,7 +72,10 @@ def extract_probabilities(
                 if "-" not in token:
                     continue
                 src_idx_s, tgt_idx_s = token.split("-", 1)
-                src_idx, tgt_idx = int(src_idx_s), int(tgt_idx_s)
+                try:
+                    src_idx, tgt_idx = int(src_idx_s), int(tgt_idx_s)
+                except ValueError:
+                    continue  # skip malformed token (e.g. "a-b")
                 if src_idx < len(french_words) and tgt_idx < len(bete_words):
                     fw = french_words[src_idx].lower()
                     bw = bete_words[tgt_idx].lower()

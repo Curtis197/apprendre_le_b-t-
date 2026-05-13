@@ -68,3 +68,21 @@ def test_output_has_required_keys():
             assert "bete_word" in r
             assert "score" in r
             assert 0.0 <= r["score"] <= 1.0
+
+
+def test_malformed_tokens_are_skipped():
+    with tempfile.TemporaryDirectory() as tmp:
+        jsonl = os.path.join(tmp, "corpus.jsonl")
+        align = os.path.join(tmp, "forward.align")
+        _write_jsonl(jsonl, [
+            {"french_text": "Abraham engendra",
+             "bete_text": "Ablaamö mɔɔ",
+             "book": "MAT", "chapter": 1, "verse": 2},
+        ])
+        # "a-b" is malformed, "0-0" is valid
+        _write_file(align, "0-0 a-b 1-1\n")
+        results = extract_probabilities(jsonl, align, threshold=0.0)
+        # Should not crash, and should return the valid alignments
+        assert results
+        words = {r["french_word"]: r["bete_word"] for r in results}
+        assert words["abraham"] == "ablaamö"
