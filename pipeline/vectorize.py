@@ -41,18 +41,17 @@ def vectorize_lexicon() -> None:
         words = [e["top_french"] for e in batch]
         embeddings = model.encode(words, show_progress_bar=False)
 
-        for entry, emb in zip(batch, embeddings):
-            try:
-                result = (
-                    client.table("lexicon")
-                    .update({"embedding": emb.tolist()})
-                    .eq("id", entry["id"])
-                    .execute()
-                )
-                if getattr(result, "error", None) is not None:
-                    print(f"  Warning: failed to update {entry['id']}: {result.error}")
-            except Exception as exc:
-                print(f"  Warning: failed to update {entry['id']}: {exc}")
+        # Add embedding to each entry dict and bulk upsert
+        records = [
+            {"id": entry["id"], "embedding": emb.tolist()}
+            for entry, emb in zip(batch, embeddings)
+        ]
+        try:
+            result = client.table("lexicon").upsert(records, on_conflict="id").execute()
+            if getattr(result, "error", None) is not None:
+                print(f"  Warning: batch upsert failed for batch starting at {i}: {result.error}")
+        except Exception as exc:
+            print(f"  Warning: batch upsert failed for batch starting at {i}: {exc}")
 
         done = min(i + BATCH_SIZE, len(entries))
         print(f"  {done}/{len(entries)}")

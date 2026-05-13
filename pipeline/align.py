@@ -80,7 +80,20 @@ def extract_probabilities(
                     fw = french_words[src_idx].lower()
                     bw = bete_words[tgt_idx].lower()
                     pair_counts[(fw, bw)] += 1
-                    source_counts[fw] += 1
+            # Count each French word only once per sentence
+            french_words_in_sentence = set()
+            for token in line.strip().split():
+                if "-" not in token:
+                    continue
+                src_idx_s, tgt_idx_s = token.split("-", 1)
+                try:
+                    src_idx = int(src_idx_s)
+                except ValueError:
+                    continue
+                if src_idx < len(french_words):
+                    french_words_in_sentence.add(french_words[src_idx].lower())
+            for fw in french_words_in_sentence:
+                source_counts[fw] += 1
 
     alignments: list[dict] = []
     for (fw, bw), count in pair_counts.items():

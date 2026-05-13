@@ -85,6 +85,36 @@ def load_lexicon(client, alignments_jsonl: str | None = None) -> None:
         print(f"  Lexicon: {min(i + batch_size, len(entries))}/{len(entries)}")
 
 
+def load_alignments(client, alignments_jsonl: str | None = None) -> None:
+    """Load raw alignment records into the alignments table for future retraining."""
+    from pipeline.config import ALIGNMENTS_JSONL
+    if alignments_jsonl is None:
+        alignments_jsonl = ALIGNMENTS_JSONL
+
+    raw: list[dict] = []
+    try:
+        with open(alignments_jsonl, "r", encoding="utf-8") as f:
+            for line in f:
+                raw.append(json.loads(line))
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Alignments JSONL file not found: {alignments_jsonl!r}")
+
+    # alignments table: bete_word, french_word, score (verse_id left null)
+    records = [
+        {"bete_word": r["bete_word"], "french_word": r["french_word"], "score": r["score"]}
+        for r in raw
+    ]
+
+    batch_size = 500
+    for i in range(0, len(records), batch_size):
+        batch = records[i : i + batch_size]
+        result = client.table("alignments").upsert(batch).execute()
+        if getattr(result, "error", None) is not None:
+            raise RuntimeError(f"Supabase upsert error: {result.error}")
+        done = min(i + batch_size, len(records))
+        print(f"  Alignments: {done}/{len(records)}")
+
+
 if __name__ == "__main__":
     from supabase import create_client
     from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
@@ -93,4 +123,6 @@ if __name__ == "__main__":
     load_verses(client)
     print("Loading lexicon...")
     load_lexicon(client)
+    print("Loading alignments...")
+    load_alignments(client)
     print("Done.")
