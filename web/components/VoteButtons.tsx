@@ -17,12 +17,20 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
   async function vote(direction: 'up' | 'down') {
     if (voted === direction) return
     const delta = direction === 'up' ? 1 : -1
-    setUpvotes(v => v + delta)
+    const newCount = upvotes + delta
+    // Optimistic update
+    setUpvotes(newCount)
     setVoted(direction)
-    await supabase
-      .from(table)
-      .update({ upvotes: upvotes + delta })
-      .eq('id', id)
+    try {
+      await supabase
+        .from(table)
+        .update({ upvotes: newCount })
+        .eq('id', id)
+    } catch {
+      // Rollback on failure
+      setUpvotes(upvotes)
+      setVoted(null)
+    }
   }
 
   return (
@@ -30,6 +38,7 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
       <Button
         variant={voted === 'up' ? 'default' : 'outline'}
         size="sm"
+        aria-label="Voter pour"
         onClick={() => vote('up')}
       >
         ▲ {upvotes}
@@ -37,6 +46,7 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
       <Button
         variant={voted === 'down' ? 'default' : 'outline'}
         size="sm"
+        aria-label="Voter contre"
         onClick={() => vote('down')}
       >
         ▼

@@ -28,7 +28,7 @@ export function LexiconEntry({ entry, compact = false }: Props) {
       </CardHeader>
       <CardContent>
         <p className="font-semibold text-blue-700">{entry.top_french}</p>
-        {!compact && entry.french_candidates.length > 1 && (
+        {!compact && (entry.french_candidates?.length ?? 0) > 1 && (
           <div className="mt-2">
             <p className="text-xs text-muted-foreground mb-1">Autres candidats :</p>
             <div className="flex flex-wrap gap-1">
