@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { ContributionForm } from '@/components/ContributionForm'
 import { PendingContributions } from '@/components/PendingContributions'
 import { Separator } from '@/components/ui/separator'

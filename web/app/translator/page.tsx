@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { TranslatorInput } from '@/components/TranslatorInput'
 
 export default function TranslatorPage() {
