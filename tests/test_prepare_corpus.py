@@ -34,12 +34,26 @@ def test_bete_and_french_lines_stay_in_sync():
             {"bete_text": "bete line two", "french_text": "french line two"},
         ])
         write_aligned_text_files(jsonl, bete_txt, french_txt)
-        bete_lines = open(bete_txt, encoding="utf-8").readlines()
-        french_lines = open(french_txt, encoding="utf-8").readlines()
+        with open(bete_txt, encoding="utf-8") as f:
+            bete_lines = f.readlines()
+        with open(french_txt, encoding="utf-8") as f:
+            french_lines = f.readlines()
         assert bete_lines[0].strip() == "bete line one"
         assert french_lines[0].strip() == "french line one"
         assert bete_lines[1].strip() == "bete line two"
         assert french_lines[1].strip() == "french line two"
+
+
+def test_empty_corpus_produces_empty_files():
+    with tempfile.TemporaryDirectory() as tmp:
+        jsonl = os.path.join(tmp, "corpus.jsonl")
+        bete_txt = os.path.join(tmp, "bete.txt")
+        french_txt = os.path.join(tmp, "french.txt")
+        # Write empty JSONL
+        open(jsonl, "w").close()
+        write_aligned_text_files(jsonl, bete_txt, french_txt)
+        assert count_lines(bete_txt) == 0
+        assert count_lines(french_txt) == 0
 
 
 def test_count_lines():
