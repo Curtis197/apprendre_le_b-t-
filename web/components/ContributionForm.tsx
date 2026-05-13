@@ -29,11 +29,14 @@ export function ContributionForm() {
   const [exprType, setExprType] = useState<'idiomatic' | 'fixed' | 'proverb'>('idiomatic')
 
   async function handleSubmit() {
-    const { data: { user } } = await supabaseRef.current.auth.getUser()
-    if (!user) { alert('Connectez-vous pour contribuer.'); return }
-
     setLoading(true)
     setSubmitError(null)
+    const { data: { user } } = await supabaseRef.current.auth.getUser()
+    if (!user) {
+      setLoading(false)
+      alert('Connectez-vous pour contribuer.')
+      return
+    }
     try {
       let error
       if (type === 'grammar_rule') {

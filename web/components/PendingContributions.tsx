@@ -9,18 +9,30 @@ import { GrammarRule, Expression } from '@/lib/types'
 export function PendingContributions() {
   const [rules, setRules] = useState<GrammarRule[]>([])
   const [expressions, setExpressions] = useState<Expression[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const supabaseRef = useRef(createClient())
 
   useEffect(() => {
     const client = supabaseRef.current
-    client.from('grammar_rules').select('*').eq('validated', false)
-      .order('created_at', { ascending: false }).limit(10)
-      .then(({ data }) => setRules((data ?? []) as GrammarRule[]))
-
-    client.from('expressions').select('*').eq('validated', false)
-      .order('created_at', { ascending: false }).limit(10)
-      .then(({ data }) => setExpressions((data ?? []) as Expression[]))
+    Promise.all([
+      client.from('grammar_rules').select('*').eq('validated', false)
+        .order('created_at', { ascending: false }).limit(10),
+      client.from('expressions').select('*').eq('validated', false)
+        .order('created_at', { ascending: false }).limit(10),
+    ]).then(([rulesRes, exprsRes]) => {
+      if (rulesRes.error || exprsRes.error) {
+        setError('Impossible de charger les contributions.')
+      } else {
+        setRules((rulesRes.data ?? []) as GrammarRule[])
+        setExpressions((exprsRes.data ?? []) as Expression[])
+      }
+      setLoading(false)
+    })
   }, [])
+
+  if (loading) return <p className="text-sm text-muted-foreground">Chargement…</p>
+  if (error) return <p className="text-sm text-red-600">{error}</p>
 
   return (
     <div className="space-y-6">

@@ -1,3 +1,4 @@
+import 'server-only'
 // lib/translation-cache.ts
 import { SupabaseClient } from '@supabase/supabase-js'
 import { TranslationResult } from './types'

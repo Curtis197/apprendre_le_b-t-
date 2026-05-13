@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase-browser'
 
@@ -12,23 +12,23 @@ interface VoteButtonsProps {
 export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsProps) {
   const [upvotes, setUpvotes] = useState(initialUpvotes)
   const [voted, setVoted] = useState<'up' | 'down' | null>(null)
-  const supabase = createClient()
+  const supabaseRef = useRef(createClient())
 
   async function vote(direction: 'up' | 'down') {
     if (voted === direction) return
+    const prevCount = upvotes  // capture before optimistic update
     const delta = direction === 'up' ? 1 : -1
-    const newCount = upvotes + delta
-    // Optimistic update
+    const newCount = prevCount + delta
     setUpvotes(newCount)
     setVoted(direction)
     try {
-      await supabase
+      await supabaseRef.current
         .from(table)
         .update({ upvotes: newCount })
         .eq('id', id)
     } catch {
-      // Rollback on failure
-      setUpvotes(upvotes)
+      // Rollback to pre-vote count
+      setUpvotes(prevCount)
       setVoted(null)
     }
   }

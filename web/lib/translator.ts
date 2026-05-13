@@ -1,3 +1,4 @@
+import 'server-only'
 // lib/translator.ts
 import Anthropic from '@anthropic-ai/sdk'
 import { SupabaseClient } from '@supabase/supabase-js'
