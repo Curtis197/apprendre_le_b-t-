@@ -19,12 +19,12 @@ create table if not exists lexicon (
   bete_phonetic     text    not null,
   french_candidates jsonb   not null,
   top_french        text    not null,
-  probability       float   not null,
+  probability       float   not null check (probability >= 0.0 and probability <= 1.0),
   embedding         vector(384),
   pos               text,
   notes             text,
   validated         bool    not null default false,
-  upvotes           int     not null default 0,
+  upvotes           int     not null default 0 check (upvotes >= 0),
   created_at        timestamptz not null default now()
 );
 create index if not exists lexicon_embedding_idx
@@ -36,8 +36,8 @@ create index if not exists lexicon_phonetic_idx    on lexicon (bete_phonetic);
 -- NT example sentences per lexicon entry
 create table if not exists lexicon_examples (
   id           uuid primary key default gen_random_uuid(),
-  lexicon_id   uuid references lexicon(id) on delete cascade,
-  verse_id     uuid references verses(id),
+  lexicon_id   uuid not null references lexicon(id) on delete cascade,
+  verse_id     uuid references verses(id) on delete set null,
   bete_snippet   text not null,
   french_snippet text not null
 );
@@ -47,14 +47,15 @@ create table if not exists alignments (
   id          uuid  primary key default gen_random_uuid(),
   french_word text  not null,
   bete_word   text  not null,
-  score       float not null,
-  verse_id    uuid  references verses(id)
+  score       float not null check (score >= 0.0 and score <= 1.0),
+  verse_id    uuid  references verses(id) on delete set null
 );
+create index if not exists alignments_verse_idx on alignments (verse_id);
 
 -- Grammar rules (user-contributed)
 create table if not exists grammar_rules (
   id                   uuid primary key default gen_random_uuid(),
-  category             text not null,
+  category             text not null check (category in ('verb','noun','tense','agreement','other')),
   pattern_french       text not null,
   pattern_bete         text not null,
   description          text not null,
@@ -62,7 +63,7 @@ create table if not exists grammar_rules (
   example_bete         text,
   example_bete_phonetic text,
   validated            bool not null default false,
-  upvotes              int  not null default 0,
+  upvotes              int  not null default 0 check (upvotes >= 0),
   created_by           uuid references auth.users(id),
   created_at           timestamptz not null default now()
 );
@@ -73,11 +74,11 @@ create table if not exists expressions (
   french_phrase    text not null,
   bete_phrase      text not null,
   bete_phonetic    text not null,
-  type             text not null,
+  type             text not null check (type in ('idiomatic','fixed','proverb')),
   embedding        vector(384),
   example_verse_id uuid references verses(id),
   validated        bool not null default false,
-  upvotes          int  not null default 0,
+  upvotes          int  not null default 0 check (upvotes >= 0),
   created_by       uuid references auth.users(id),
   created_at       timestamptz not null default now()
 );
@@ -90,7 +91,7 @@ create table if not exists user_feedback (
   id                      uuid primary key default gen_random_uuid(),
   user_id                 uuid references auth.users(id),
   lexicon_id              uuid references lexicon(id),
-  type                    text not null,
+  type                    text not null check (type in ('confirm','reject','suggest')),
   suggested_bete          text,
   suggested_bete_phonetic text,
   translator_phrase       text,
