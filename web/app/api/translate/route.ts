@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { translate } from '@/lib/translator'
 import { getCached, setCached } from '@/lib/translation-cache'
+import type { TranslationResult } from '@/lib/types'
 
 function createServiceClient() {
   return createServerClient(
@@ -32,10 +33,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Translate
-  const result = await translate(client, input)
+  let result: TranslationResult
+  try {
+    result = await translate(client, input)
+  } catch (err) {
+    console.error('translate error:', err)
+    return Response.json({ error: 'translation failed' }, { status: 500 })
+  }
 
-  // Store in cache
-  await setCached(client, input, result)
+  try {
+    await setCached(client, input, result)
+  } catch (err) {
+    console.error('cache write error:', err)
+    // Non-critical — proceed with the result
+  }
 
   return Response.json(result)
 }
