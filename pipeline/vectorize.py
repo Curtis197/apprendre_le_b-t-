@@ -1,7 +1,7 @@
 # pipeline/vectorize.py
 from sentence_transformers import SentenceTransformer
 from supabase import create_client
-from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 BATCH_SIZE = 128
@@ -27,7 +27,9 @@ def vectorize_lexicon() -> None:
         .is_("embedding", "null")
         .execute()
     )
-    entries = response.data
+    if getattr(response, "error", None) is not None:
+        raise RuntimeError(f"Supabase fetch error: {response.error}")
+    entries = response.data or []
     if not entries:
         print("All entries already have embeddings.")
         return
@@ -40,12 +42,17 @@ def vectorize_lexicon() -> None:
         embeddings = model.encode(words, show_progress_bar=False)
 
         for entry, emb in zip(batch, embeddings):
-            (
-                client.table("lexicon")
-                .update({"embedding": emb.tolist()})
-                .eq("id", entry["id"])
-                .execute()
-            )
+            try:
+                result = (
+                    client.table("lexicon")
+                    .update({"embedding": emb.tolist()})
+                    .eq("id", entry["id"])
+                    .execute()
+                )
+                if getattr(result, "error", None) is not None:
+                    print(f"  Warning: failed to update {entry['id']}: {result.error}")
+            except Exception as exc:
+                print(f"  Warning: failed to update {entry['id']}: {exc}")
 
         done = min(i + BATCH_SIZE, len(entries))
         print(f"  {done}/{len(entries)}")
