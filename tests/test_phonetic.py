@@ -1,8 +1,5 @@
 # tests/test_phonetic.py
-import pytest
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
-from phonetic import to_phonetic
+from pipeline.phonetic import to_phonetic
 
 def test_maps_iota_to_i():
     assert to_phonetic("ɩ") == "i"
