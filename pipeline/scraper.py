@@ -29,7 +29,7 @@ def merge_verse_pairs(
     pairs = []
     for bv in bete_verses:
         fn = french_map.get(bv["verse"])
-        if fn:
+        if fn is not None:
             pairs.append({
                 "book": book,
                 "chapter": chapter,
@@ -130,6 +130,7 @@ async def scrape_nt(output_path: str = PARALLEL_JSONL) -> None:
                     pairs = merge_verse_pairs(book, chapter, bete, french)
                     for pair in pairs:
                         out.write(json.dumps(pair, ensure_ascii=False) + "\n")
+                    out.flush()  # ensure data is written to disk before next chapter
                     print(f"    → {len(pairs)} verse pairs")
 
         await browser.close()
