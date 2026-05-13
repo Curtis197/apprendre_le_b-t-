@@ -31,46 +31,57 @@ def build_lexicon_from_alignments(alignments: list[dict]) -> list[dict]:
             "probability":        top["score"],
             "validated":          False,
         })
+    entries.sort(key=lambda e: e["bete_word"])
     return entries
 
 
-def load_verses(client, parallel_jsonl: str = None) -> None:
+def load_verses(client, parallel_jsonl: str | None = None) -> None:
+    """Load verse pairs into the verses table (upsert by book+chapter+verse)."""
     from pipeline.config import PARALLEL_JSONL
     if parallel_jsonl is None:
         parallel_jsonl = PARALLEL_JSONL
-    """Load verse pairs into the verses table (upsert by book+chapter+verse)."""
     verses = []
-    with open(parallel_jsonl, "r", encoding="utf-8") as f:
-        for line in f:
-            verses.append(json.loads(line))
+    try:
+        with open(parallel_jsonl, "r", encoding="utf-8") as f:
+            for line in f:
+                verses.append(json.loads(line))
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Parallel JSONL file not found: {parallel_jsonl!r}")
 
     batch_size = 500
     for i in range(0, len(verses), batch_size):
         batch = verses[i : i + batch_size]
-        client.table("verses").upsert(
+        result = client.table("verses").upsert(
             batch, on_conflict="book,chapter,verse"
         ).execute()
+        if getattr(result, "error", None) is not None:
+            raise RuntimeError(f"Supabase error upserting verses: {result.error}")
         print(f"  Verses: {min(i + batch_size, len(verses))}/{len(verses)}")
 
 
-def load_lexicon(client, alignments_jsonl: str = None) -> None:
+def load_lexicon(client, alignments_jsonl: str | None = None) -> None:
+    """Load alignment-derived lexicon entries into the lexicon table."""
     from pipeline.config import ALIGNMENTS_JSONL
     if alignments_jsonl is None:
         alignments_jsonl = ALIGNMENTS_JSONL
-    """Load alignment-derived lexicon entries into the lexicon table."""
     raw: list[dict] = []
-    with open(alignments_jsonl, "r", encoding="utf-8") as f:
-        for line in f:
-            raw.append(json.loads(line))
+    try:
+        with open(alignments_jsonl, "r", encoding="utf-8") as f:
+            for line in f:
+                raw.append(json.loads(line))
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Alignments JSONL file not found: {alignments_jsonl!r}")
 
     entries = build_lexicon_from_alignments(raw)
 
     batch_size = 500
     for i in range(0, len(entries), batch_size):
         batch = entries[i : i + batch_size]
-        client.table("lexicon").upsert(
+        result = client.table("lexicon").upsert(
             batch, on_conflict="bete_word"
         ).execute()
+        if getattr(result, "error", None) is not None:
+            raise RuntimeError(f"Supabase error upserting lexicon: {result.error}")
         print(f"  Lexicon: {min(i + batch_size, len(entries))}/{len(entries)}")
 
 
