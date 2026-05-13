@@ -1,0 +1,7 @@
+playwright==1.44.0
+eflomal==0.5.0
+sentence-transformers==3.0.1
+supabase==2.5.0
+python-dotenv==1.0.1
+pytest==8.2.2
+pytest-asyncio==0.23.7
