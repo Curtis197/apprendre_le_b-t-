@@ -22,11 +22,12 @@ export default async function ContributePage() {
   let displayName = 'Contributeur'
 
   if (user) {
-    const [gr, ex] = await Promise.all([
+    const [gr, ex, ct] = await Promise.all([
       supabase.from('grammar_rules').select('validated').eq('created_by', user.id),
       supabase.from('expressions').select('validated').eq('created_by', user.id),
+      supabase.from('community_texts').select('validated').eq('created_by', user.id),
     ])
-    const all = [...(gr.data ?? []), ...(ex.data ?? [])]
+    const all = [...(gr.data ?? []), ...(ex.data ?? []), ...(ct.data ?? [])]
     totalCount = all.length
     validatedCount = all.filter(c => c.validated).length
     displayName = (user.user_metadata?.full_name as string | undefined)

@@ -3,8 +3,11 @@ import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase-browser'
 
+type VoteableTable = 'lexicon' | 'grammar_rules' | 'expressions'
+  | 'forum_threads' | 'forum_posts' | 'community_texts'
+
 interface VoteButtonsProps {
-  table: 'lexicon' | 'grammar_rules' | 'expressions'
+  table: VoteableTable
   id: string
   upvotes: number
 }
@@ -16,20 +19,22 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
 
   async function vote(direction: 'up' | 'down') {
     if (voted === direction) return
-    const prevCount = upvotes  // capture before optimistic update
-    const delta = direction === 'up' ? 1 : -1
-    const newCount = prevCount + delta
-    setUpvotes(newCount)
+    // If switching vote direction, delta is ±2; first vote is ±1
+    const delta = direction === 'up'
+      ? (voted === 'down' ? 2 : 1)
+      : (voted === 'up' ? -2 : -1)
+
+    setUpvotes(v => Math.max(0, v + delta))
     setVoted(direction)
-    try {
-      await supabaseRef.current
-        .from(table)
-        .update({ upvotes: newCount })
-        .eq('id', id)
-    } catch {
-      // Rollback to pre-vote count
-      setUpvotes(prevCount)
+
+    const { data, error } = await supabaseRef.current
+      .rpc('increment_upvotes', { table_name: table, row_id: id, delta })
+
+    if (error) {
+      setUpvotes(initialUpvotes)
       setVoted(null)
+    } else if (typeof data === 'number') {
+      setUpvotes(data)
     }
   }
 
