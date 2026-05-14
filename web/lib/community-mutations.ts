@@ -122,6 +122,7 @@ export async function submitCommunityText(
       type:           input.type,
       content_bete:   input.content_bete.trim(),
       content_french: input.content_french?.trim() || null,
+      video_url:      input.video_url?.trim() || null,
       author_name:    displayName,
       region:         input.region?.trim() || null,
       created_by:     user.id,

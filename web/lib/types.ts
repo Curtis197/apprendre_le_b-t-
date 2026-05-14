@@ -80,6 +80,7 @@ export interface CommunityText {
   type: ContentType
   content_bete: string
   content_french: string | null
+  video_url: string | null
   author_name: string | null
   region: string | null
   created_by: string | null
@@ -106,6 +107,7 @@ export interface CreateCommunityTextInput {
   type: ContentType
   content_bete: string
   content_french?: string
+  video_url?: string
   author_name?: string
   region?: string
 }

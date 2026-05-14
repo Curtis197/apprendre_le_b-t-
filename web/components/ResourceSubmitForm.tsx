@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { submitCommunityText } from '@/lib/community-mutations'
+import { extractYouTubeId } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,19 +26,25 @@ export function ResourceSubmitForm() {
   const [type, setType]                 = useState<ContentType>('proverb')
   const [contentBete, setContentBete]   = useState('')
   const [contentFrench, setContentFrench] = useState('')
+  const [videoUrl, setVideoUrl]         = useState('')
   const [authorName, setAuthorName]     = useState('')
   const [region, setRegion]             = useState('')
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState<string | null>(null)
   const [submitted, setSubmitted]       = useState(false)
 
+  const videoId = videoUrl.trim() ? extractYouTubeId(videoUrl.trim()) : null
+  const videoInvalid = videoUrl.trim() !== '' && videoId === null
+
   async function handleSubmit() {
     if (!title.trim() || !contentBete.trim()) return
+    if (videoInvalid) { setError('URL YouTube invalide.'); return }
     setLoading(true)
     setError(null)
     const { error: err } = await submitCommunityText(supabaseRef.current, {
       title, type, content_bete: contentBete,
       content_french: contentFrench || undefined,
+      video_url: videoUrl.trim() || undefined,
       author_name: authorName || undefined,
       region: region || undefined,
     })
@@ -54,7 +61,7 @@ export function ResourceSubmitForm() {
       <div className="flex gap-3 justify-center pt-2">
         <Button
           variant="outline"
-          onClick={() => { setSubmitted(false); setTitle(''); setContentBete(''); setContentFrench('') }}
+          onClick={() => { setSubmitted(false); setTitle(''); setContentBete(''); setContentFrench(''); setVideoUrl('') }}
         >
           Soumettre une autre
         </Button>
@@ -75,6 +82,23 @@ export function ResourceSubmitForm() {
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
+
+      {/* Video URL */}
+      <div className="space-y-1.5">
+        <Input
+          placeholder="Lien YouTube (optionnel) — ex: https://youtu.be/dQw4w9WgXcQ"
+          value={videoUrl}
+          onChange={e => setVideoUrl(e.target.value)}
+          className={videoInvalid ? 'border-destructive' : ''}
+        />
+        {videoInvalid && (
+          <p className="text-xs text-destructive">URL YouTube non reconnue. Formats acceptés : youtube.com/watch?v=… ou youtu.be/…</p>
+        )}
+        {videoId && (
+          <p className="text-xs text-emerald-600">✓ Vidéo reconnue (ID : {videoId})</p>
+        )}
+      </div>
+
       <Textarea
         placeholder="Texte en bété *"
         value={contentBete}
@@ -95,7 +119,7 @@ export function ResourceSubmitForm() {
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button
         onClick={handleSubmit}
-        disabled={loading || !title.trim() || !contentBete.trim()}
+        disabled={loading || !title.trim() || !contentBete.trim() || videoInvalid}
         className="w-full"
       >
         {loading ? 'Envoi…' : 'Soumettre la ressource'}
