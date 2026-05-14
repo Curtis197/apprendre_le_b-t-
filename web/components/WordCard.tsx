@@ -17,7 +17,7 @@ export function WordCard({ entry, featured = false, className }: Props) {
           <span className="bg-secondary/20 text-secondary text-xs font-semibold rounded-full px-3 py-1">
             Mot du Jour
           </span>
-          <button className="w-14 h-14 bg-primary/20 hover:bg-primary hover:text-white text-primary rounded-full flex items-center justify-center transition-colors">
+          <button aria-label="Écouter la prononciation" className="w-14 h-14 bg-primary/20 hover:bg-primary hover:text-white text-primary rounded-full flex items-center justify-center transition-colors">
             <Volume2 className="w-6 h-6" />
           </button>
         </div>
@@ -39,7 +39,7 @@ export function WordCard({ entry, featured = false, className }: Props) {
         <span className="bg-secondary text-white text-xs font-semibold rounded-full px-3 py-1">
           {entry.pos ?? 'Mot'}
         </span>
-        <button className="w-12 h-12 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-colors group-hover:scale-110">
+        <button aria-label="Écouter la prononciation" className="w-12 h-12 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-colors group-hover:scale-110">
           <Volume2 className="w-5 h-5" />
         </button>
       </div>

@@ -30,6 +30,7 @@ export default function LexiconPage() {
   }, [category])
 
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
     const from = page * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
@@ -41,11 +42,15 @@ export default function LexiconPage() {
     if (category !== 'Tous' && POS_MAP[category]) {
       q = q.ilike('pos', `%${POS_MAP[category]}%`)
     }
-    q.then(({ data, count }) => {
-      setEntries((data ?? []) as LexiconEntry[])
-      setTotal(count ?? 0)
+    q.then(({ data, count, error }) => {
+      if (cancelled) return
+      if (!error) {
+        setEntries((data ?? []) as LexiconEntry[])
+        setTotal(count ?? 0)
+      }
       setLoading(false)
     })
+    return () => { cancelled = true }
   }, [category, page])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -80,6 +85,7 @@ export default function LexiconPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {featured && (
             <WordCard
+              key={featured.id}
               entry={featured}
               featured
               className="md:col-span-2 xl:col-span-1"
