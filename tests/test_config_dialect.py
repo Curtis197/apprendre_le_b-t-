@@ -29,9 +29,12 @@ def test_corpus_paths_northern():
     p = corpus_paths("northern")
     assert p["parallel_jsonl"] == "corpus/northern/nt_parallel.jsonl"
 
+def test_corpus_paths_western_values():
+    p = corpus_paths("western")
+    assert p["parallel_jsonl"] == "corpus/western/nt_parallel.jsonl"
+    assert p["corpus_dir"] == "corpus/western"
+
 def test_corpus_paths_invalid():
-    try:
+    import pytest
+    with pytest.raises(ValueError):
         corpus_paths("invalid")
-        assert False
-    except ValueError:
-        pass
