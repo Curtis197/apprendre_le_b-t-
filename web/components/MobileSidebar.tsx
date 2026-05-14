@@ -1,6 +1,6 @@
 // web/components/MobileSidebar.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, X, Home, BookOpen, BookText, PlusCircle } from 'lucide-react'
@@ -17,6 +17,22 @@ const links = [
 export function MobileSidebar() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+
+  // Lock body scroll when sidebar opens
+  useEffect(() => {
+    document.documentElement.style.overflow = open ? 'hidden' : ''
+    return () => { document.documentElement.style.overflow = '' }
+  }, [open])
+
+  // Close sidebar on Escape key
+  useEffect(() => {
+    if (!open) return
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [open])
 
   return (
     <>
