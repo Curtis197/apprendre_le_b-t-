@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
+import { AuthNav } from '@/components/AuthNav'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/contribute" className="text-sm text-muted-foreground hover:text-foreground">
               Contribuer
             </Link>
+            <AuthNav />
           </nav>
         </header>
         {children}
