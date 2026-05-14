@@ -4,10 +4,11 @@ import { ArrowLeftRight, Copy, Mic, Sparkles } from 'lucide-react'
 import type { TranslationResult } from '@/lib/types'
 
 export function HomeTranslator() {
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [input, setInput]       = useState('')
+  const [output, setOutput]     = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+  const [remaining, setRemaining] = useState<number | null>(null)
 
   async function handleTranslate() {
     if (!input.trim()) return
@@ -19,9 +20,26 @@ export function HomeTranslator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: input }),
       })
+
+      // Read quota headers even on error responses
+      const limit     = res.headers.get('X-RateLimit-Limit')
+      const rem       = res.headers.get('X-RateLimit-Remaining')
+      if (rem !== null) setRemaining(Number(rem))
+
+      if (res.status === 429) {
+        const data = await res.json()
+        setError(data.error ?? 'Quota journalier atteint.')
+        return
+      }
       if (!res.ok) throw new Error('Erreur de traduction. Veuillez réessayer.')
+
       const data: TranslationResult = await res.json()
       setOutput(data.tokens?.map(t => t.bete_word).join(' ') ?? '')
+
+      // Cached responses don't include rate-limit headers — keep last known value
+      if (rem === null && limit === null) {
+        // cached hit — quota unchanged, don't update remaining
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de traduction.')
     } finally {
@@ -31,10 +49,17 @@ export function HomeTranslator() {
 
   return (
     <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="bg-muted rounded-full px-4 py-1.5 text-sm font-semibold">Français</span>
-        <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-        <span className="bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-semibold">Bété</span>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <span className="bg-muted rounded-full px-4 py-1.5 text-sm font-semibold">Français</span>
+          <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+          <span className="bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-semibold">Bété</span>
+        </div>
+        {remaining !== null && (
+          <span className={`text-xs font-medium ${remaining <= 2 ? 'text-destructive' : 'text-muted-foreground'}`}>
+            {remaining} traduction{remaining !== 1 ? 's' : ''} restante{remaining !== 1 ? 's' : ''} aujourd&apos;hui
+          </span>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -69,7 +94,7 @@ export function HomeTranslator() {
 
       <button
         onClick={handleTranslate}
-        disabled={loading || !input.trim()}
+        disabled={loading || !input.trim() || remaining === 0}
         className="w-full h-12 bg-primary text-white rounded-lg font-heading font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50 transition-colors"
       >
         {loading ? (
