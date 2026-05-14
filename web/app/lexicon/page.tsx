@@ -101,17 +101,20 @@ export default function LexiconPage() {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => (
+          {Array.from(
+            { length: Math.min(totalPages, 5) },
+            (_, i) => Math.max(0, Math.min(page - 2, totalPages - 5)) + i
+          ).map(pageNum => (
             <button
-              key={i}
-              onClick={() => setPage(i)}
+              key={pageNum}
+              onClick={() => setPage(pageNum)}
               className={`w-10 h-10 rounded-full text-sm font-semibold transition-colors ${
-                page === i
+                page === pageNum
                   ? 'bg-primary text-white'
                   : 'border border-border hover:bg-muted'
               }`}
             >
-              {i + 1}
+              {pageNum + 1}
             </button>
           ))}
           <button
