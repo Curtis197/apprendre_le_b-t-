@@ -2,6 +2,13 @@ import { LexiconEntry as TLexiconEntry } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { VoteButtons } from './VoteButtons'
+import { cleanBeteWord } from '@/lib/utils'
+
+const POS_LABELS: Record<string, string> = {
+  noun: 'Nom', verb: 'Verbe', adj: 'Adj.', adv: 'Adv.',
+  name: 'Nom propre', num: 'Num.', interj: 'Interj.',
+  prep: 'Prép.', conj: 'Conj.', pron: 'Pron.',
+}
 
 interface Props {
   entry: TLexiconEntry
@@ -9,19 +16,24 @@ interface Props {
 }
 
 export function LexiconEntry({ entry, compact = false }: Props) {
+  const posTag = entry.pos?.[0]
+  const posLabel = posTag ? (POS_LABELS[posTag] ?? posTag) : null
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-xl">{entry.bete_word}</CardTitle>
+            {/* Latin alphabet form as primary display */}
+            <CardTitle className="text-xl">{entry.bete_phonetic}</CardTitle>
+            {/* Original Bible phonetic notation in brackets */}
             <p className="text-sm text-muted-foreground font-mono">
-              [{entry.bete_phonetic}]
+              [{cleanBeteWord(entry.bete_word)}]
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {entry.validated && <Badge variant="secondary">✓ validé</Badge>}
-            {entry.pos && <Badge variant="outline">{entry.pos}</Badge>}
+            {posLabel && <Badge variant="outline">{posLabel}</Badge>}
             <VoteButtons table="lexicon" id={entry.id} upvotes={entry.upvotes} />
           </div>
         </div>

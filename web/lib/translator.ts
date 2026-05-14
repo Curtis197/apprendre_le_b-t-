@@ -87,7 +87,7 @@ export async function translate(
   const lexiconContext = Object.entries(lexiconMatches)
     .map(([fr, entry]) => {
       if (!entry) return `${fr} → [unknown]`
-      return `${fr} → ${entry.bete_phonetic} (standard: ${entry.bete_word}, score: ${entry.probability})`
+      return `${fr} → ${entry.bete_phonetic} (score: ${entry.probability})`
     })
     .join('\n')
 

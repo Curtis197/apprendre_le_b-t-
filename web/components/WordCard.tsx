@@ -1,6 +1,6 @@
 'use client'
 import { Volume2, BookOpen } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, cleanBeteWord } from '@/lib/utils'
 import type { LexiconEntry } from '@/lib/types'
 
 interface Props {
@@ -50,8 +50,8 @@ export function WordCard({ entry, featured = false, className }: Props) {
             <Volume2 className="w-6 h-6" />
           </button>
         </div>
-        <h2 className="font-heading text-4xl font-bold text-primary mb-1">{entry.bete_word}</h2>
-        <p className="text-sm italic text-muted-foreground mb-3">[{entry.bete_phonetic}]</p>
+        <h2 className="font-heading text-4xl font-bold text-primary mb-1">{entry.bete_phonetic}</h2>
+        <p className="text-sm italic text-muted-foreground mb-3">[{cleanBeteWord(entry.bete_word)}]</p>
         <div className="w-16 h-0.5 bg-primary/30 mb-3" />
         <p className="italic text-foreground/80">{entry.top_french}</p>
         <BookOpen className="absolute -bottom-4 -right-4 w-32 h-32 text-primary opacity-10" aria-hidden="true" />
@@ -83,7 +83,7 @@ export function WordCard({ entry, featured = false, className }: Props) {
           <Volume2 className="w-5 h-5" />
         </button>
       </div>
-      <h3 className="font-heading text-2xl font-bold text-foreground mb-2">{entry.bete_word}</h3>
+      <h3 className="font-heading text-2xl font-bold text-foreground mb-2">{entry.bete_phonetic}</h3>
       <div
         className="w-16 h-1 mb-2 rounded-full"
         style={{
@@ -93,7 +93,7 @@ export function WordCard({ entry, featured = false, className }: Props) {
       />
       <p className="italic text-muted-foreground text-sm mb-3">{entry.top_french}</p>
       <div className="border-t border-border pt-3 flex items-center justify-between opacity-60 group-hover:opacity-100 transition-opacity">
-        <span className="text-xs text-muted-foreground font-mono">[{entry.bete_phonetic}]</span>
+        <span className="text-xs text-muted-foreground font-mono">[{cleanBeteWord(entry.bete_word)}]</span>
         {entry.validated && (
           <span className="text-xs text-secondary font-semibold">✓ validé</span>
         )}
