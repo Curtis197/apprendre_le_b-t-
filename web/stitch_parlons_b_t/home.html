@@ -1,0 +1,314 @@
+<!DOCTYPE html><html class="light" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "surface-container": "#efeeea",
+                    "secondary-fixed-dim": "#7bda96",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed-variant": "#005228",
+                    "surface-tint": "#a23f00",
+                    "inverse-primary": "#ffb595",
+                    "tertiary-container": "#cea700",
+                    "secondary-container": "#94f4ad",
+                    "outline": "#8c7166",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#7c2e00",
+                    "on-tertiary-fixed-variant": "#574500",
+                    "tertiary-fixed": "#ffe084",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed-dim": "#eec209",
+                    "error": "#ba1a1a",
+                    "on-secondary-container": "#00723a",
+                    "on-surface": "#1b1c1a",
+                    "inverse-on-surface": "#f2f0ed",
+                    "surface-container-high": "#eae8e4",
+                    "primary-container": "#c64f00",
+                    "surface": "#fbf9f5",
+                    "primary": "#9e3d00",
+                    "primary-fixed-dim": "#ffb595",
+                    "surface-bright": "#fbf9f5",
+                    "surface-variant": "#e4e2de",
+                    "primary-fixed": "#ffdbcd",
+                    "on-background": "#1b1c1a",
+                    "tertiary": "#735c00",
+                    "surface-container-low": "#f5f3ef",
+                    "secondary": "#006d38",
+                    "on-tertiary-fixed": "#231b00",
+                    "surface-container-highest": "#e4e2de",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed": "#00210d",
+                    "inverse-surface": "#30312e",
+                    "on-tertiary-container": "#4e3e00",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#351000",
+                    "outline-variant": "#e0c0b2",
+                    "surface-dim": "#dbdad6",
+                    "on-primary-container": "#fffbff",
+                    "on-surface-variant": "#594238",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed": "#96f7b0",
+                    "background": "#fbf9f5"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "margin-desktop": "40px",
+                    "container-max": "1280px",
+                    "base": "8px",
+                    "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Lexend"],
+                    "label-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "display-lg-mobile": ["Lexend"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Lexend"],
+                    "headline-lg": ["Lexend"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .geometric-bg {
+            background-image: radial-gradient(circle at 2px 2px, #e0c0b2 1px, transparent 0);
+            background-size: 32px 32px;
+            opacity: 0.15;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style data-stitch-cursor=""></style><style data-stitch-scroll-lock=""></style></head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md text-body-md">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter py-4 max-w-container-max mx-auto bg-surface-container-low shadow-sm transition-all duration-200">
+<div class="flex items-center gap-8">
+<h1 class="font-display-lg text-headline-md text-primary tracking-tight">Bété Lingo</h1>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Lexicon</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Grammar</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Contribute</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<input class="bg-surface-container-highest border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-primary w-48 transition-all" placeholder="Search..." type="text">
+<span class="material-symbols-outlined absolute right-3 top-2 text-on-surface-variant text-sm">search</span>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high p-2 rounded-full transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<div class="flex pt-20 flex-grow">
+<!-- SideNavBar (Desktop Only) -->
+
+<!-- Main Content -->
+<main class="flex-grow relative overflow-hidden">
+<!-- Subtle Geometric Pattern Overlay -->
+<div class="absolute inset-0 geometric-bg pointer-events-none"></div>
+<div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-12 relative z-10">
+<!-- Hero / AI Translator Section -->
+<section class="mb-16">
+<div class="text-center mb-12">
+<h2 class="font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-4">Preserving the Voice of Ivory Coast</h2>
+<p class="text-body-lg text-on-surface-variant max-w-2xl mx-auto">Bridging generations through advanced AI. Translate from French to Bété seamlessly and contribute to our living archive.</p>
+</div>
+<!-- Translator Card -->
+<div class="bg-surface shadow-xl rounded-2xl overflow-hidden border border-outline-variant max-w-4xl mx-auto">
+<div class="flex items-center justify-between px-6 py-4 bg-surface-container-low border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md transition-all hover:bg-secondary-fixed">
+                                    French
+                                </button>
+<span class="material-symbols-outlined text-on-surface-variant">swap_horiz</span>
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-md text-label-md transition-all hover:bg-primary-fixed-dim">
+                                    Bété
+                                </button>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="grid md:grid-cols-2">
+<div class="p-6 border-b md:border-b-0 md:border-r border-outline-variant">
+<textarea class="w-full h-40 bg-transparent border-none focus:ring-0 text-body-lg resize-none placeholder:text-outline-variant" placeholder="Enter text to translate..."></textarea>
+<div class="flex justify-between items-center mt-4">
+<div class="flex gap-2">
+<button class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant"><span class="material-symbols-outlined text-xl">mic</span></button>
+<button class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant"><span class="material-symbols-outlined text-xl">volume_up</span></button>
+</div>
+<span class="text-label-sm text-outline-variant">0 / 500</span>
+</div>
+</div>
+<div class="p-6 bg-surface-container-lowest">
+<div class="h-40 text-body-lg text-on-surface-variant font-medium">
+<span class="text-outline-variant italic">Translation will appear here...</span>
+</div>
+<div class="flex justify-between items-center mt-4">
+<div class="flex gap-2">
+<button class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant"><span class="material-symbols-outlined text-xl" data-weight="fill">content_copy</span></button>
+<button class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant"><span class="material-symbols-outlined text-xl">share</span></button>
+</div>
+<button class="flex items-center gap-2 text-primary font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-xl">auto_fix_high</span>
+                                        Translate
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Word of the Day & Cultural Section (Bento Style) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Word of the Day -->
+<div class="lg:col-span-1 bg-surface-container-low rounded-2xl p-8 border-l-4 border-primary shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 text-primary opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-[120px]">menu_book</span>
+</div>
+<div class="flex items-center justify-between mb-6">
+<span class="px-3 py-1 rounded-full bg-secondary text-on-secondary font-label-sm text-label-sm">Word of the Day</span>
+<span class="text-outline-variant text-label-sm italic">Nov 22, 2023</span>
+</div>
+<h3 class="font-display-lg text-headline-lg text-primary mb-2">Gbalu</h3>
+<p class="text-on-surface-variant text-body-lg mb-6">/gba.lu/</p>
+<div class="w-12 h-0.5 bg-outline-variant mb-6"></div>
+<p class="text-on-surface font-semibold mb-2">Meaning:</p>
+<p class="text-on-surface-variant mb-6 italic">"To share with the heart; a deep communal generosity."</p>
+<button class="flex items-center gap-2 text-secondary font-bold hover:gap-3 transition-all">
+                            Learn more about this concept
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Cultural Introduction -->
+<div class="lg:col-span-2 grid md:grid-cols-2 bg-surface rounded-2xl overflow-hidden border border-outline-variant shadow-sm">
+<div class="h-64 md:h-auto overflow-hidden relative">
+<img alt="Bété Heritage" class="w-full h-full object-cover" data-alt="A cinematic, warm-toned photograph of a traditional Bété mask and textile artifacts displayed in a modern, sunlit cultural museum. The lighting is soft and golden, highlighting the intricate geometric carvings of the wood and the vibrant terracotta colors of the fabric. The composition is balanced and professional, evoking a sense of deep respect for Ivorian heritage and the marriage of ancient art with contemporary preservation techniques." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFG5PiUYkMBtJ75G-8Dso5tcY1yqiRIdwQA1I1JgpuQcv7ioiozjstI3FA6b_x32kp7TW_kpo6TWgS2OSlAv2OV-9St0zzfDwL8ZehlIE62umuwOEx7THByRQ8KHmFOniqQxgNAPJSM-U9rpeiifj7iLvncUSWQSIxaeHmqzC0XE6wqGr3DRv_Q5UPc_z8M5ems-NXELvZDmwKTN69OJ_bJE__b0MyNx7SLzP6f-R6Hk9p2eG4URSXPftpBl3OAmc0pZ6vqHYaEW4">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6 md:hidden">
+<h3 class="text-white font-display-lg text-headline-md">The Heart of the Forest</h3>
+</div>
+</div>
+<div class="p-8 flex flex-col justify-center">
+<h3 class="hidden md:block font-display-lg text-headline-md text-secondary mb-4">The Heart of the Forest</h3>
+<p class="text-on-surface-variant mb-6 leading-relaxed">
+                                The Bété people of central-western Ivory Coast possess a rich oral tradition where language is more than communication—it is the vessel of history, philosophy, and the "Bé" spirit. Our mission is to digitize this legacy for the digital generation.
+                            </p>
+<div class="flex flex-wrap gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-lg">
+<span class="material-symbols-outlined text-primary text-sm">groups</span>
+<span class="text-label-sm font-label-md">3M+ Speakers</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-lg">
+<span class="material-symbols-outlined text-primary text-sm">auto_stories</span>
+<span class="text-label-sm font-label-md">Rich Folklore</span>
+</div>
+</div>
+<button class="mt-8 border-2 border-secondary text-secondary font-bold py-3 px-6 rounded-xl hover:bg-secondary hover:text-on-secondary transition-all w-fit">
+                                Explore Traditions
+                            </button>
+</div>
+</div>
+</div>
+<!-- Patterned Divider -->
+<div class="py-16">
+<div class="h-px bg-outline-variant relative">
+<div class="absolute left-1/2 -top-3 -translate-x-1/2 bg-background px-4">
+<div class="flex gap-1">
+<div class="w-6 h-6 border-2 border-outline-variant rotate-45"></div>
+<div class="w-6 h-6 border-2 border-primary rotate-45"></div>
+<div class="w-6 h-6 border-2 border-outline-variant rotate-45"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Stats/Community Section -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+<div class="text-center">
+<p class="font-display-lg text-display-lg-mobile text-primary">12k+</p>
+<p class="text-on-surface-variant font-label-md">Daily Phrases</p>
+</div>
+<div class="text-center">
+<p class="font-display-lg text-display-lg-mobile text-primary">450</p>
+<p class="text-on-surface-variant font-label-md">Verified Proverbs</p>
+</div>
+<div class="text-center">
+<p class="font-display-lg text-display-lg-mobile text-primary">2.1k</p>
+<p class="text-on-surface-variant font-label-md">Contributors</p>
+</div>
+<div class="text-center">
+<p class="font-display-lg text-display-lg-mobile text-primary">98%</p>
+<p class="text-on-surface-variant font-label-md">AI Accuracy</p>
+</div>
+</section>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="w-full py-8 mt-auto border-t border-outline-variant bg-surface-container-highest">
+<div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex flex-col items-center md:items-start gap-2">
+<h4 class="font-display-lg text-headline-md text-primary">Bété Lingo</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant">© 2024 Bété Lingo. Preserving Ivorian Heritage.</p>
+</div>
+<nav class="flex flex-wrap justify-center gap-6">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Cultural Resources</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Community Guidelines</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Language Map</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Archives</a>
+</nav>
+<div class="flex gap-4">
+<button class="w-10 h-10 rounded-full bg-surface flex items-center justify-center hover:opacity-80 transition-opacity"><span class="material-symbols-outlined text-primary">language</span></button>
+<button class="w-10 h-10 rounded-full bg-surface flex items-center justify-center hover:opacity-80 transition-opacity"><span class="material-symbols-outlined text-primary">public</span></button>
+</div>
+</div>
+</footer>
+<!-- Mobile Bottom NavBar (Visible on small screens only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface shadow-[0_-2px_10px_rgba(0,0,0,0.05)] flex justify-around items-center py-3 px-2 z-50 border-t border-outline-variant">
+<a class="flex flex-col items-center text-primary font-bold" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px]">Lexicon</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">translate</span>
+<span class="text-[10px]">Translate</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="text-[10px]">Profile</span>
+</a>
+</nav>
+
+
+</body></html>
