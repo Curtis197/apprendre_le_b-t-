@@ -28,6 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="hidden md:flex items-center gap-8 flex-1">
               <NavLink href="/lexicon">Lexique</NavLink>
               <NavLink href="/grammar">Grammaire</NavLink>
+              <NavLink href="/forum">Forum</NavLink>
+              <NavLink href="/resources">Ressources</NavLink>
               <NavLink href="/contribute">Contribuer</NavLink>
             </div>
             <div className="flex items-center gap-3 ml-auto">

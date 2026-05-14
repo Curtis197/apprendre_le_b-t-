@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Home, BookOpen, BookText, PlusCircle } from 'lucide-react'
+import { Menu, X, Home, BookOpen, BookText, MessageCircle, Layers, PlusCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AuthNav } from './AuthNav'
 
@@ -11,6 +11,8 @@ const links = [
   { href: '/', label: 'Accueil', icon: Home },
   { href: '/lexicon', label: 'Lexique', icon: BookOpen },
   { href: '/grammar', label: 'Grammaire', icon: BookText },
+  { href: '/forum', label: 'Forum', icon: MessageCircle },
+  { href: '/resources', label: 'Ressources', icon: Layers },
   { href: '/contribute', label: 'Contribuer', icon: PlusCircle },
 ]
 
