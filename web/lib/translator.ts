@@ -73,14 +73,13 @@ export async function translate(
     }
   }
 
-  // Look up each token
-  const lexiconMatches: Record<string, LexiconEntry | null> = {}
-  for (const token of tokens) {
-    const clean = token.replace(/[.,!?;:«»"']/g, '').toLowerCase()
-    if (clean) {
-      lexiconMatches[clean] = await lookupWord(client, clean)
-    }
-  }
+  // Look up each token in parallel
+  const cleanTokens = tokens.map(t => t.replace(/[.,!?;:«»"']/g, '').toLowerCase())
+  const uniqueClean = [...new Set(cleanTokens.filter(Boolean))]
+  const lookupResults = await Promise.all(uniqueClean.map(w => lookupWord(client, w)))
+  const lexiconMatches: Record<string, LexiconEntry | null> = Object.fromEntries(
+    uniqueClean.map((w, i) => [w, lookupResults[i]])
+  )
 
   const grammarRules = await fetchGrammarRules(client)
 
@@ -113,16 +112,15 @@ Return ONLY the JSON array, no explanation.
 
 French input: ${frenchText}`
 
-  const message = await anthropic.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: prompt }],
-  })
-
-  const firstBlock = message.content[0]
-  const raw = firstBlock.type === 'text' ? firstBlock.text.trim() : ''
   let llmTokens: { french_word: string; bete_phonetic: string; score: number }[] = []
   try {
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }],
+    })
+    const firstBlock = message.content[0]
+    const raw = firstBlock.type === 'text' ? firstBlock.text.trim() : ''
     const parsed = JSON.parse(raw)
     if (Array.isArray(parsed)) {
       llmTokens = parsed
@@ -130,7 +128,7 @@ French input: ${frenchText}`
       throw new Error('LLM response is not an array')
     }
   } catch {
-    // Fallback: direct lookup without LLM
+    // Fallback: direct lexicon lookup without LLM (API error or bad response)
     llmTokens = tokens.map(t => {
       const clean = t.replace(/[.,!?;:«»"']/g, '').toLowerCase()
       const entry = lexiconMatches[clean]
