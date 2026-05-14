@@ -48,6 +48,70 @@ export interface Expression {
   created_at: string
 }
 
+// ── Community types ────────────────────────────────────────────────────────
+
+export type ForumCategory = 'general' | 'grammar' | 'lexicon' | 'culture' | 'translation'
+export type ContentType   = 'song' | 'story' | 'poem' | 'proverb' | 'speech' | 'riddle' | 'other'
+
+export interface ForumThread {
+  id: string
+  title: string
+  body: string
+  category: ForumCategory
+  author_name: string | null
+  created_by: string | null
+  upvotes: number
+  created_at: string
+}
+
+export interface ForumPost {
+  id: string
+  thread_id: string
+  content: string
+  author_name: string | null
+  created_by: string | null
+  upvotes: number
+  created_at: string
+}
+
+export interface CommunityText {
+  id: string
+  title: string
+  type: ContentType
+  content_bete: string
+  content_french: string | null
+  author_name: string | null
+  region: string | null
+  created_by: string | null
+  validated: boolean
+  upvotes: number
+  created_at: string
+}
+
+export interface CreateThreadInput {
+  title: string
+  body: string
+  category: ForumCategory
+  author_name?: string
+}
+
+export interface CreatePostInput {
+  thread_id: string
+  content: string
+  author_name?: string
+}
+
+export interface CreateCommunityTextInput {
+  title: string
+  type: ContentType
+  content_bete: string
+  content_french?: string
+  author_name?: string
+  region?: string
+}
+
+// ── Translation types ──────────────────────────────────────────────────────
+
 export interface TranslationToken {
   french_word: string
   bete_word: string

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Clock, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase-server'
+import { getThread, getThreadPosts } from '@/lib/community'
 import { ForumReplyForm } from '@/components/ForumReplyForm'
 
 export const dynamic = 'force-dynamic'
@@ -15,24 +16,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   translation: 'Traduction',
 }
 
-interface Post {
-  id: string
-  content: string
-  author_name: string | null
-  upvotes: number
-  created_at: string
-}
-
-interface Thread {
-  id: string
-  title: string
-  body: string
-  category: string
-  author_name: string | null
-  upvotes: number
-  created_at: string
-}
-
 interface Props {
   params: Promise<{ id: string }>
 }
@@ -41,15 +24,12 @@ export default async function ThreadPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
 
-  const [{ data: thread }, { data: posts }] = await Promise.all([
-    supabase.from('forum_threads').select('*').eq('id', id).single(),
-    supabase.from('forum_posts').select('*').eq('thread_id', id).order('created_at', { ascending: true }),
+  const [t, replies] = await Promise.all([
+    getThread(supabase, id),
+    getThreadPosts(supabase, id),
   ])
 
-  if (!thread) notFound()
-
-  const t = thread as Thread
-  const replies = (posts ?? []) as Post[]
+  if (!t) notFound()
 
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-10 py-10">

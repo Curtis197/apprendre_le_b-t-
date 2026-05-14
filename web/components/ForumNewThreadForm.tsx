@@ -2,11 +2,13 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
+import { createThread } from '@/lib/community-mutations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import type { ForumCategory } from '@/lib/types'
 
-const CATEGORIES = [
+const CATEGORIES: { value: ForumCategory; label: string }[] = [
   { value: 'general',     label: 'Général' },
   { value: 'grammar',     label: 'Grammaire' },
   { value: 'lexicon',     label: 'Lexique' },
@@ -17,36 +19,23 @@ const CATEGORIES = [
 export function ForumNewThreadForm() {
   const router = useRouter()
   const supabaseRef = useRef(createClient())
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
-  const [category, setCategory] = useState('general')
+  const [title, setTitle]           = useState('')
+  const [body, setBody]             = useState('')
+  const [category, setCategory]     = useState<ForumCategory>('general')
   const [authorName, setAuthorName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState<string | null>(null)
 
   async function handleSubmit() {
     if (!title.trim() || !body.trim()) return
     setLoading(true)
     setError(null)
-    try {
-      const { data: { user } } = await supabaseRef.current.auth.getUser()
-      if (!user) { setError('Connectez-vous pour poster.'); return }
-      const displayName = authorName.trim()
-        || user.user_metadata?.full_name
-        || user.email?.split('@')[0]
-        || 'Anonyme'
-      const { data, error: err } = await supabaseRef.current
-        .from('forum_threads')
-        .insert({ title: title.trim(), body: body.trim(), category, author_name: displayName, created_by: user.id })
-        .select('id')
-        .single()
-      if (err) throw err
-      router.push(`/forum/${data.id}`)
-    } catch {
-      setError('Erreur lors de la publication. Veuillez réessayer.')
-    } finally {
-      setLoading(false)
-    }
+    const { data, error: err } = await createThread(supabaseRef.current, {
+      title, body, category, author_name: authorName,
+    })
+    setLoading(false)
+    if (err || !data) { setError(err ?? 'Erreur inattendue.'); return }
+    router.push(`/forum/${data.id}`)
   }
 
   return (
@@ -59,7 +48,7 @@ export function ForumNewThreadForm() {
       />
       <select
         value={category}
-        onChange={e => setCategory(e.target.value)}
+        onChange={e => setCategory(e.target.value as ForumCategory)}
         className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
       >
         {CATEGORIES.map(c => (

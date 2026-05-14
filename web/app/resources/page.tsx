@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { Music, BookOpen, Feather, Quote, Mic, HelpCircle, Layers, PlusCircle } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { createClient } from '@/lib/supabase-server'
+import { getCommunityTexts } from '@/lib/community'
+import type { ContentType } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,18 +28,6 @@ const TYPE_COLORS: Record<string, string> = {
   other:   'bg-muted text-muted-foreground',
 }
 
-interface CommunityText {
-  id: string
-  title: string
-  type: string
-  content_bete: string
-  content_french: string | null
-  author_name: string | null
-  region: string | null
-  upvotes: number
-  created_at: string
-}
-
 interface Props {
   searchParams: Promise<{ type?: string }>
 }
@@ -45,21 +35,8 @@ interface Props {
 export default async function ResourcesPage({ searchParams }: Props) {
   const { type } = await searchParams
   const supabase = await createClient()
-
-  let q = supabase
-    .from('community_texts')
-    .select('*')
-    .eq('validated', true)
-    .order('upvotes', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(60)
-
-  if (type && type !== 'all') {
-    q = q.eq('type', type)
-  }
-
-  const { data } = await q
-  const texts: CommunityText[] = (data ?? []) as CommunityText[]
+  const contentType = (type && type !== 'all' ? type : null) as ContentType | null
+  const texts = await getCommunityTexts(supabase, contentType)
 
   const activeType = TYPES.find(t => t.value === (type ?? null)) ?? TYPES[0]
 

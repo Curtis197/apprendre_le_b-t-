@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { MessageCircle, PlusCircle, Clock } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { createClient } from '@/lib/supabase-server'
+import { getThreads } from '@/lib/community'
+import type { ForumCategory } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,17 +25,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   translation: 'bg-emerald-100 text-emerald-700',
 }
 
-interface Thread {
-  id: string
-  title: string
-  body: string
-  category: string
-  author_name: string | null
-  upvotes: number
-  created_at: string
-  reply_count?: number
-}
-
 interface Props {
   searchParams: Promise<{ cat?: string }>
 }
@@ -41,19 +32,8 @@ interface Props {
 export default async function ForumPage({ searchParams }: Props) {
   const { cat } = await searchParams
   const supabase = await createClient()
-
-  let q = supabase
-    .from('forum_threads')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(50)
-
-  if (cat && cat !== 'all') {
-    q = q.eq('category', cat)
-  }
-
-  const { data } = await q
-  const threads: Thread[] = (data ?? []) as Thread[]
+  const category = (cat && cat !== 'all' ? cat : null) as ForumCategory | null
+  const threads = await getThreads(supabase, category)
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-10 py-10">

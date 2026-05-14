@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
+import { createPost } from '@/lib/community-mutations'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -9,33 +10,22 @@ import { Input } from '@/components/ui/input'
 export function ForumReplyForm({ threadId }: { threadId: string }) {
   const router = useRouter()
   const supabaseRef = useRef(createClient())
-  const [content, setContent] = useState('')
+  const [content, setContent]       = useState('')
   const [authorName, setAuthorName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState<string | null>(null)
 
   async function handleSubmit() {
     if (!content.trim()) return
     setLoading(true)
     setError(null)
-    try {
-      const { data: { user } } = await supabaseRef.current.auth.getUser()
-      if (!user) { setError('Connectez-vous pour répondre.'); return }
-      const displayName = authorName.trim()
-        || user.user_metadata?.full_name
-        || user.email?.split('@')[0]
-        || 'Anonyme'
-      const { error: err } = await supabaseRef.current
-        .from('forum_posts')
-        .insert({ thread_id: threadId, content: content.trim(), author_name: displayName, created_by: user.id })
-      if (err) throw err
-      setContent('')
-      router.refresh()
-    } catch {
-      setError('Erreur lors de l\'envoi. Veuillez réessayer.')
-    } finally {
-      setLoading(false)
-    }
+    const { error: err } = await createPost(supabaseRef.current, {
+      thread_id: threadId, content, author_name: authorName,
+    })
+    setLoading(false)
+    if (err) { setError(err); return }
+    setContent('')
+    router.refresh()
   }
 
   return (
