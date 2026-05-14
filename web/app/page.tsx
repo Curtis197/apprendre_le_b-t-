@@ -1,110 +1,63 @@
 // web/app/page.tsx
-'use client'
-import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeftRight, Copy, Mic, Sparkles, Users, Mic2 } from 'lucide-react'
+import { Users, Mic2, BookOpen } from 'lucide-react'
 import { PatternDivider } from '@/components/PatternDivider'
-import type { TranslationResult } from '@/lib/types'
+import { HomeTranslator } from '@/components/HomeTranslator'
+import { createClient } from '@/lib/supabase-server'
+import type { LexiconEntry } from '@/lib/types'
 
-export default function HomePage() {
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export const dynamic = 'force-dynamic'
 
-  async function handleTranslate() {
-    if (!input.trim()) return
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: input }),
-      })
-      if (!res.ok) throw new Error('Erreur de traduction. Veuillez réessayer.')
-      const data: TranslationResult = await res.json()
-      setOutput(data.tokens?.map(t => t.bete_word).join(' ') ?? '')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur de traduction.')
-    } finally {
-      setLoading(false)
-    }
-  }
+async function getWordOfDay(): Promise<LexiconEntry | null> {
+  const supabase = await createClient()
+  const { count } = await supabase
+    .from('lexicon')
+    .select('*', { count: 'exact', head: true })
+  if (!count) return null
+  const dayIndex = Math.floor(Date.now() / 86400000) % count
+  const { data } = await supabase
+    .from('lexicon')
+    .select('*')
+    .order('created_at')
+    .range(dayIndex, dayIndex)
+    .maybeSingle()
+  return data as LexiconEntry | null
+}
+
+export default async function HomePage() {
+  const wotd = await getWordOfDay()
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10 space-y-10">
+      <HomeTranslator />
 
-      {/* Translator Hero */}
-      <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="bg-muted rounded-full px-4 py-1.5 text-sm font-semibold">Français</span>
-          <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-          <span className="bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-semibold">Bété</span>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4 mb-4">
-          <div className="relative">
-            <textarea
-              className="w-full h-40 bg-muted rounded-lg p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
-              placeholder="Entrez votre texte en français…"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              disabled={loading}
-            />
-            <button className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-background border border-border hover:bg-muted transition-colors">
-              <Mic className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
-          <div className="relative">
-            <div className="w-full h-40 bg-muted rounded-lg p-4 text-sm overflow-auto">
-              {output
-                ? <span className="text-foreground">{output}</span>
-                : <span className="text-muted-foreground">La traduction apparaîtra ici…</span>
-              }
-            </div>
-            <button
-              onClick={() => output && navigator.clipboard.writeText(output)}
-              className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-background border border-border hover:bg-muted transition-colors"
-              aria-label="Copier"
-            >
-              <Copy className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
-        </div>
-
-        <button
-          onClick={handleTranslate}
-          disabled={loading || !input.trim()}
-          className="w-full h-12 bg-primary text-white rounded-lg font-heading font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50 transition-colors"
-        >
-          {loading ? (
-            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Sparkles className="w-5 h-5" />
-          )}
-          {loading ? 'Traduction en cours…' : 'Traduire'}
-        </button>
-        {error && (
-          <p className="text-sm text-destructive mt-2 text-center">{error}</p>
-        )}
-      </div>
-
-      {/* Bento Grid */}
       <div className="grid md:grid-cols-3 gap-6">
-
         {/* Word of Day */}
         <div className="bg-muted rounded-2xl p-8 border-l-4 border-primary">
           <span className="bg-secondary text-white text-xs rounded-full px-3 py-1 inline-block mb-4">
             Mot du Jour
           </span>
-          <h2 className="font-heading text-3xl text-primary font-bold">Gbô</h2>
-          <p className="text-sm italic text-muted-foreground mt-1">/ɡbò/</p>
-          <div className="w-12 h-0.5 bg-border my-3" />
-          <p className="italic text-foreground/80 text-sm">"La parole, la voix"</p>
-          <Link href="/lexicon" className="inline-block mt-4 text-primary text-sm font-semibold hover:underline">
-            En savoir plus →
-          </Link>
+          {wotd ? (
+            <>
+              <h2 className="font-heading text-3xl text-primary font-bold">{wotd.bete_word}</h2>
+              <p className="text-sm italic text-muted-foreground mt-1">[{wotd.bete_phonetic}]</p>
+              <div className="w-12 h-0.5 bg-border my-3" />
+              <p className="italic text-foreground/80 text-sm">{wotd.top_french}</p>
+              <Link href={`/lexicon/${wotd.id}`} className="inline-block mt-4 text-primary text-sm font-semibold hover:underline">
+                En savoir plus →
+              </Link>
+            </>
+          ) : (
+            <>
+              <h2 className="font-heading text-3xl text-primary font-bold">Gbô</h2>
+              <p className="text-sm italic text-muted-foreground mt-1">/ɡbò/</p>
+              <div className="w-12 h-0.5 bg-border my-3" />
+              <p className="italic text-foreground/80 text-sm">"La parole, la voix"</p>
+              <Link href="/lexicon" className="inline-block mt-4 text-primary text-sm font-semibold hover:underline">
+                En savoir plus →
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Cultural Card */}
@@ -121,8 +74,8 @@ export default function HomePage() {
             <div className="p-8 flex flex-col justify-center bg-card">
               <h2 className="font-heading text-2xl font-bold mb-3">Patrimoine Vivant</h2>
               <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
-                La langue bété, parlée par plus de 3 millions de personnes en Côte d'Ivoire,
-                est porteuse d'une tradition orale exceptionnelle.
+                La langue bété, parlée par plus de 3 millions de personnes en Côte d&apos;Ivoire,
+                est porteuse d&apos;une tradition orale exceptionnelle.
               </p>
               <div className="flex flex-wrap gap-2 mb-6">
                 <span className="bg-muted rounded-full px-3 py-1 text-sm flex items-center gap-1.5">

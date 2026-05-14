@@ -7,7 +7,7 @@ export interface LexiconEntry {
   french_candidates: { word: string; score: number }[]
   top_french: string
   probability: number
-  pos: string | null
+  pos: string[] | null
   notes: string | null
   validated: boolean
   upvotes: number
@@ -54,6 +54,7 @@ export interface TranslationToken {
   bete_phonetic: string
   score: number
   is_expression: boolean
+  lexicon_id?: string
 }
 
 export interface TranslationResult {

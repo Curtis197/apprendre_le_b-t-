@@ -4,8 +4,42 @@ export const dynamic = 'force-dynamic'
 import { PenLine, ShieldCheck, CheckCircle2, Clock } from 'lucide-react'
 import { ContributionForm } from '@/components/ContributionForm'
 import { PendingContributions } from '@/components/PendingContributions'
+import { createClient } from '@/lib/supabase-server'
 
-export default function ContributePage() {
+const LEVELS = [
+  { name: 'Débutant',      initial: 'D', min: 0,  next: 3  },
+  { name: 'Intermédiaire', initial: 'I', min: 3,  next: 10 },
+  { name: 'Avancé',        initial: 'A', min: 10, next: 25 },
+  { name: 'Expert',        initial: 'E', min: 25, next: null },
+]
+
+export default async function ContributePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let validatedCount = 0
+  let totalCount = 0
+  let displayName = 'Contributeur'
+
+  if (user) {
+    const [gr, ex] = await Promise.all([
+      supabase.from('grammar_rules').select('validated').eq('created_by', user.id),
+      supabase.from('expressions').select('validated').eq('created_by', user.id),
+    ])
+    const all = [...(gr.data ?? []), ...(ex.data ?? [])]
+    totalCount = all.length
+    validatedCount = all.filter(c => c.validated).length
+    displayName = (user.user_metadata?.full_name as string | undefined)
+      ?? user.email?.split('@')[0]
+      ?? 'Contributeur'
+  }
+
+  const level = [...LEVELS].reverse().find(l => validatedCount >= l.min) ?? LEVELS[0]
+  const progress = level.next
+    ? Math.min(100, ((validatedCount - level.min) / (level.next - level.min)) * 100)
+    : 100
+  const toNext = level.next ? level.next - validatedCount : 0
+
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10">
 
@@ -17,7 +51,7 @@ export default function ContributePage() {
             Contribuez au Patrimoine Bété
           </h1>
           <p className="text-lg opacity-90 max-w-xl leading-relaxed">
-            Chaque mot que vous ajoutez renforce la préservation d'une langue vivante.
+            Chaque mot que vous ajoutez renforce la préservation d&apos;une langue vivante.
             Les contributions avec 3 votes sont intégrées au traducteur.
           </p>
         </div>
@@ -51,7 +85,7 @@ export default function ContributePage() {
                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold">Authenticité</p>
-                  <p className="text-xs text-muted-foreground">Utilisez des mots issus d'usage réel, pas de traductions littérales.</p>
+                  <p className="text-xs text-muted-foreground">Utilisez des mots issus d&apos;usage réel, pas de traductions littérales.</p>
                 </div>
               </li>
               <li className="flex gap-3">
@@ -76,22 +110,32 @@ export default function ContributePage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-heading text-sm font-bold">Niveau Contributeur</h3>
               <span className="bg-accent/40 text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Débutant
+                {level.name}
               </span>
             </div>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-accent/40 flex items-center justify-center font-heading font-bold text-sm">
-                B
+                {level.initial}
               </div>
               <div>
-                <p className="text-sm font-semibold">Contributeur</p>
-                <p className="text-xs text-muted-foreground">0 contributions validées</p>
+                <p className="text-sm font-semibold">{user ? displayName : 'Contributeur'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {validatedCount} contribution{validatedCount !== 1 ? 's' : ''} validée{validatedCount !== 1 ? 's' : ''}
+                  {totalCount > validatedCount ? ` · ${totalCount - validatedCount} en attente` : ''}
+                </p>
               </div>
             </div>
             <div className="w-full bg-foreground/10 h-2 rounded-full overflow-hidden">
-              <div className="bg-secondary h-full rounded-full w-[5%]" />
+              <div
+                className="bg-secondary h-full rounded-full transition-all"
+                style={{ width: `${Math.max(progress, 5)}%` }}
+              />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">3 contributions pour passer au niveau suivant</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {level.next
+                ? `${toNext} contribution${toNext !== 1 ? 's' : ''} validée${toNext !== 1 ? 's' : ''} pour passer au niveau ${LEVELS[LEVELS.indexOf(level) + 1]?.name}`
+                : 'Niveau maximum atteint — merci pour vos contributions !'}
+            </p>
           </div>
         </div>
       </div>

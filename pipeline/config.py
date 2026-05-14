@@ -2,9 +2,14 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+load_dotenv(".env.local", override=True)
 
-SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
+_project_id = os.environ.get("SUPABASE_PROJECT_ID", "")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", f"https://{_project_id}.supabase.co" if _project_id else "")
+SUPABASE_SERVICE_KEY = (
+    os.environ.get("SUPABASE_SERVICE_KEY")
+    or os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+)
 
 BETE_BIBLE_ID = 3284
 FRENCH_BIBLE_ID = 93

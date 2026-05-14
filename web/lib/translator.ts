@@ -152,6 +152,7 @@ French input: ${frenchText}`
       bete_phonetic: lt.bete_phonetic,
       score: lt.score,
       is_expression: false,
+      lexicon_id: entry?.id,
     })
   }
 

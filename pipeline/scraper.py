@@ -61,10 +61,12 @@ async def _scrape_chapter(
         print(f"  Timeout: {book} {chapter} {version} — skipping")
         return []
 
-    verses = await page.evaluate("""() => {
+    verses = await page.evaluate("""([book, chapter]) => {
+        const prefix = book + '.' + chapter + '.';
         const results = [];
         document.querySelectorAll('[data-usfm]').forEach(el => {
             const usfm = el.getAttribute('data-usfm');
+            if (!usfm.startsWith(prefix)) return;
             const parts = usfm.split('.');
             if (parts.length !== 3) return;
             const verseNum = parseInt(parts[2], 10);
@@ -77,7 +79,7 @@ async def _scrape_chapter(
             if (text) results.push({ verse: verseNum, text });
         });
         return results;
-    }""")
+    }""", [book, chapter])
     return verses
 
 
@@ -131,7 +133,7 @@ async def scrape_nt(output_path: str = PARALLEL_JSONL) -> None:
                     for pair in pairs:
                         out.write(json.dumps(pair, ensure_ascii=False) + "\n")
                     out.flush()  # ensure data is written to disk before next chapter
-                    print(f"    → {len(pairs)} verse pairs")
+                    print(f"    -> {len(pairs)} verse pairs")
 
         await browser.close()
 

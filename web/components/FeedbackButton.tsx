@@ -18,6 +18,7 @@ export function FeedbackButton({ token }: Props) {
       const { data: { user } } = await supabaseRef.current.auth.getUser()
       const { error } = await supabaseRef.current.from('user_feedback').insert({
         user_id: user?.id ?? null,
+        lexicon_id: token.lexicon_id ?? null,
         type: 'reject',
         translator_phrase: `${token.french_word} → ${token.bete_phonetic}`,
       })

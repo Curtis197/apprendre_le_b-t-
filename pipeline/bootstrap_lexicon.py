@@ -40,13 +40,24 @@ def load_verses(client, parallel_jsonl: str | None = None) -> None:
     from pipeline.config import PARALLEL_JSONL
     if parallel_jsonl is None:
         parallel_jsonl = PARALLEL_JSONL
-    verses = []
+    raw: list[dict] = []
     try:
         with open(parallel_jsonl, "r", encoding="utf-8") as f:
             for line in f:
-                verses.append(json.loads(line))
+                raw.append(json.loads(line))
     except FileNotFoundError:
         raise FileNotFoundError(f"Parallel JSONL file not found: {parallel_jsonl!r}")
+
+    # Deduplicate by (book, chapter, verse) — concatenate text segments for split verses
+    seen: dict[tuple, dict] = {}
+    for rec in raw:
+        key = (rec["book"], rec["chapter"], rec["verse"])
+        if key in seen:
+            seen[key]["bete_text"]   += " " + rec["bete_text"]
+            seen[key]["french_text"] += " " + rec["french_text"]
+        else:
+            seen[key] = dict(rec)
+    verses = list(seen.values())
 
     batch_size = 500
     for i in range(0, len(verses), batch_size):

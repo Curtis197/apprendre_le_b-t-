@@ -3,10 +3,10 @@ import type { Metadata } from 'next'
 import { Inter, Lexend } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import { Search } from 'lucide-react'
 import { AuthNav } from '@/components/AuthNav'
 import { NavLink } from '@/components/NavLink'
 import { MobileSidebar } from '@/components/MobileSidebar'
+import { HeaderSearch } from '@/components/HeaderSearch'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: ['400', '600', '700'] })
@@ -31,10 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NavLink href="/contribute">Contribuer</NavLink>
             </div>
             <div className="flex items-center gap-3 ml-auto">
-              <div className="hidden md:flex items-center gap-2 bg-muted rounded-full px-4 py-2 text-sm text-muted-foreground cursor-text">
-                <Search className="w-4 h-4 shrink-0" />
-                <span>Rechercher…</span>
-              </div>
+              <HeaderSearch />
               <div className="hidden md:block">
                 <AuthNav />
               </div>

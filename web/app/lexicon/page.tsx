@@ -8,14 +8,18 @@ import { WordCard } from '@/components/WordCard'
 import { createClient } from '@/lib/supabase-browser'
 import type { LexiconEntry } from '@/lib/types'
 
-const CATEGORIES = ['Tous', 'Noms', 'Verbes', 'Adjectifs']
+const FILTERS: { label: string; tag: string | null }[] = [
+  { label: 'Tous',      tag: null },
+  { label: 'Noms',      tag: 'noun' },
+  { label: 'Verbes',    tag: 'verb' },
+  { label: 'Adjectifs', tag: 'adj' },
+  { label: 'Famille',   tag: 'family' },
+  { label: 'Religion',  tag: 'religion' },
+  { label: 'Nature',    tag: 'nature' },
+  { label: 'Animaux',   tag: 'animal' },
+]
+const FILTER_LABELS = FILTERS.map(f => f.label)
 const PAGE_SIZE = 9
-
-const POS_MAP: Record<string, string> = {
-  Noms: 'noun',
-  Verbes: 'verb',
-  Adjectifs: 'adj',
-}
 
 export default function LexiconPage() {
   const [category, setCategory] = useState('Tous')
@@ -25,23 +29,27 @@ export default function LexiconPage() {
   const [loading, setLoading] = useState(true)
   const supabaseRef = useRef(createClient())
 
-  useEffect(() => {
-    setPage(0)
-  }, [category])
+  useEffect(() => { setPage(0) }, [category])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     const from = page * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
+    const filter = FILTERS.find(f => f.label === category)
+
     let q = supabaseRef.current
       .from('lexicon')
       .select('*', { count: 'exact' })
+      // Always hide garbage fragment entries
+      .not('pos', 'cs', '{"fragment"}')
       .order('upvotes', { ascending: false })
       .range(from, to)
-    if (category !== 'Tous' && POS_MAP[category]) {
-      q = q.ilike('pos', `%${POS_MAP[category]}%`)
+
+    if (filter?.tag) {
+      q = q.contains('pos', [filter.tag])
     }
+
     q.then(({ data, count, error }) => {
       if (cancelled) return
       if (!error) {
@@ -65,7 +73,7 @@ export default function LexiconPage() {
       />
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-        <FilterPills options={CATEGORIES} value={category} onChange={setCategory} />
+        <FilterPills options={FILTER_LABELS} value={category} onChange={setCategory} />
         <span className="text-sm text-muted-foreground shrink-0">
           {loading ? '…' : `${total} mot${total !== 1 ? 's' : ''} trouvé${total !== 1 ? 's' : ''}`}
         </span>

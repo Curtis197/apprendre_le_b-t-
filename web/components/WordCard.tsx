@@ -1,4 +1,4 @@
-// web/components/WordCard.tsx
+'use client'
 import { Volume2, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { LexiconEntry } from '@/lib/types'
@@ -9,6 +9,31 @@ interface Props {
   className?: string
 }
 
+const TAG_LABELS: Record<string, string> = {
+  noun: 'Nom', verb: 'Verbe', adj: 'Adj.', adv: 'Adv.',
+  name: 'Nom propre', num: 'Num.', interj: 'Interj.',
+  prep: 'Prép.', conj: 'Conj.', pron: 'Pron.',
+  family: 'Famille', nature: 'Nature', body: 'Corps',
+  religion: 'Religion', animal: 'Animal', food: 'Alimentation',
+  place: 'Lieu', time: 'Temps', action: 'Action',
+}
+
+function primaryLabel(pos: string[] | null): string {
+  if (!pos?.length) return 'Mot'
+  return TAG_LABELS[pos[0]] ?? pos[0]
+}
+
+function semanticTags(pos: string[] | null): string[] {
+  const semantic = ['family', 'nature', 'body', 'religion', 'animal', 'food', 'place', 'time', 'action']
+  return (pos ?? []).filter(t => semantic.includes(t))
+}
+
+function speak(text: string) {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return
+  speechSynthesis.cancel()
+  speechSynthesis.speak(new SpeechSynthesisUtterance(text))
+}
+
 export function WordCard({ entry, featured = false, className }: Props) {
   if (featured) {
     return (
@@ -17,7 +42,11 @@ export function WordCard({ entry, featured = false, className }: Props) {
           <span className="bg-secondary/20 text-secondary text-xs font-semibold rounded-full px-3 py-1">
             Mot du Jour
           </span>
-          <button aria-label="Écouter la prononciation" className="w-14 h-14 bg-primary/20 hover:bg-primary hover:text-white text-primary rounded-full flex items-center justify-center transition-colors">
+          <button
+            aria-label="Écouter la prononciation"
+            onClick={() => speak(entry.bete_phonetic)}
+            className="w-14 h-14 bg-primary/20 hover:bg-primary hover:text-white text-primary rounded-full flex items-center justify-center transition-colors"
+          >
             <Volume2 className="w-6 h-6" />
           </button>
         </div>
@@ -36,10 +65,21 @@ export function WordCard({ entry, featured = false, className }: Props) {
       className
     )}>
       <div className="flex items-start justify-between mb-3">
-        <span className="bg-secondary text-white text-xs font-semibold rounded-full px-3 py-1">
-          {entry.pos ?? 'Mot'}
-        </span>
-        <button aria-label="Écouter la prononciation" className="w-12 h-12 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-colors group-hover:scale-110">
+        <div className="flex flex-wrap gap-1">
+          <span className="bg-secondary text-white text-xs font-semibold rounded-full px-3 py-1">
+            {primaryLabel(entry.pos)}
+          </span>
+          {semanticTags(entry.pos).map(t => (
+            <span key={t} className="bg-muted text-muted-foreground text-xs rounded-full px-2 py-1">
+              {TAG_LABELS[t] ?? t}
+            </span>
+          ))}
+        </div>
+        <button
+          aria-label="Écouter la prononciation"
+          onClick={() => speak(entry.bete_phonetic)}
+          className="w-12 h-12 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-colors group-hover:scale-110"
+        >
           <Volume2 className="w-5 h-5" />
         </button>
       </div>
