@@ -133,8 +133,7 @@
 
 @layer utilities {
   .pattern-bg {
-    background-image: radial-gradient(circle, var(--color-primary) 0.5px, transparent 0.5px);
+    background-image: radial-gradient(circle, color-mix(in oklch, var(--color-primary) 6%, transparent) 0.5px, transparent 0.5px);
     background-size: 24px 24px;
-    opacity: 0.04;
   }
 }
