@@ -10,18 +10,23 @@ export default function HomePage() {
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleTranslate() {
     if (!input.trim()) return
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: input }),
       })
+      if (!res.ok) throw new Error('Erreur de traduction. Veuillez réessayer.')
       const data: TranslationResult = await res.json()
       setOutput(data.tokens?.map(t => t.bete_word).join(' ') ?? '')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur de traduction.')
     } finally {
       setLoading(false)
     }
@@ -80,6 +85,9 @@ export default function HomePage() {
           )}
           {loading ? 'Traduction en cours…' : 'Traduire'}
         </button>
+        {error && (
+          <p className="text-sm text-destructive mt-2 text-center">{error}</p>
+        )}
       </div>
 
       {/* Bento Grid */}
