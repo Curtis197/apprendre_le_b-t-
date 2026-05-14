@@ -46,14 +46,19 @@ Already applied in `web/app/globals.css`:
 - Nav style: `sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border shadow-sm`
 - Container: `max-w-7xl mx-auto px-4 md:px-10 h-[72px] flex items-center`
 
-### Mobile Bottom Nav
-- `fixed bottom-0 left-0 right-0 md:hidden bg-background border-t border-border z-50`
-- 4 items: Accueil (Home icon), Lexique (BookOpen), Contribuer (PlusCircle), Profil (User)
-- Active: `text-primary`, inactive: `text-muted-foreground`
-- Each item: `flex flex-col items-center gap-1 text-[10px]`
+### Mobile Burger Menu + Sidebar
+- Top nav right side (mobile only, `md:hidden`): Lucide `Menu` icon button — `w-10 h-10 flex items-center justify-center`
+- Clicking it opens a **slide-in sidebar** from the left
+- Sidebar: `fixed inset-y-0 left-0 z-50 w-72 bg-background border-r border-border flex flex-col`
+  - Top: logo "Bété Lingo" + Lucide `X` close button aligned right
+  - Nav links: Accueil, Lexique, Grammaire, Contribuer — each `flex items-center gap-3 px-6 py-4 text-base`, active = `bg-primary/10 text-primary border-l-4 border-primary`
+  - Bottom: `<AuthNav />` + app version or tagline
+- **Backdrop overlay:** `fixed inset-0 bg-black/40 z-40 md:hidden` — clicking it closes the sidebar
+- Sidebar open/close state: `useState` in a `<MobileSidebar>` client component
+- Sidebar is `md:hidden` — never visible on desktop
 
 ### Main Content
-- `<main className="pb-16 md:pb-0">` to avoid overlap with mobile bottom nav
+- `<main>` needs no bottom padding (no bottom nav anymore)
 
 ### NavLink Component
 Extract a `<NavLink>` client component to `components/NavLink.tsx` — wraps Next.js `<Link>` with `usePathname()` active state logic.
@@ -227,6 +232,7 @@ Same `<PatternDivider>` component extracted from home page.
 | Component | File | Used by |
 |---|---|---|
 | `NavLink` | `components/NavLink.tsx` | layout.tsx |
+| `MobileSidebar` | `components/MobileSidebar.tsx` | layout.tsx |
 | `PatternDivider` | `components/PatternDivider.tsx` | home, grammar |
 | `WordCard` | `components/WordCard.tsx` | lexicon |
 | `FilterPills` | `components/FilterPills.tsx` | lexicon, contribute |
