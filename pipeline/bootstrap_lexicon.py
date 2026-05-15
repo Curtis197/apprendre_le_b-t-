@@ -46,7 +46,7 @@ def load_verses(client, parallel_jsonl: str | None = None, dialect: str = "weste
 
     seen: dict[tuple, dict] = {}
     for rec in raw:
-        key = (rec["book"], rec["chapter"], rec["verse"])
+        key = (rec["book"], rec["chapter"], rec["verse"], dialect)
         if key in seen:
             seen[key]["bete_text"]   += " " + rec["bete_text"]
             seen[key]["french_text"] += " " + rec["french_text"]
@@ -107,7 +107,9 @@ def load_alignments(client, alignments_jsonl: str | None = None, dialect: str = 
     batch_size = 500
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
-        result = client.table("alignments").upsert(batch).execute()
+        result = client.table("alignments").upsert(
+            batch, on_conflict="bete_word,french_word,dialect"
+        ).execute()
         if getattr(result, "error", None) is not None:
             raise RuntimeError(f"Supabase error: {result.error}")
         print(f"  Alignments: {min(i + batch_size, len(records))}/{len(records)}")

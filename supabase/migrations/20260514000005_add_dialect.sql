@@ -26,3 +26,7 @@ ALTER TABLE lexicon_examples ADD CONSTRAINT lexicon_examples_dialect_check
 CREATE UNIQUE INDEX IF NOT EXISTS lexicon_examples_lexicon_verse_dialect_idx
   ON lexicon_examples (lexicon_id, verse_id, dialect)
   WHERE verse_id IS NOT NULL;
+
+-- Unique index on alignments for re-run idempotency
+CREATE UNIQUE INDEX IF NOT EXISTS alignments_bete_french_dialect_idx
+  ON alignments (bete_word, french_word, dialect);
