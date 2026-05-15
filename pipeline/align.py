@@ -154,6 +154,18 @@ def save_alignments(
 
 
 if __name__ == "__main__":
-    run_alignment()
-    alignments = extract_probabilities()
-    save_alignments(alignments)
+    import argparse
+    from pipeline.config import DIALECTS, corpus_paths
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dialect", default="western", choices=list(DIALECTS))
+    args = parser.parse_args()
+    paths = corpus_paths(args.dialect)
+    run_alignment(
+        french_txt=paths["french_txt"], bete_txt=paths["bete_txt"],
+        forward_align=paths["forward_align"], reverse_align=paths["reverse_align"],
+    )
+    alignments = extract_probabilities(
+        french_txt=paths["french_txt"], bete_txt=paths["bete_txt"],
+        forward_align=paths["forward_align"],
+    )
+    save_alignments(alignments, output_path=paths["alignments_jsonl"])

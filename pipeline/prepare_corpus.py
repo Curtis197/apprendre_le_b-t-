@@ -63,8 +63,17 @@ def count_lines(path: str) -> int:
 
 
 if __name__ == "__main__":
-    write_aligned_text_files()
-    bete_count = count_lines(BETE_TXT)
-    french_count = count_lines(FRENCH_TXT)
-    assert bete_count == french_count, "Line counts do not match!"
-    print(f"Wrote {bete_count} aligned sentence pairs.")
+    import argparse
+    from pipeline.config import DIALECTS, corpus_paths
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dialect", default="western", choices=list(DIALECTS))
+    args = parser.parse_args()
+    paths = corpus_paths(args.dialect)
+    write_aligned_text_files(
+        parallel_jsonl=paths["parallel_jsonl"],
+        bete_txt=paths["bete_txt"],
+        french_txt=paths["french_txt"],
+    )
+    n = count_lines(paths["bete_txt"])
+    assert n == count_lines(paths["french_txt"]), "Line counts do not match!"
+    print(f"Wrote {n} aligned sentence pairs.")
