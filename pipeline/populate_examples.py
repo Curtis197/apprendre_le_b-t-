@@ -1,11 +1,11 @@
 # pipeline/populate_examples.py
 from supabase import create_client
-from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY, DIALECTS
 
 MAX_PER_ENTRY = 3
 
 
-def populate_examples() -> None:
+def populate_examples(dialect: str = "western") -> None:
     """
     For each lexicon entry that has no examples yet, find verses whose
     bete_text contains that bete_word (word-boundary match) and insert
@@ -14,8 +14,8 @@ def populate_examples() -> None:
     """
     client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-    lexicon = client.table("lexicon").select("id,bete_word").execute().data or []
-    print(f"Processing {len(lexicon)} lexicon entries...")
+    lexicon = client.table("lexicon").select("id,bete_word").eq("dialect", dialect).execute().data or []
+    print(f"Processing {len(lexicon)} {dialect} lexicon entries...")
 
     inserted = 0
     skipped = 0
@@ -40,6 +40,7 @@ def populate_examples() -> None:
         verses = (
             client.table("verses")
             .select("id,bete_text,french_text")
+            .eq("dialect", dialect)
             .ilike("bete_text", f"% {bete_word} %")
             .limit(MAX_PER_ENTRY)
             .execute()
@@ -51,6 +52,7 @@ def populate_examples() -> None:
             extra = (
                 client.table("verses")
                 .select("id,bete_text,french_text")
+                .eq("dialect", dialect)
                 .ilike("bete_text", f"{bete_word} %")
                 .limit(MAX_PER_ENTRY - len(verses))
                 .execute()
@@ -70,6 +72,7 @@ def populate_examples() -> None:
                     "verse_id": verse["id"],
                     "bete_snippet": verse["bete_text"],
                     "french_snippet": verse["french_text"],
+                    "dialect": dialect,
                 }).execute()
                 inserted += 1
             except Exception as exc:
@@ -83,4 +86,8 @@ def populate_examples() -> None:
 
 
 if __name__ == "__main__":
-    populate_examples()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dialect", default="western", choices=list(DIALECTS))
+    args = parser.parse_args()
+    populate_examples(dialect=args.dialect)

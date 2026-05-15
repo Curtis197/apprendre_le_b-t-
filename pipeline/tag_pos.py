@@ -11,7 +11,7 @@ Safe to re-run: skips entries that already have pos tags.
 """
 import re
 from supabase import create_client
-from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY, DIALECTS
 
 # ---------------------------------------------------------------------------
 # Data tables
@@ -293,22 +293,23 @@ def classify(top_french: str) -> list[str]:
     return _morph_tags(key2 or key)
 
 
-def tag_pos() -> None:
+def tag_pos(dialect: str = "western") -> None:
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
     entries = (
         supabase.table("lexicon")
         .select("id,bete_word,top_french")
+        .eq("dialect", dialect)
         .is_("pos", "null")
         .execute()
         .data or []
     )
 
     if not entries:
-        print("All entries already tagged.")
+        print(f"All {dialect} entries already tagged.")
         return
 
-    print(f"Tagging {len(entries)} entries...")
+    print(f"Tagging {len(entries)} {dialect} entries...")
 
     counts: dict[str, int] = {}
     for entry in entries:
@@ -323,4 +324,9 @@ def tag_pos() -> None:
 
 
 if __name__ == "__main__":
-    tag_pos()
+    import argparse
+    from pipeline.config import DIALECTS
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dialect", default="western", choices=list(DIALECTS))
+    args = parser.parse_args()
+    tag_pos(dialect=args.dialect)

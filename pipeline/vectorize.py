@@ -1,13 +1,13 @@
 # pipeline/vectorize.py
 from sentence_transformers import SentenceTransformer
 from supabase import create_client
-from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY, DIALECTS
 
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 BATCH_SIZE = 128
 
 
-def vectorize_lexicon() -> None:
+def vectorize_lexicon(dialect: str = "western") -> None:
     """
     Generate embeddings for the French side of each lexicon entry
     and store them in the lexicon.embedding (pgvector) column.
@@ -24,6 +24,7 @@ def vectorize_lexicon() -> None:
     response = (
         client.table("lexicon")
         .select("id,top_french")
+        .eq("dialect", dialect)
         .is_("embedding", "null")
         .execute()
     )
@@ -31,10 +32,10 @@ def vectorize_lexicon() -> None:
         raise RuntimeError(f"Supabase fetch error: {response.error}")
     entries = response.data or []
     if not entries:
-        print("All entries already have embeddings.")
+        print(f"All {dialect} entries already have embeddings.")
         return
 
-    print(f"Vectorizing {len(entries)} lexicon entries...")
+    print(f"Vectorizing {len(entries)} {dialect} entries...")
 
     for i in range(0, len(entries), BATCH_SIZE):
         batch = entries[i : i + BATCH_SIZE]
@@ -56,4 +57,8 @@ def vectorize_lexicon() -> None:
 
 
 if __name__ == "__main__":
-    vectorize_lexicon()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dialect", default="western", choices=list(DIALECTS))
+    args = parser.parse_args()
+    vectorize_lexicon(dialect=args.dialect)
