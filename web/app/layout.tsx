@@ -7,6 +7,7 @@ import { AuthNav } from '@/components/AuthNav'
 import { NavLink } from '@/components/NavLink'
 import { MobileSidebar } from '@/components/MobileSidebar'
 import { HeaderSearch } from '@/components/HeaderSearch'
+import { DialectProvider } from '@/context/DialectContext'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: ['400', '600', '700'] })
@@ -41,7 +42,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </nav>
         </header>
-        <main>{children}</main>
+        <DialectProvider>
+          <main>{children}</main>
+        </DialectProvider>
       </body>
     </html>
   )

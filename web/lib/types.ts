@@ -1,5 +1,7 @@
 // lib/types.ts
 
+export type { DialectKey } from './dialect'
+
 export interface LexiconEntry {
   id: string
   bete_word: string
