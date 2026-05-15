@@ -7,6 +7,8 @@ import { FilterPills } from '@/components/FilterPills'
 import { WordCard } from '@/components/WordCard'
 import { createClient } from '@/lib/supabase-browser'
 import type { LexiconEntry } from '@/lib/types'
+import { DialectSelector } from '@/components/DialectSelector'
+import { useDialect } from '@/context/DialectContext'
 
 const FILTERS: { label: string; tag: string | null }[] = [
   { label: 'Tous',      tag: null },
@@ -28,8 +30,9 @@ export default function LexiconPage() {
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const supabaseRef = useRef(createClient())
+  const { dialect } = useDialect()
 
-  useEffect(() => { setPage(0) }, [category])
+  useEffect(() => { setPage(0) }, [category, dialect])
 
   useEffect(() => {
     let cancelled = false
@@ -43,6 +46,7 @@ export default function LexiconPage() {
       .select('*', { count: 'exact' })
       // Always hide garbage fragment entries
       .not('pos', 'cs', '{"fragment"}')
+      .eq('dialect', dialect)
       .order('upvotes', { ascending: false })
       .range(from, to)
 
@@ -59,7 +63,7 @@ export default function LexiconPage() {
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [category, page])
+  }, [category, page, dialect])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const [featured, ...rest] = entries
@@ -71,6 +75,10 @@ export default function LexiconPage() {
         title="Lexique Bété"
         subtitle="Explorez les mots de la langue bété, leur prononciation et leur traduction en français."
       />
+
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+        <DialectSelector />
+      </div>
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <FilterPills options={FILTER_LABELS} value={category} onChange={setCategory} />
