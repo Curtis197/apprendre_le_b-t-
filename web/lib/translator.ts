@@ -3,6 +3,7 @@ import 'server-only'
 import Anthropic from '@anthropic-ai/sdk'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { LexiconEntry, Expression, GrammarRule, TranslationToken, TranslationResult } from './types'
+import { type DialectKey } from './dialect'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -21,21 +22,28 @@ async function findExpression(
 
 async function lookupWord(
   client: SupabaseClient,
-  frenchWord: string
+  frenchWord: string,
+  dialect: DialectKey
 ): Promise<LexiconEntry | null> {
   // 1. Exact match
   const { data: exact } = await client
     .from('lexicon')
     .select('*')
     .eq('top_french', frenchWord.toLowerCase())
+    .eq('dialect', dialect)
     .maybeSingle()
   if (exact) return exact as LexiconEntry
 
-  // 2. pgvector similarity via RPC
-  const { data: similar } = await client
-    .rpc('match_lexicon_by_french', { query_text: frenchWord, match_count: 1 })
+  // 2. Dialect-scoped ilike fallback
+  const { data: partial } = await client
+    .from('lexicon')
+    .select('*')
+    .eq('dialect', dialect)
+    .ilike('top_french', `%${frenchWord.toLowerCase()}%`)
+    .order('probability', { ascending: false })
+    .limit(1)
     .maybeSingle()
-  return (similar as LexiconEntry) ?? null
+  return (partial as LexiconEntry) ?? null
 }
 
 async function fetchGrammarRules(
@@ -52,7 +60,8 @@ async function fetchGrammarRules(
 
 export async function translate(
   client: SupabaseClient,
-  frenchText: string
+  frenchText: string,
+  dialect: DialectKey = 'western'
 ): Promise<TranslationResult> {
   const tokens = frenchText.trim().split(/\s+/)
   const resolvedTokens: TranslationToken[] = []
@@ -76,7 +85,7 @@ export async function translate(
   // Look up each token in parallel
   const cleanTokens = tokens.map(t => t.replace(/[.,!?;:«»"']/g, '').toLowerCase())
   const uniqueClean = [...new Set(cleanTokens.filter(Boolean))]
-  const lookupResults = await Promise.all(uniqueClean.map(w => lookupWord(client, w)))
+  const lookupResults = await Promise.all(uniqueClean.map(w => lookupWord(client, w, dialect)))
   const lexiconMatches: Record<string, LexiconEntry | null> = Object.fromEntries(
     uniqueClean.map((w, i) => [w, lookupResults[i]])
   )

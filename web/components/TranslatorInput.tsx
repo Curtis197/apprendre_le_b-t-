@@ -4,12 +4,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { TranslatorOutput } from './TranslatorOutput'
 import { TranslationResult } from '@/lib/types'
+import { useDialect } from '@/context/DialectContext'
 
 export function TranslatorInput() {
   const [text, setText] = useState('')
   const [result, setResult] = useState<TranslationResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { dialect } = useDialect()
 
   async function handleTranslate() {
     if (!text.trim()) return
@@ -19,7 +21,7 @@ export function TranslatorInput() {
       const res = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, dialect }),
       })
       if (!res.ok) throw new Error(await res.text())
       setResult(await res.json())

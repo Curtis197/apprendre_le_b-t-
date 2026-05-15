@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { translate } from '@/lib/translator'
 import { getCached, setCached } from '@/lib/translation-cache'
 import type { TranslationResult } from '@/lib/types'
+import { DIALECT_KEYS, DEFAULT_DIALECT, type DialectKey } from '@/lib/dialect'
 
 // Limits
 const LIMIT_AUTH = 10   // logged-in users per day
@@ -116,6 +117,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: 'text too long (max 500 chars)' }, { status: 400 })
   }
 
+  const dialect: DialectKey = DIALECT_KEYS.includes(body.dialect) ? body.dialect : DEFAULT_DIALECT
+
   const service = createServiceClient()
 
   // Cache hits are always free — check before consuming quota
@@ -141,7 +144,7 @@ export async function POST(req: NextRequest) {
   // Translate
   let result: TranslationResult
   try {
-    result = await translate(service, input)
+    result = await translate(service, input, dialect)
   } catch (err) {
     console.error('translate error:', err)
     return Response.json({ error: 'translation failed' }, { status: 500 })
