@@ -48,3 +48,16 @@ def test_build_lexicon_multiple_words():
     bete_words = {e["bete_word"] for e in entries}
     assert "gwälɩɛ" in bete_words
     assert "ablaamö" in bete_words
+
+
+def test_build_lexicon_entries_tagged_with_dialect():
+    from pipeline.bootstrap_lexicon import build_lexicon_from_alignments
+    alns = [{"bete_word": "n", "french_word": "je", "score": 0.9}]
+    entries = build_lexicon_from_alignments(alns, dialect="northern")
+    assert entries[0]["dialect"] == "northern"
+
+def test_build_lexicon_entries_default_western():
+    from pipeline.bootstrap_lexicon import build_lexicon_from_alignments
+    alns = [{"bete_word": "n", "french_word": "je", "score": 0.9}]
+    entries = build_lexicon_from_alignments(alns)
+    assert entries[0]["dialect"] == "western"

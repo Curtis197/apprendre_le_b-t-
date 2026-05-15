@@ -5,10 +5,6 @@ from pipeline.phonetic import to_phonetic
 
 
 def group_by_bete_word(alignments: list[dict]) -> dict[str, list[dict]]:
-    """
-    Group alignment records by Bété word.
-    Each group is a list of {word, score} dicts sorted by score descending.
-    """
     grouped: defaultdict[str, list[dict]] = defaultdict(list)
     for a in alignments:
         grouped[a["bete_word"]].append({"word": a["french_word"], "score": a["score"]})
@@ -17,38 +13,37 @@ def group_by_bete_word(alignments: list[dict]) -> dict[str, list[dict]]:
     return dict(grouped)
 
 
-def build_lexicon_from_alignments(alignments: list[dict]) -> list[dict]:
-    """Build lexicon entry dicts ready for Supabase upsert."""
+def build_lexicon_from_alignments(
+    alignments: list[dict],
+    dialect: str = "western",
+) -> list[dict]:
     grouped = group_by_bete_word(alignments)
     entries = []
     for bete_word, candidates in grouped.items():
         top = candidates[0]
         entries.append({
-            "bete_word":          bete_word,
-            "bete_phonetic":      to_phonetic(bete_word),
-            "french_candidates":  candidates,
-            "top_french":         top["word"],
-            "probability":        top["score"],
-            "validated":          False,
+            "bete_word":         bete_word,
+            "bete_phonetic":     to_phonetic(bete_word),
+            "french_candidates": candidates,
+            "top_french":        top["word"],
+            "probability":       top["score"],
+            "validated":         False,
+            "dialect":           dialect,
         })
     entries.sort(key=lambda e: e["bete_word"])
     return entries
 
 
-def load_verses(client, parallel_jsonl: str | None = None) -> None:
-    """Load verse pairs into the verses table (upsert by book+chapter+verse)."""
-    from pipeline.config import PARALLEL_JSONL
+def load_verses(client, parallel_jsonl: str | None = None, dialect: str = "western") -> None:
+    """Load verse pairs into the verses table (upsert by book+chapter+verse+dialect)."""
+    from pipeline.config import corpus_paths
     if parallel_jsonl is None:
-        parallel_jsonl = PARALLEL_JSONL
+        parallel_jsonl = corpus_paths(dialect)["parallel_jsonl"]
     raw: list[dict] = []
-    try:
-        with open(parallel_jsonl, "r", encoding="utf-8") as f:
-            for line in f:
-                raw.append(json.loads(line))
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Parallel JSONL file not found: {parallel_jsonl!r}")
+    with open(parallel_jsonl, "r", encoding="utf-8") as f:
+        for line in f:
+            raw.append(json.loads(line))
 
-    # Deduplicate by (book, chapter, verse) — concatenate text segments for split verses
     seen: dict[tuple, dict] = {}
     for rec in raw:
         key = (rec["book"], rec["chapter"], rec["verse"])
@@ -56,84 +51,80 @@ def load_verses(client, parallel_jsonl: str | None = None) -> None:
             seen[key]["bete_text"]   += " " + rec["bete_text"]
             seen[key]["french_text"] += " " + rec["french_text"]
         else:
-            seen[key] = dict(rec)
+            entry = dict(rec)
+            entry["dialect"] = dialect
+            seen[key] = entry
     verses = list(seen.values())
 
     batch_size = 500
     for i in range(0, len(verses), batch_size):
         batch = verses[i : i + batch_size]
         result = client.table("verses").upsert(
-            batch, on_conflict="book,chapter,verse"
+            batch, on_conflict="book,chapter,verse,dialect"
         ).execute()
         if getattr(result, "error", None) is not None:
-            raise RuntimeError(f"Supabase error upserting verses: {result.error}")
+            raise RuntimeError(f"Supabase error: {result.error}")
         print(f"  Verses: {min(i + batch_size, len(verses))}/{len(verses)}")
 
 
-def load_lexicon(client, alignments_jsonl: str | None = None) -> None:
-    """Load alignment-derived lexicon entries into the lexicon table."""
-    from pipeline.config import ALIGNMENTS_JSONL
+def load_lexicon(client, alignments_jsonl: str | None = None, dialect: str = "western") -> None:
+    """Load alignment-derived lexicon entries tagged with dialect."""
+    from pipeline.config import corpus_paths
     if alignments_jsonl is None:
-        alignments_jsonl = ALIGNMENTS_JSONL
+        alignments_jsonl = corpus_paths(dialect)["alignments_jsonl"]
     raw: list[dict] = []
-    try:
-        with open(alignments_jsonl, "r", encoding="utf-8") as f:
-            for line in f:
-                raw.append(json.loads(line))
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Alignments JSONL file not found: {alignments_jsonl!r}")
+    with open(alignments_jsonl, "r", encoding="utf-8") as f:
+        for line in f:
+            raw.append(json.loads(line))
 
-    entries = build_lexicon_from_alignments(raw)
-
+    entries = build_lexicon_from_alignments(raw, dialect=dialect)
     batch_size = 500
     for i in range(0, len(entries), batch_size):
         batch = entries[i : i + batch_size]
         result = client.table("lexicon").upsert(
-            batch, on_conflict="bete_word"
+            batch, on_conflict="bete_word,dialect"
         ).execute()
         if getattr(result, "error", None) is not None:
-            raise RuntimeError(f"Supabase error upserting lexicon: {result.error}")
+            raise RuntimeError(f"Supabase error: {result.error}")
         print(f"  Lexicon: {min(i + batch_size, len(entries))}/{len(entries)}")
 
 
-def load_alignments(client, alignments_jsonl: str | None = None) -> None:
-    """Load raw alignment records into the alignments table for future retraining."""
-    from pipeline.config import ALIGNMENTS_JSONL
+def load_alignments(client, alignments_jsonl: str | None = None, dialect: str = "western") -> None:
+    """Load raw alignment records tagged with dialect."""
+    from pipeline.config import corpus_paths
     if alignments_jsonl is None:
-        alignments_jsonl = ALIGNMENTS_JSONL
-
+        alignments_jsonl = corpus_paths(dialect)["alignments_jsonl"]
     raw: list[dict] = []
-    try:
-        with open(alignments_jsonl, "r", encoding="utf-8") as f:
-            for line in f:
-                raw.append(json.loads(line))
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Alignments JSONL file not found: {alignments_jsonl!r}")
+    with open(alignments_jsonl, "r", encoding="utf-8") as f:
+        for line in f:
+            raw.append(json.loads(line))
 
-    # alignments table: bete_word, french_word, score (verse_id left null)
     records = [
-        {"bete_word": r["bete_word"], "french_word": r["french_word"], "score": r["score"]}
+        {"bete_word": r["bete_word"], "french_word": r["french_word"],
+         "score": r["score"], "dialect": dialect}
         for r in raw
     ]
-
     batch_size = 500
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
         result = client.table("alignments").upsert(batch).execute()
         if getattr(result, "error", None) is not None:
-            raise RuntimeError(f"Supabase upsert error: {result.error}")
-        done = min(i + batch_size, len(records))
-        print(f"  Alignments: {done}/{len(records)}")
+            raise RuntimeError(f"Supabase error: {result.error}")
+        print(f"  Alignments: {min(i + batch_size, len(records))}/{len(records)}")
 
 
 if __name__ == "__main__":
+    import argparse
     from supabase import create_client
-    from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+    from pipeline.config import SUPABASE_URL, SUPABASE_SERVICE_KEY, DIALECTS
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dialect", default="western", choices=list(DIALECTS))
+    args = parser.parse_args()
     client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    print("Loading verses...")
-    load_verses(client)
-    print("Loading lexicon...")
-    load_lexicon(client)
-    print("Loading alignments...")
-    load_alignments(client)
+    print(f"Loading verses for {args.dialect}...")
+    load_verses(client, dialect=args.dialect)
+    print(f"Loading lexicon for {args.dialect}...")
+    load_lexicon(client, dialect=args.dialect)
+    print(f"Loading alignments for {args.dialect}...")
+    load_alignments(client, dialect=args.dialect)
     print("Done.")
