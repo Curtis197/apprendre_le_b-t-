@@ -5,6 +5,7 @@ import { PenLine, ShieldCheck, CheckCircle2, Clock } from 'lucide-react'
 import { ContributionForm } from '@/components/ContributionForm'
 import { PendingContributions } from '@/components/PendingContributions'
 import { createClient } from '@/lib/supabase-server'
+import { DialectSelector } from '@/components/DialectSelector'
 
 const LEVELS = [
   { name: 'Débutant',      initial: 'D', min: 0,  next: 3  },
@@ -59,6 +60,10 @@ export default async function ContributePage() {
       </div>
 
       {/* Two-column layout */}
+      <div className="mb-6">
+        <DialectSelector />
+      </div>
+
       <div className="grid lg:grid-cols-12 gap-8 mb-10">
 
         {/* Contribution Form — col 8 */}

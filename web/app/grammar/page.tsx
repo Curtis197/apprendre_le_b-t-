@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/PageHeader'
 import { PatternDivider } from '@/components/PatternDivider'
 import { createClient } from '@/lib/supabase-server'
 import type { GrammarRule } from '@/lib/types'
+import { DialectSelector } from '@/components/DialectSelector'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,10 @@ export default async function GrammarPage() {
         title="Architecture Grammaticale"
         subtitle="La langue bété possède une structure tonale et aspectuelle unique qui reflète la richesse de la tradition orale ivoirienne."
       />
+
+      <div className="mb-6">
+        <DialectSelector />
+      </div>
 
       <div className="grid md:grid-cols-12 gap-6">
 
