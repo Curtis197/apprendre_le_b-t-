@@ -125,7 +125,7 @@ KNOWN: dict[str, list[str]] = {
     "chant": ["noun"], "directeur": ["noun"],
     "effigie": ["noun"], "fardeau": ["noun"],
     "fl-ûte": ["noun"], "flûte": ["noun"],
-    "forgeron": ["noun"], "gloire": ["noun"],
+    "forgeron": ["noun"],
     "groupes": ["noun"], "groupe": ["noun"],
     "guérison": ["noun"], "guérisons": ["noun"],
     "insulte": ["noun"], "insultes": ["noun"],
@@ -325,7 +325,6 @@ def tag_pos(dialect: str = "western") -> None:
 
 if __name__ == "__main__":
     import argparse
-    from pipeline.config import DIALECTS
     parser = argparse.ArgumentParser()
     parser.add_argument("--dialect", default="western", choices=list(DIALECTS))
     args = parser.parse_args()
