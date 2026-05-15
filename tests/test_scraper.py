@@ -49,7 +49,6 @@ def test_merge_verse_pairs_skips_missing_bete():
 
 
 def test_merge_verse_pairs_includes_dialect():
-    from pipeline.scraper import merge_verse_pairs
     bete = [{"verse": 1, "text": "bete text"}]
     french = [{"verse": 1, "text": "french text"}]
     pairs = merge_verse_pairs("MAT", 1, "northern", bete, french)
@@ -57,7 +56,6 @@ def test_merge_verse_pairs_includes_dialect():
 
 
 def test_merge_verse_pairs_western():
-    from pipeline.scraper import merge_verse_pairs
     pairs = merge_verse_pairs("MAT", 1, "western",
                                [{"verse": 1, "text": "a"}], [{"verse": 1, "text": "b"}])
     assert pairs[0]["dialect"] == "western"

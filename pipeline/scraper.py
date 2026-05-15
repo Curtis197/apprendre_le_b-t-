@@ -76,7 +76,8 @@ async def scrape_nt(dialect: str = "western", output_path: str | None = None) ->
         with open(output_path, "r", encoding="utf-8") as f:
             for line in f:
                 rec = json.loads(line)
-                done.add((rec["book"], rec["chapter"]))
+                if rec.get("dialect") == dialect:
+                    done.add((rec["book"], rec["chapter"]))
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
