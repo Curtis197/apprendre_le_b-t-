@@ -106,9 +106,11 @@ export function ContributionForm() {
             value={category}
             onChange={e => setCategory(e.target.value)}
           >
-            {['verb', 'noun', 'tense', 'agreement', 'other'].map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
+            <option value="verb">Verbe</option>
+            <option value="noun">Nom</option>
+            <option value="tense">Temps</option>
+            <option value="agreement">Accord</option>
+            <option value="other">Autre</option>
           </select>
           <Input placeholder="Patron français (ex: verbe + é)" value={patternFr} onChange={e => setPatternFr(e.target.value)} />
           <Input placeholder="Patron bété correspondant" value={patternBete} onChange={e => setPatternBete(e.target.value)} />

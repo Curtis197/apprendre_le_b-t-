@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { VoteButtons } from './VoteButtons'
 import { createClient } from '@/lib/supabase-browser'
 import { GrammarRule, Expression } from '@/lib/types'
+import { ContributionComments } from './ContributionComments'
 
 export function PendingContributions() {
   const [rules, setRules] = useState<GrammarRule[]>([])
@@ -54,6 +55,7 @@ export function PendingContributions() {
                 <CardContent>
                   <p className="font-bold">{ex.bete_phrase}</p>
                   <p className="text-sm font-mono text-muted-foreground">[{ex.bete_phonetic}]</p>
+                  <ContributionComments targetTable="expressions" targetId={ex.id} />
                 </CardContent>
               </Card>
             ))}
@@ -79,6 +81,7 @@ export function PendingContributions() {
                 <CardContent className="text-sm space-y-1">
                   <p><span className="text-muted-foreground">FR:</span> {rule.pattern_french}</p>
                   <p><span className="text-muted-foreground">Bété:</span> {rule.pattern_bete}</p>
+                  <ContributionComments targetTable="grammar_rules" targetId={rule.id} />
                 </CardContent>
               </Card>
             ))}

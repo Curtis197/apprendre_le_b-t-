@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { createThread } from '@/lib/community-mutations'
@@ -23,15 +23,32 @@ export function ForumNewThreadForm() {
   const [body, setBody]             = useState('')
   const [category, setCategory]     = useState<ForumCategory>('general')
   const [authorName, setAuthorName] = useState('')
+  const [nameFromProfile, setNameFromProfile] = useState(false)
   const [loading, setLoading]       = useState(false)
   const [error, setError]           = useState<string | null>(null)
 
+  useEffect(() => {
+    supabaseRef.current.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: profile } = await supabaseRef.current
+        .from('profiles')
+        .select('name')
+        .eq('id', user.id)
+        .maybeSingle()
+      const name = profile?.name
+        || (user.user_metadata?.full_name as string | undefined)
+        || user.email?.split('@')[0]
+        || ''
+      if (name) { setAuthorName(name); setNameFromProfile(true) }
+    })
+  }, [])
+
   async function handleSubmit() {
-    if (!title.trim() || !body.trim()) return
+    if (!title.trim() || !body.trim() || !authorName.trim()) return
     setLoading(true)
     setError(null)
     const { data, error: err } = await createThread(supabaseRef.current, {
-      title, body, category, author_name: authorName,
+      title, body, category, author_name: authorName.trim(),
     })
     setLoading(false)
     if (err || !data) { setError(err ?? 'Erreur inattendue.'); return }
@@ -61,15 +78,21 @@ export function ForumNewThreadForm() {
         onChange={e => setBody(e.target.value)}
         rows={6}
       />
-      <Input
-        placeholder="Votre nom (optionnel)"
-        value={authorName}
-        onChange={e => setAuthorName(e.target.value)}
-      />
+      <div className="space-y-1">
+        <Input
+          placeholder="Votre nom"
+          value={authorName}
+          onChange={e => { setAuthorName(e.target.value); setNameFromProfile(false) }}
+          required
+        />
+        {nameFromProfile && (
+          <p className="text-xs text-muted-foreground">Nom récupéré depuis votre profil</p>
+        )}
+      </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button
         onClick={handleSubmit}
-        disabled={loading || !title.trim() || !body.trim()}
+        disabled={loading || !title.trim() || !body.trim() || !authorName.trim()}
         className="w-full"
       >
         {loading ? 'Publication…' : 'Publier le sujet'}

@@ -1,11 +1,12 @@
 // web/app/resources/page.tsx
 import Link from 'next/link'
-import { Music, BookOpen, Feather, Quote, Mic, HelpCircle, Layers, PlusCircle, PlayCircle } from 'lucide-react'
+import { Music, BookOpen, Feather, Quote, Mic, HelpCircle, Layers, PlusCircle, PlayCircle, Video, GraduationCap } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { createClient } from '@/lib/supabase-server'
 import { getCommunityTexts } from '@/lib/community'
 import { extractYouTubeId } from '@/lib/utils'
 import type { ContentType, CommunityText } from '@/lib/types'
+import { PendingResources } from '@/components/PendingResources'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,8 @@ const TYPES = [
   { value: 'proverb', label: 'Proverbes',  icon: Quote },
   { value: 'speech',  label: 'Discours',   icon: Mic },
   { value: 'riddle',  label: 'Devinettes', icon: HelpCircle },
+  { value: 'video',   label: 'Vidéos',     icon: Video },
+  { value: 'course',  label: 'Cours',      icon: GraduationCap },
 ]
 
 const TYPE_COLORS: Record<string, string> = {
@@ -26,6 +29,8 @@ const TYPE_COLORS: Record<string, string> = {
   proverb: 'bg-emerald-100 text-emerald-700',
   speech:  'bg-blue-100 text-blue-700',
   riddle:  'bg-orange-100 text-orange-700',
+  video:   'bg-red-100 text-red-700',
+  course:  'bg-teal-100 text-teal-700',
   other:   'bg-muted text-muted-foreground',
 }
 
@@ -37,7 +42,6 @@ function ResourceCard({ text }: { text: CommunityText }) {
 
   return (
     <div className={`bg-card border border-border rounded-xl overflow-hidden flex flex-col ${hasVideo ? 'md:col-span-2 xl:col-span-2' : ''}`}>
-      {/* YouTube embed */}
       {hasVideo && (
         <div className="relative w-full aspect-video bg-black">
           <iframe
@@ -51,7 +55,6 @@ function ResourceCard({ text }: { text: CommunityText }) {
       )}
 
       <div className="p-5 flex flex-col flex-1">
-        {/* Header row */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className={`inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-2.5 py-0.5 ${TYPE_COLORS[text.type] ?? TYPE_COLORS.other}`}>
@@ -72,7 +75,6 @@ function ResourceCard({ text }: { text: CommunityText }) {
 
         <h2 className="font-heading font-semibold text-base mb-2">{text.title}</h2>
 
-        {/* Bété text — side by side with French when video is present */}
         <div className={`flex-1 ${hasVideo ? 'grid md:grid-cols-2 gap-4' : ''}`}>
           <p className="font-mono text-sm text-primary leading-relaxed whitespace-pre-wrap line-clamp-6">
             {text.content_bete}
@@ -84,7 +86,6 @@ function ResourceCard({ text }: { text: CommunityText }) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
           {text.author_name && <span>{text.author_name}</span>}
           {text.author_name && text.region && <span>·</span>}
@@ -114,7 +115,7 @@ export default async function ResourcesPage({ searchParams }: Props) {
       <PageHeader
         badge="Patrimoine Culturel"
         title="Ressources Communautaires"
-        subtitle="Chansons, contes, poèmes et proverbes partagés par la communauté bété."
+        subtitle="Chansons, contes, poèmes, vidéos et cours partagés par la communauté bété."
       />
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
@@ -168,7 +169,12 @@ export default async function ResourcesPage({ searchParams }: Props) {
         </div>
       )}
 
-      <div className="mt-10 bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
+      {/* Pending submissions queue */}
+      <div className="mt-10">
+        <PendingResources />
+      </div>
+
+      <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
         <strong>Note :</strong> Les ressources soumises sont visibles ici après validation par l&apos;équipe.
         Vous pouvez soumettre vos textes et vidéos via le bouton &quot;Soumettre&quot; ci-dessus.
       </div>

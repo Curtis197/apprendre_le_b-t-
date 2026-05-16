@@ -1,7 +1,7 @@
 // web/app/lexicon/page.tsx
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LayoutGrid, List } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { FilterPills } from '@/components/FilterPills'
 import { WordCard } from '@/components/WordCard'
@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase-browser'
 import type { LexiconEntry } from '@/lib/types'
 import { DialectSelector } from '@/components/DialectSelector'
 import { useDialect } from '@/context/DialectContext'
+import Link from 'next/link'
 
 const FILTERS: { label: string; tag: string | null }[] = [
   { label: 'Tous',      tag: null },
@@ -23,12 +24,52 @@ const FILTERS: { label: string; tag: string | null }[] = [
 const FILTER_LABELS = FILTERS.map(f => f.label)
 const PAGE_SIZE = 9
 
+const TAG_LABELS: Record<string, string> = {
+  noun: 'Nom', verb: 'Verbe', adj: 'Adj.', adv: 'Adv.',
+  name: 'Nom propre', num: 'Num.', interj: 'Interj.',
+  prep: 'Prép.', conj: 'Conj.', pron: 'Pron.',
+  family: 'Famille', nature: 'Nature', body: 'Corps',
+  religion: 'Religion', animal: 'Animal', food: 'Alimentation',
+  place: 'Lieu', time: 'Temps', action: 'Action',
+}
+
+function primaryLabel(pos: string[] | null): string {
+  if (!pos?.length) return 'Mot'
+  return TAG_LABELS[pos[0]] ?? pos[0]
+}
+
+function ListRow({ entry }: { entry: LexiconEntry }) {
+  return (
+    <Link
+      href={`/lexicon/${entry.id}`}
+      className="flex items-center gap-4 px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
+    >
+      <span className="bg-secondary text-white text-xs font-semibold rounded-full px-2.5 py-0.5 shrink-0 w-16 text-center">
+        {primaryLabel(entry.pos)}
+      </span>
+      <div className="flex-1 min-w-0">
+        <span className="font-heading font-bold text-foreground group-hover:text-primary transition-colors">
+          {entry.bete_phonetic}
+        </span>
+        <span className="text-xs font-mono text-muted-foreground ml-2">[{entry.bete_word}]</span>
+      </div>
+      <span className="text-sm text-muted-foreground italic truncate max-w-[200px] shrink-0">
+        {entry.top_french}
+      </span>
+      {entry.validated && (
+        <span className="text-xs text-secondary font-semibold shrink-0">✓</span>
+      )}
+    </Link>
+  )
+}
+
 export default function LexiconPage() {
   const [category, setCategory] = useState('Tous')
   const [entries, setEntries] = useState<LexiconEntry[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const supabaseRef = useRef(createClient())
   const { dialect } = useDialect()
 
@@ -44,7 +85,6 @@ export default function LexiconPage() {
     let q = supabaseRef.current
       .from('lexicon')
       .select('*', { count: 'exact' })
-      // Always hide garbage fragment entries
       .not('pos', 'cs', '{"fragment"}')
       .eq('dialect', dialect)
       .order('upvotes', { ascending: false })
@@ -82,22 +122,48 @@ export default function LexiconPage() {
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <FilterPills options={FILTER_LABELS} value={category} onChange={setCategory} />
-        <span className="text-sm text-muted-foreground shrink-0">
-          {loading ? '…' : `${total} mot${total !== 1 ? 's' : ''} trouvé${total !== 1 ? 's' : ''}`}
-        </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-sm text-muted-foreground">
+            {loading ? '…' : `${total} mot${total !== 1 ? 's' : ''} trouvé${total !== 1 ? 's' : ''}`}
+          </span>
+          <div className="flex border border-border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`w-9 h-9 flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'hover:bg-muted'}`}
+              aria-label="Vue grille"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`w-9 h-9 flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'hover:bg-muted'}`}
+              aria-label="Vue liste"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-            <div key={i} className="bg-muted rounded-xl h-48 animate-pulse" />
-          ))}
-        </div>
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+              <div key={i} className="bg-muted rounded-xl h-48 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+              <div key={i} className="bg-muted rounded-lg h-14 animate-pulse" />
+            ))}
+          </div>
+        )
       ) : entries.length === 0 ? (
         <p className="text-muted-foreground text-sm py-10 text-center">
           Aucun mot trouvé pour cette catégorie.
         </p>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {featured && (
             <WordCard
@@ -109,6 +175,12 @@ export default function LexiconPage() {
           )}
           {rest.map(entry => (
             <WordCard key={entry.id} entry={entry} />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {entries.map(entry => (
+            <ListRow key={entry.id} entry={entry} />
           ))}
         </div>
       )}

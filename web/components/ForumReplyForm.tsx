@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { createPost } from '@/lib/community-mutations'
@@ -12,15 +12,32 @@ export function ForumReplyForm({ threadId }: { threadId: string }) {
   const supabaseRef = useRef(createClient())
   const [content, setContent]       = useState('')
   const [authorName, setAuthorName] = useState('')
+  const [nameFromProfile, setNameFromProfile] = useState(false)
   const [loading, setLoading]       = useState(false)
   const [error, setError]           = useState<string | null>(null)
 
+  useEffect(() => {
+    supabaseRef.current.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: profile } = await supabaseRef.current
+        .from('profiles')
+        .select('name')
+        .eq('id', user.id)
+        .maybeSingle()
+      const name = profile?.name
+        || (user.user_metadata?.full_name as string | undefined)
+        || user.email?.split('@')[0]
+        || ''
+      if (name) { setAuthorName(name); setNameFromProfile(true) }
+    })
+  }, [])
+
   async function handleSubmit() {
-    if (!content.trim()) return
+    if (!content.trim() || !authorName.trim()) return
     setLoading(true)
     setError(null)
     const { error: err } = await createPost(supabaseRef.current, {
-      thread_id: threadId, content, author_name: authorName,
+      thread_id: threadId, content, author_name: authorName.trim(),
     })
     setLoading(false)
     if (err) { setError(err); return }
@@ -37,13 +54,22 @@ export function ForumReplyForm({ threadId }: { threadId: string }) {
         onChange={e => setContent(e.target.value)}
         rows={4}
       />
-      <Input
-        placeholder="Votre nom (optionnel)"
-        value={authorName}
-        onChange={e => setAuthorName(e.target.value)}
-      />
+      <div className="space-y-1">
+        <Input
+          placeholder="Votre nom"
+          value={authorName}
+          onChange={e => { setAuthorName(e.target.value); setNameFromProfile(false) }}
+          required
+        />
+        {nameFromProfile && (
+          <p className="text-xs text-muted-foreground">Nom récupéré depuis votre profil</p>
+        )}
+      </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button onClick={handleSubmit} disabled={loading || !content.trim()}>
+      <Button
+        onClick={handleSubmit}
+        disabled={loading || !content.trim() || !authorName.trim()}
+      >
         {loading ? 'Envoi…' : 'Répondre'}
       </Button>
     </div>

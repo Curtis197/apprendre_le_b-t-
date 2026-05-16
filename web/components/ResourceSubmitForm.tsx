@@ -16,6 +16,8 @@ const TYPES: { value: ContentType; label: string }[] = [
   { value: 'proverb', label: 'Proverbe' },
   { value: 'speech',  label: 'Discours' },
   { value: 'riddle',  label: 'Devinette' },
+  { value: 'video',   label: 'Vidéo' },
+  { value: 'course',  label: 'Cours' },
   { value: 'other',   label: 'Autre' },
 ]
 

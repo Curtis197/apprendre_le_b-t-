@@ -6,14 +6,13 @@ import Link from 'next/link'
 import { AuthNav } from '@/components/AuthNav'
 import { NavLink } from '@/components/NavLink'
 import { MobileSidebar } from '@/components/MobileSidebar'
-import { HeaderSearch } from '@/components/HeaderSearch'
 import { DialectProvider } from '@/context/DialectContext'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: ['400', '600', '700'] })
 
 export const metadata: Metadata = {
-  title: 'Bété Lingo — Plateforme linguistique',
+  title: 'Parlons Bété — Plateforme linguistique',
   description: 'Lexique, traducteur et ressources pour la langue bété',
 }
 
@@ -24,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border shadow-sm">
           <nav className="max-w-7xl mx-auto px-4 md:px-10 h-[72px] flex items-center gap-6">
             <Link href="/" className="font-heading font-bold text-xl text-primary shrink-0">
-              Bété Lingo
+              Parlons Bété
             </Link>
             <div className="hidden md:flex items-center gap-8 flex-1">
               <NavLink href="/lexicon">Lexique</NavLink>
@@ -32,9 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NavLink href="/forum">Forum</NavLink>
               <NavLink href="/resources">Ressources</NavLink>
               <NavLink href="/contribute">Contribuer</NavLink>
+              <NavLink href="/contact">Contact</NavLink>
             </div>
             <div className="flex items-center gap-3 ml-auto">
-              <HeaderSearch />
               <div className="hidden md:block">
                 <AuthNav />
               </div>

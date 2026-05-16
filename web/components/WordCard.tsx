@@ -1,5 +1,5 @@
 'use client'
-import { Volume2, BookOpen } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
 import { cn, cleanBeteWord } from '@/lib/utils'
 import type { LexiconEntry } from '@/lib/types'
 
@@ -28,12 +28,6 @@ function semanticTags(pos: string[] | null): string[] {
   return (pos ?? []).filter(t => semantic.includes(t))
 }
 
-function speak(text: string) {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return
-  speechSynthesis.cancel()
-  speechSynthesis.speak(new SpeechSynthesisUtterance(text))
-}
-
 export function WordCard({ entry, featured = false, className }: Props) {
   if (featured) {
     return (
@@ -42,13 +36,6 @@ export function WordCard({ entry, featured = false, className }: Props) {
           <span className="bg-secondary/20 text-secondary text-xs font-semibold rounded-full px-3 py-1">
             Mot du Jour
           </span>
-          <button
-            aria-label="Écouter la prononciation"
-            onClick={() => speak(entry.bete_phonetic)}
-            className="w-14 h-14 bg-primary/20 hover:bg-primary hover:text-white text-primary rounded-full flex items-center justify-center transition-colors"
-          >
-            <Volume2 className="w-6 h-6" />
-          </button>
         </div>
         <h2 className="font-heading text-4xl font-bold text-primary mb-1">{entry.bete_phonetic}</h2>
         <p className="text-sm italic text-muted-foreground mb-3">[{cleanBeteWord(entry.bete_word)}]</p>
@@ -75,13 +62,6 @@ export function WordCard({ entry, featured = false, className }: Props) {
             </span>
           ))}
         </div>
-        <button
-          aria-label="Écouter la prononciation"
-          onClick={() => speak(entry.bete_phonetic)}
-          className="w-12 h-12 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-full flex items-center justify-center transition-colors group-hover:scale-110"
-        >
-          <Volume2 className="w-5 h-5" />
-        </button>
       </div>
       <h3 className="font-heading text-2xl font-bold text-foreground mb-2">{entry.bete_phonetic}</h3>
       <div

@@ -53,7 +53,7 @@ export interface Expression {
 // ── Community types ────────────────────────────────────────────────────────
 
 export type ForumCategory = 'general' | 'grammar' | 'lexicon' | 'culture' | 'translation'
-export type ContentType   = 'song' | 'story' | 'poem' | 'proverb' | 'speech' | 'riddle' | 'other'
+export type ContentType   = 'song' | 'story' | 'poem' | 'proverb' | 'speech' | 'riddle' | 'video' | 'course' | 'other'
 
 export interface ForumThread {
   id: string
