@@ -28,7 +28,7 @@ const GROUPS = [
 ]
 
 // Individual instructors / advisors
-const INSTRUCTORS = [
+const INSTRUCTORS: { name: string; role: string; contact: string }[] = [
   // Add real entries here
   // { name: 'Nom Prénom', role: 'Professeur de langue bété', contact: 'email@example.com' },
 ]
