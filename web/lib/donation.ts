@@ -17,11 +17,14 @@ export interface ContributionRow {
 }
 
 export function buildContributionRow(session: Stripe.Checkout.Session): ContributionRow {
+  if (session.amount_total === null || session.amount_total === undefined) {
+    throw new Error(`Stripe session ${session.id} has null amount_total`)
+  }
   const date = new Date(session.created * 1000)
   const month = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
   return {
     stripe_session_id: session.id,
-    amount_cents: session.amount_total ?? 0,
+    amount_cents: session.amount_total,
     contributor_email: session.customer_details?.email ?? null,
     month,
   }

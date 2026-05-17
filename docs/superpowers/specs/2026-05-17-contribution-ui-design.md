@@ -47,7 +47,7 @@ User clicks donate
 create table contributions (
   id uuid primary key default gen_random_uuid(),
   stripe_session_id text unique not null,
-  amount_eur int not null,        -- in cents (100 = 1€, 1000 = 10€)
+  amount_cents int not null,        -- in cents (100 = 1€, 1000 = 10€)
   contributor_email text,         -- from Stripe, nullable
   month text not null,            -- 'YYYY-MM', used for monthly filtering
   created_at timestamptz default now()
@@ -56,7 +56,7 @@ create table contributions (
 
 Monthly total query:
 ```sql
-SELECT COALESCE(SUM(amount_eur), 0) AS raised_cents
+SELECT COALESCE(SUM(amount_cents), 0) AS raised_cents
 FROM contributions
 WHERE month = to_char(now(), 'YYYY-MM');
 ```

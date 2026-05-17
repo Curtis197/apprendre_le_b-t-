@@ -41,7 +41,7 @@
 create table contributions (
   id uuid primary key default gen_random_uuid(),
   stripe_session_id text unique not null,
-  amount_eur int not null,
+  amount_cents int not null,
   contributor_email text,
   month text not null,
   created_at timestamptz default now()
@@ -167,7 +167,7 @@ describe('buildContributionRow', () => {
     const row = buildContributionRow(session as any)
     expect(row).toEqual({
       stripe_session_id: 'cs_test_abc123',
-      amount_eur: 500,
+      amount_cents: 500,
       contributor_email: 'test@example.com',
       month: '2026-05',
     })
@@ -211,7 +211,7 @@ export function validateDonationAmount(amount: number): boolean {
 
 export interface ContributionRow {
   stripe_session_id: string
-  amount_eur: number
+  amount_cents: number
   contributor_email: string | null
   month: string
 }
@@ -221,7 +221,7 @@ export function buildContributionRow(session: Stripe.Checkout.Session): Contribu
   const month = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
   return {
     stripe_session_id: session.id,
-    amount_eur: session.amount_total ?? 0,
+    amount_cents: session.amount_total ?? 0,
     contributor_email: session.customer_details?.email ?? null,
     month,
   }
@@ -246,7 +246,7 @@ Append to the end of the file:
 export interface Contribution {
   id: string
   stripe_session_id: string
-  amount_eur: number
+  amount_cents: number
   contributor_email: string | null
   month: string
   created_at: string
@@ -459,10 +459,10 @@ async function getMonthlyProgress(): Promise<{ raised: number; month: string }> 
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const { data, error } = await supabase
     .from('contributions')
-    .select('amount_eur')
+    .select('amount_cents')
     .eq('month', month)
   if (error || !data) return { raised: 0, month }
-  const raised = data.reduce((sum, row) => sum + row.amount_eur, 0)
+  const raised = data.reduce((sum, row) => sum + row.amount_cents, 0)
   return { raised, month }
 }
 

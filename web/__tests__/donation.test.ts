@@ -12,6 +12,7 @@ describe('validateDonationAmount', () => {
   it('accepts valid free amounts between 100 and 50000', () => {
     expect(validateDonationAmount(150)).toBe(true)
     expect(validateDonationAmount(49999)).toBe(true)
+    expect(validateDonationAmount(50000)).toBe(true)  // add this line
   })
 
   it('rejects amounts below 100', () => {
@@ -55,5 +56,15 @@ describe('buildContributionRow', () => {
     }
     const row = buildContributionRow(session as any)
     expect(row.contributor_email).toBeNull()
+  })
+
+  it('throws when amount_total is null', () => {
+    const session = {
+      id: 'cs_test_null',
+      amount_total: null,
+      created: 1778976000,
+      customer_details: null,
+    }
+    expect(() => buildContributionRow(session as any)).toThrow('has null amount_total')
   })
 })
