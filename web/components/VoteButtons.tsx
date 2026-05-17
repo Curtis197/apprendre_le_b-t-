@@ -25,7 +25,6 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
     const sb = supabaseRef.current
     sb.auth.getUser().then(async ({ data }) => {
       if (!data.user) { setIsAuthed(false); return }
-      setIsAuthed(true)
       const { data: existing } = await sb
         .from('user_votes')
         .select('direction')
@@ -33,6 +32,7 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
         .eq('row_id', id)
         .maybeSingle()
       setVoted((existing?.direction as 'up' | 'down') ?? null)
+      setIsAuthed(true)
     })
   }, [table, id])
 
