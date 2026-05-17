@@ -1,0 +1,14 @@
+- remove the search bar
+- the mobile navbar is broken
+- let's chnage the name og the logo for "parlons bété"
+- let's add a list view for the lexicon
+- let's create an account creation templates and a vercel/edge function. the resend API key is in the root .env.local
+- lets create a user table with name, and image url for the forum and the name displayed, then remove the optionality of the name in the forum
+- let's add a video section in the ressource and a course section. 
+- let's make a waiting validation list for the ressource page 
+- the grammar category are in english let's translate them in french
+- let's remove the audio from the lexical as there is any for the moment. 
+- let's remove the audio from the the translator. 
+- let's add the possibility to comment the contribution submission and gramatical submission. 
+- the card patrimoine vivant should be the hero card the image is store in the web folder, let's add two more word of the day making 3 word of the day under the translator. 
+- let's create a contact page with a contact to the admin and a list of contact ( group(external group of discussion (whatsapp, tiktok, ...)+the link), individual who dispense course or advise)

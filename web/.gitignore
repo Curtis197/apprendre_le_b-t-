@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# superpowers plugin sessions
+.superpowers/
+
+# loose media files at project root
+maxresdefault.jpg
