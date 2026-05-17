@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase-browser'
 
@@ -17,6 +18,7 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
   const [upvotes, setUpvotes] = useState(initialUpvotes)
   const [voted, setVoted] = useState<'up' | 'down' | null>(null)
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null)
+  const pathname = usePathname()
   const supabaseRef = useRef(createClient())
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
   if (!isAuthed) {
     return (
       <Link
-        href="/auth"
+        href={'/auth?next=' + pathname}
         className="text-xs text-muted-foreground hover:text-primary transition-colors"
         title="Connectez-vous pour voter"
       >

@@ -28,6 +28,10 @@ export function MobileSidebar() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => setIsAuthed(!!data.user))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthed(!!session?.user)
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   useEffect(() => { setMounted(true) }, [])
