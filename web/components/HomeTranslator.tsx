@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Link from 'next/link'
 import { ArrowLeftRight, Copy, Mic, Sparkles } from 'lucide-react'
 import type { TranslationResult } from '@/lib/types'
 
@@ -107,6 +108,11 @@ export function HomeTranslator() {
       {error && (
         <p className="text-sm text-destructive mt-2 text-center">{error}</p>
       )}
+      <div className="mt-3 text-right">
+        <Link href="/translator" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+          Ouvrir le traducteur complet →
+        </Link>
+      </div>
     </div>
   )
 }

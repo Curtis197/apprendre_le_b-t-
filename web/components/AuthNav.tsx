@@ -11,24 +11,39 @@ export function AuthNav() {
   const [displayName, setDisplayName] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
 
-  function resolveName(user: { email?: string; user_metadata?: Record<string, unknown> } | null | undefined): string | null {
-    if (!user) return null
-    const name = user.user_metadata?.full_name as string | undefined
-    return name?.trim() || user.email || null
+  async function fetchName(userId: string, fallback: string): Promise<string> {
+    const supabase = supabaseRef.current!
+    const { data } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', userId)
+      .single()
+    return data?.name?.trim() || fallback
   }
 
   useEffect(() => {
     const supabase = createClient()
     supabaseRef.current = supabase
     let active = true
-    supabase.auth.getUser().then(({ data }) => {
+
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!active) return
-      setDisplayName(resolveName(data.user))
+      if (data.user) {
+        const name = await fetchName(data.user.id, data.user.email ?? '')
+        if (active) setDisplayName(name)
+      }
       setReady(true)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setDisplayName(resolveName(session?.user))
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const name = await fetchName(session.user.id, session.user.email ?? '')
+        setDisplayName(name)
+      } else {
+        setDisplayName(null)
+      }
     })
+
     return () => {
       active = false
       sub.subscription.unsubscribe()
@@ -44,10 +59,7 @@ export function AuthNav() {
 
   if (!displayName) {
     return (
-      <Link
-        href="/auth"
-        className="ml-auto text-sm text-muted-foreground hover:text-foreground"
-      >
+      <Link href="/auth" className="ml-auto text-sm text-muted-foreground hover:text-foreground">
         Se connecter
       </Link>
     )
@@ -55,9 +67,13 @@ export function AuthNav() {
 
   return (
     <div className="ml-auto flex items-center gap-3">
-      <span className="text-sm text-muted-foreground truncate max-w-[160px]" title={displayName}>
+      <Link
+        href="/profile"
+        className="text-sm text-muted-foreground hover:text-foreground truncate max-w-[160px]"
+        title={displayName}
+      >
         {displayName}
-      </span>
+      </Link>
       <button
         onClick={handleSignOut}
         className="text-sm text-muted-foreground hover:text-foreground"
