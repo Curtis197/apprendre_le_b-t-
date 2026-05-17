@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateDonationAmount } from '@/lib/donation'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia',
+  apiVersion: '2026-04-22.dahlia' as any,
 })
 
 export async function POST(req: NextRequest) {
@@ -17,26 +17,39 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const origin = req.headers.get('origin') ?? 'http://localhost:3000'
+  const origin =
+    req.headers.get('origin') ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    'http://localhost:3000'
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    line_items: [
-      {
-        price_data: {
-          currency: 'eur',
-          unit_amount: amount,
-          product_data: {
-            name: 'Soutien à Parlons Bété',
-            description: 'Contribution au financement de la plateforme linguistique bété.',
+  let session: Stripe.Checkout.Session
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            unit_amount: amount,
+            product_data: {
+              name: 'Soutien à Parlons Bété',
+              description: 'Contribution au financement de la plateforme linguistique bété.',
+            },
           },
+          quantity: 1,
         },
-        quantity: 1,
-      },
-    ],
-    success_url: `${origin}/contribute?donated=true`,
-    cancel_url: `${origin}/contribute`,
-  })
+      ],
+      success_url: `${origin}/contribute?donated=true`,
+      cancel_url: `${origin}/contribute`,
+    })
+  } catch (err) {
+    console.error('Stripe checkout session creation failed:', err)
+    return NextResponse.json({ error: 'Payment service unavailable.' }, { status: 502 })
+  }
+
+  if (!session.url) {
+    return NextResponse.json({ error: 'Stripe did not return a checkout URL.' }, { status: 502 })
+  }
 
   return NextResponse.json({ url: session.url })
 }
