@@ -70,7 +70,8 @@ export function MobileSidebar() {
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
           {links.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || (href !== '/' && pathname.startsWith(href))
+            const hrefPath = href.split('#')[0]
+            const isActive = pathname === hrefPath || (hrefPath !== '/' && pathname.startsWith(hrefPath))
             return (
               <Link
                 key={href}
