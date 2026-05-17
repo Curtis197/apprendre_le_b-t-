@@ -1,5 +1,6 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase-browser'
 
@@ -15,11 +16,17 @@ interface VoteButtonsProps {
 export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsProps) {
   const [upvotes, setUpvotes] = useState(initialUpvotes)
   const [voted, setVoted] = useState<'up' | 'down' | null>(null)
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null)
   const supabaseRef = useRef(createClient())
 
+  useEffect(() => {
+    supabaseRef.current.auth.getUser().then(({ data }) => {
+      setIsAuthed(!!data.user)
+    })
+  }, [])
+
   async function vote(direction: 'up' | 'down') {
-    if (voted === direction) return
-    // If switching vote direction, delta is ±2; first vote is ±1
+    if (voted === direction || !isAuthed) return
     const delta = direction === 'up'
       ? (voted === 'down' ? 2 : 1)
       : (voted === 'up' ? -2 : -1)
@@ -36,6 +43,22 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
     } else if (typeof data === 'number') {
       setUpvotes(data)
     }
+  }
+
+  if (isAuthed === null) {
+    return <div className="h-9 w-20" />
+  }
+
+  if (!isAuthed) {
+    return (
+      <Link
+        href="/auth"
+        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+        title="Connectez-vous pour voter"
+      >
+        ▲ {upvotes}
+      </Link>
+    )
   }
 
   return (
