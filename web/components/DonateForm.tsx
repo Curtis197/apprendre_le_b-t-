@@ -31,7 +31,7 @@ export function DonateForm() {
     if (custom) {
       const euros = parseFloat(custom.replace(',', '.'))
       if (isNaN(euros)) return null
-      return Math.round(euros * 100)
+      return Math.trunc(Math.round(euros * 100))
     }
     return selected
   }
@@ -55,6 +55,7 @@ export function DonateForm() {
       window.location.href = data.url
     } catch (e) {
       setError('Une erreur est survenue, veuillez réessayer.')
+    } finally {
       setLoading(false)
     }
   }
@@ -107,7 +108,8 @@ export function DonateForm() {
         <span className="text-sm text-muted-foreground">Autre montant :</span>
         <div className="relative">
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             min="1"
             max="500"
             step="1"
