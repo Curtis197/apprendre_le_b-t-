@@ -116,17 +116,24 @@ export interface CreateCommunityTextInput {
 
 // ── Translation types ──────────────────────────────────────────────────────
 
-export interface TranslationToken {
-  french_word: string
-  bete_word: string
-  bete_phonetic: string
-  score: number
-  is_expression: boolean
-  lexicon_id?: string
+/**
+ * One resolved word used internally and for word-level feedback.
+ * bete_word    = IPA/Bible phonetic form (stored in lexicon.bete_word column)
+ * bete_western = western Latin everyday form (stored in lexicon.bete_phonetic column)
+ */
+export interface FeedbackToken {
+  french_word:  string
+  bete_western: string   // from lexicon.bete_phonetic (western Latin)
+  bete_word:    string   // from lexicon.bete_word (IPA/Bible phonetic)
+  lexicon_id?:  string
 }
 
 export interface TranslationResult {
-  input: string
-  tokens: TranslationToken[]
-  cached: boolean
+  input:             string
+  sentence:          string    // fluent Bété — western Latin alphabet (bete_phonetic values)
+  sentence_phonetic: string    // fluent Bété — IPA/Bible phonetic form (bete_word values)
+  unknowns:          string[]  // French words with no Bété candidate
+  rules_applied:     string[]  // grammar rule descriptions used
+  tokens:            FeedbackToken[]  // kept for word-level feedback
+  cached:            boolean
 }
