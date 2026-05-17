@@ -21,7 +21,7 @@ export async function getCached(
   if (!data) return null
   const result = data.result
   // Basic shape validation before trusting cached data
-  if (!result || typeof result !== 'object' || !Array.isArray(result.tokens)) {
+  if (!result || typeof result !== 'object' || typeof result.sentence !== 'string') {
     return null
   }
   return { ...(result as TranslationResult), cached: true }
