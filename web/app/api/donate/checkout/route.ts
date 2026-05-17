@@ -2,11 +2,10 @@ import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 import { validateDonationAmount } from '@/lib/donation'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-04-22.dahlia' as any,
-})
-
 export async function POST(req: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2026-04-22.dahlia' as any,
+  })
   const body = await req.json().catch(() => null)
   const amount = body?.amount
 
