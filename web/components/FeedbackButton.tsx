@@ -1,10 +1,10 @@
 'use client'
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase-browser'
-import { TranslationToken } from '@/lib/types'
+import { FeedbackToken } from '@/lib/types'
 
 interface Props {
-  token: TranslationToken
+  token: FeedbackToken
 }
 
 export function FeedbackButton({ token }: Props) {
@@ -20,7 +20,7 @@ export function FeedbackButton({ token }: Props) {
         user_id: user?.id ?? null,
         lexicon_id: token.lexicon_id ?? null,
         type: 'reject',
-        translator_phrase: `${token.french_word} → ${token.bete_phonetic}`,
+        translator_phrase: `${token.french_word} → ${token.bete_western}`,
       })
       if (error) throw error
       setState('done')

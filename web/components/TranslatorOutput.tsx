@@ -1,23 +1,12 @@
-import { TranslationResult, TranslationToken } from '@/lib/types'
-import { Badge } from '@/components/ui/badge'
+import { TranslationResult, FeedbackToken } from '@/lib/types'
 import { FeedbackButton } from './FeedbackButton'
 
-function TokenCard({ token }: { token: TranslationToken }) {
-  const confidence = token.score >= 0.7 ? 'high' : token.score >= 0.4 ? 'medium' : 'low'
-  const borderColor = {
-    high: 'border-green-300',
-    medium: 'border-yellow-300',
-    low: 'border-red-200',
-  }[confidence]
-
+function TokenCard({ token }: { token: FeedbackToken }) {
   return (
-    <div className={`border rounded p-2 text-center min-w-[80px] ${borderColor}`}>
+    <div className="border rounded p-2 text-center min-w-[80px]">
       <p className="text-xs text-muted-foreground">{token.french_word}</p>
-      <p className="font-bold text-sm">{token.bete_phonetic}</p>
+      <p className="font-bold text-sm">{token.bete_western}</p>
       <p className="text-xs font-mono text-muted-foreground">{token.bete_word}</p>
-      {token.is_expression && (
-        <Badge variant="secondary" className="text-xs mt-1">expression</Badge>
-      )}
       <FeedbackButton token={token} />
     </div>
   )
@@ -30,11 +19,29 @@ interface Props {
 export function TranslatorOutput({ result }: Props) {
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {result.tokens.map((token, i) => (
-          <TokenCard key={i} token={token} />
-        ))}
+      <div className="space-y-1">
+        <p className="text-lg font-semibold">{result.sentence}</p>
+        {result.sentence_phonetic && result.sentence_phonetic !== result.sentence && (
+          <p className="text-sm font-mono text-muted-foreground">{result.sentence_phonetic}</p>
+        )}
       </div>
+      {result.unknowns.length > 0 && (
+        <p className="text-xs text-amber-600">
+          Mots non traduits : {result.unknowns.join(', ')}
+        </p>
+      )}
+      {result.rules_applied.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Règles : {result.rules_applied.join(' · ')}
+        </p>
+      )}
+      {result.tokens.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {result.tokens.map((token, i) => (
+            <TokenCard key={i} token={token} />
+          ))}
+        </div>
+      )}
       <p className="text-xs text-muted-foreground">
         {result.cached ? '⚡ Depuis le cache' : '🤖 Traduction générée'}
       </p>
