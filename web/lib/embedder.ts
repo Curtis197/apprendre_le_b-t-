@@ -18,7 +18,7 @@ export async function embed(text: string): Promise<number[]> {
   const res = await fetch(HF_URL, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+      Authorization: `Bearer ${process.env.HUGGINGFACE_ACCESS_TOKEN}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ inputs: text, options: { wait_for_model: true } }),
