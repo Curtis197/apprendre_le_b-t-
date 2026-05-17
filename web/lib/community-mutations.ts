@@ -76,30 +76,6 @@ export async function createPost(
   return { data: { id: (data as { id: string }).id }, error: null }
 }
 
-/** Increment the upvote count on a thread (one call = one vote). */
-export async function upvoteThread(
-  client: SupabaseClient,
-  threadId: string,
-): Promise<{ error: string | null }> {
-  const { error } = await client.rpc('increment_upvotes', {
-    table_name: 'forum_threads',
-    row_id: threadId,
-  })
-  return { error: error?.message ?? null }
-}
-
-/** Increment the upvote count on a post. */
-export async function upvotePost(
-  client: SupabaseClient,
-  postId: string,
-): Promise<{ error: string | null }> {
-  const { error } = await client.rpc('increment_upvotes', {
-    table_name: 'forum_posts',
-    row_id: postId,
-  })
-  return { error: error?.message ?? null }
-}
-
 // ── Community texts ────────────────────────────────────────────────────────
 
 /** Submit a community text (song, story, poem, proverb …). Pending validation. */
@@ -134,14 +110,3 @@ export async function submitCommunityText(
   return { data: { id: (data as { id: string }).id }, error: null }
 }
 
-/** Increment the upvote count on a community text. */
-export async function upvoteCommunityText(
-  client: SupabaseClient,
-  textId: string,
-): Promise<{ error: string | null }> {
-  const { error } = await client.rpc('increment_upvotes', {
-    table_name: 'community_texts',
-    row_id: textId,
-  })
-  return { error: error?.message ?? null }
-}
