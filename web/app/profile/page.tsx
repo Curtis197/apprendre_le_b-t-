@@ -1,6 +1,6 @@
 // web/app/profile/page.tsx
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Save, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
@@ -11,20 +11,6 @@ import { Textarea } from '@/components/ui/textarea'
 
 type ProfileType = 'member' | 'group' | 'teacher'
 type Canal = 'whatsapp' | 'tiktok' | 'instagram' | 'facebook'
-
-interface ProfileRow {
-  name: string
-  avatar_url: string | null
-  bio: string | null
-  type: ProfileType
-  is_public: boolean
-  contact: string | null
-  canal: Canal | null
-  whatsapp_url: string | null
-  tiktok_url: string | null
-  instagram_url: string | null
-  facebook_url: string | null
-}
 
 const TYPE_LABELS: Record<ProfileType, string> = {
   member: 'Membre',
@@ -42,6 +28,7 @@ const CANAL_LABELS: Record<Canal, string> = {
 export default function ProfilePage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -64,16 +51,23 @@ export default function ProfilePage() {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
+        setLoading(false)
         router.replace('/auth?next=/profile')
         return
       }
       setUserId(data.user.id)
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single()
+
+      if (profileError) {
+        setError(profileError.message)
+        setLoading(false)
+        return
+      }
 
       if (profile) {
         setName(profile.name ?? '')
@@ -91,6 +85,12 @@ export default function ProfilePage() {
       setLoading(false)
     })
   }, [supabase, router])
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    }
+  }, [])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -123,7 +123,7 @@ export default function ProfilePage() {
       setError(upsertError.message)
     } else {
       setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      savedTimerRef.current = setTimeout(() => setSaved(false), 3000)
     }
   }
 
