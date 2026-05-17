@@ -137,3 +137,20 @@ export interface TranslationResult {
   tokens:            FeedbackToken[]  // kept for word-level feedback
   cached:            boolean
 }
+
+// ── Contribution types ─────────────────────────────────────────────────────
+
+export interface Contribution {
+  id: string
+  stripe_session_id: string
+  amount_cents: number
+  contributor_email: string | null
+  month: string
+  created_at: string
+}
+
+export interface FundingProgress {
+  raised_cents: number
+  goal_cents: number
+  month: string
+}
