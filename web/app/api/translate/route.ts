@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   const service = createServiceClient()
 
   // Cache hits are always free — check before consuming quota
-  const cached = await getCached(service, input)
+  const cached = await getCached(service, input, dialect)
   if (cached) {
     return Response.json(cached)
   }
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await setCached(service, input, result)
+    await setCached(service, input, dialect, result)
   } catch (err) {
     console.error('cache write error:', err)
   }

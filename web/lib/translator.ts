@@ -211,8 +211,10 @@ async function assembleWithClaude(
   // Strip markdown code fences if present
   const json = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
   const parsed = JSON.parse(json)
+  const sentence = String(parsed.sentence ?? '')
+  if (!sentence) throw new Error('Claude returned empty sentence')
   return {
-    sentence:      String(parsed.sentence ?? ''),
+    sentence,
     unknowns:      Array.isArray(parsed.unknowns) ? parsed.unknowns : [],
     rules_applied: Array.isArray(parsed.rules_applied) ? parsed.rules_applied : [],
   }
@@ -237,7 +239,11 @@ function buildPhoneticSentence(
 
   return westernSentence
     .split(/\s+/)
-    .map(w => westernToPhonetic.get(w.toLowerCase()) ?? w)
+    .map(w => {
+      const stripped = w.replace(/[.,!?;:«»"''']/g, '')
+      const phonetic = westernToPhonetic.get(stripped.toLowerCase())
+      return phonetic ? phonetic + w.slice(stripped.length) : w
+    })
     .join(' ')
 }
 
