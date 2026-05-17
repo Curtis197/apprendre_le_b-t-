@@ -8,7 +8,7 @@ const GOAL_CENTS = 5000
 async function getMonthlyProgress(): Promise<{ raised: number; month: string }> {
   const supabase = await createClient()
   const now = new Date()
-  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
   const { data, error } = await supabase
     .from('contributions')
     .select('amount_cents')
@@ -33,6 +33,8 @@ export async function FundingWidget() {
   } catch {
     return null
   }
+
+  if (!month) return null
 
   const [year, monthNum] = month.split('-')
   const monthLabel = `${MONTH_NAMES_FR[parseInt(monthNum) - 1]} ${year}`
@@ -68,7 +70,7 @@ export async function FundingWidget() {
       <p className="text-sm text-muted-foreground">
         {reached
           ? <span className="text-secondary font-semibold">Objectif atteint !</span>
-          : <><span className="font-semibold text-foreground">{raisedEur}€</span> / {goalEur}€ ce mois-ci</>
+          : <><span className="font-semibold text-primary">{raisedEur}€</span> / {goalEur}€ ce mois-ci</>
         }
       </p>
     </div>
