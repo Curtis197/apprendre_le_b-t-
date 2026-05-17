@@ -121,11 +121,15 @@ export async function POST(req: NextRequest) {
 
   const service = createServiceClient()
 
+  console.log(`\n[route] POST /api/translate — "${input}" (${dialect})`)
+
   // Cache hits are always free — check before consuming quota
   const cached = await getCached(service, input, dialect)
   if (cached) {
+    console.log(`[route] cache HIT — returning cached result`)
     return Response.json(cached)
   }
+  console.log(`[route] cache MISS — running translator`)
 
   // Rate-limit check (only for non-cached requests)
   const { identifier, limit } = await resolveIdentifier(req)
