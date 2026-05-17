@@ -39,6 +39,8 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
   async function handleVote(direction: 'up' | 'down') {
     if (!isAuthed) return
 
+    console.log('[vote] attempt', { table, id, direction, previousVote: voted })
+
     // Optimistic update
     const prevVoted = voted
     const prevUpvotes = upvotes
@@ -52,9 +54,11 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
       .rpc('vote', { p_table_name: table, p_row_id: id, p_direction: direction })
 
     if (error || !data) {
+      console.error('[vote] rpc error', { table, id, direction, error })
       setUpvotes(prevUpvotes)
       setVoted(prevVoted)
     } else {
+      console.log('[vote] rpc success', { table, id, direction, upvotes: data.upvotes, activeDirection: data.direction })
       setUpvotes(data.upvotes)
       setVoted(data.direction ?? null)
     }
