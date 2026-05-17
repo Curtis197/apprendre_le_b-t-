@@ -121,12 +121,26 @@ Coverage target: ~80% of tokens resolved without vector search. Unknown forms fa
 3. `buildPrompt(candidates, rules)` → structured ~400-token prompt
 4. `assembleWithClaude(prompt)` → single Claude Haiku call, returns structured JSON
 
+### Column naming note — critical
+
+The DB column names are **inverted** from intuition:
+
+| Column | Actual content | Display label |
+|---|---|---|
+| `bete_word` | Phonetic/IPA-like form from the Bible scrape (uses ɩ, ɛ, ɔ, ŋ, ʋ) | "phonétique" |
+| `bete_phonetic` | Western/Latin alphabet form produced by `to_phonetic()` (maps ɩ→i, ɛ→e, etc.) | "mot bété" |
+
+The Bible used a phonetic alphabet to transcribe Bété sounds. Everyday Bété writing uses the standard Latin alphabet. The pipeline converts the Bible form to Latin and stores it in `bete_phonetic` — but that column holds what is effectively the natural written word, not a phonetic transcription.
+
+**Both values must always be returned and displayed with correct labels.** Never swap them.
+
 ### Response type (`lib/types.ts` — updated)
 
 ```typescript
 interface TranslationResult {
   input:         string
   sentence:      string        // fluent Bété output (replaces tokens array)
+  sentence_phonetic: string    // same sentence using bete_word (phonetic/Bible) forms
   unknowns:      string[]      // French words with no Bété candidate
   rules_applied: string[]      // grammar rule IDs used
   cached:        boolean
