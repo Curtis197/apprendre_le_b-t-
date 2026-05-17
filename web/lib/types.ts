@@ -128,6 +128,12 @@ export interface FeedbackToken {
   lexicon_id?:  string
 }
 
+export interface TranslationLogEntry {
+  step:   string
+  detail: string
+  ms:     number  // ms since translation started
+}
+
 export interface TranslationResult {
   input:             string
   sentence:          string    // fluent Bété — western Latin alphabet (bete_phonetic values)
@@ -136,6 +142,7 @@ export interface TranslationResult {
   rules_applied:     string[]  // grammar rule descriptions used
   tokens:            FeedbackToken[]  // kept for word-level feedback
   cached:            boolean
+  debug?:            TranslationLogEntry[]
 }
 
 // ── Contribution types ─────────────────────────────────────────────────────

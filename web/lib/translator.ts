@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { embed } from './embedder'
 import { lemmatize } from './lemmatizer'
-import { FeedbackToken, TranslationResult } from './types'
+import { FeedbackToken, TranslationResult, TranslationLogEntry } from './types'
 import { type DialectKey } from './dialect'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -255,10 +255,16 @@ export async function translate(
   dialect: DialectKey = 'western',
 ): Promise<TranslationResult> {
   const input = frenchText.trim()
+  const t0 = Date.now()
+  const log: TranslationLogEntry[] = []
+  const ms = () => Date.now() - t0
 
-  // Check full phrase as expression first (cache-friendly, free)
+  log.push({ step: 'start', detail: `"${input}" — dialect: ${dialect}`, ms: ms() })
+
+  // Check full phrase as expression first
   const expr = await findExpression(client, input)
   if (expr) {
+    log.push({ step: 'expression hit', detail: `Found in expressions table → "${expr.bete_western}"`, ms: ms() })
     return {
       input,
       sentence:          expr.bete_western,
@@ -267,20 +273,34 @@ export async function translate(
       rules_applied:     ['expression idiomatique'],
       tokens:            [],
       cached:            false,
+      debug:             log,
     }
   }
+  log.push({ step: 'expression lookup', detail: 'No match in expressions table', ms: ms() })
 
   // Resolve each token in parallel
   const rawTokens = input.split(/\s+/).filter(Boolean)
+  log.push({ step: 'tokenize', detail: `${rawTokens.length} token(s): ${rawTokens.map(t => `"${t}"`).join(', ')}`, ms: ms() })
+
   const resolvedTokens = await Promise.all(
     rawTokens.map(t => resolveToken(client, t, dialect))
   )
 
-  // Retrieve grammar rules (sentence-level embedding)
-  const rules = await retrieveGrammarRules(client, input)
+  for (const t of resolvedTokens) {
+    if (t.source === 'inflected_forms') {
+      log.push({ step: `token "${t.french_form}"`, detail: `inflected_forms hit → "${t.candidates[0]?.bete_western_form}"`, ms: ms() })
+    } else if (t.source === 'vector') {
+      const top = t.candidates[0]
+      log.push({ step: `token "${t.french_form}"`, detail: `vector → lemma "${t.french_clean}", top match "${top?.bete_western_form}" (score ${top?.similarity.toFixed(3)})`, ms: ms() })
+    } else {
+      log.push({ step: `token "${t.french_form}"`, detail: `unknown — no match found`, ms: ms() })
+    }
+  }
 
-  // Fallback: if all tokens resolved with single unambiguous candidate and no rules,
-  // assemble directly without Claude
+  // Retrieve grammar rules
+  const rules = await retrieveGrammarRules(client, input)
+  log.push({ step: 'grammar rules', detail: rules.length > 0 ? `${rules.length} rule(s): ${rules.map(r => r.pattern_french).join(', ')}` : 'no validated rules with embeddings', ms: ms() })
+
   const allUnambiguous = resolvedTokens.every(t => t.candidates.length === 1)
   const noRules = rules.length === 0
 
@@ -294,12 +314,15 @@ export async function translate(
       .join(' ')
     unknowns = resolvedTokens.filter(t => t.candidates.length === 0).map(t => t.french_form)
     rules_applied = []
+    log.push({ step: 'assembly', detail: 'fast-path (all unambiguous, no rules) — skipped Claude', ms: ms() })
   } else {
     const prompt = buildPrompt(input, resolvedTokens, rules)
+    log.push({ step: 'claude prompt', detail: `${prompt.length} chars — sending to claude-haiku`, ms: ms() })
     try {
       ;({ sentence, unknowns, rules_applied } = await assembleWithClaude(prompt))
-    } catch {
-      // Fallback: concatenate top candidates
+      log.push({ step: 'claude response', detail: `"${sentence}"${unknowns.length ? ` — unknowns: ${unknowns.join(', ')}` : ''}`, ms: ms() })
+    } catch (err) {
+      log.push({ step: 'claude error', detail: `${err} — falling back to concatenation`, ms: ms() })
       sentence = resolvedTokens
         .map(t => t.candidates[0]?.bete_western_form ?? t.french_form)
         .join(' ')
@@ -309,8 +332,8 @@ export async function translate(
   }
 
   const sentence_phonetic = buildPhoneticSentence(sentence, resolvedTokens)
+  log.push({ step: 'done', detail: `→ "${sentence}" / "${sentence_phonetic}" in ${ms()}ms`, ms: ms() })
 
-  // Build FeedbackToken list from top candidates
   const tokens: FeedbackToken[] = resolvedTokens.map(t => ({
     french_word:  t.french_form,
     bete_western: t.candidates[0]?.bete_western_form ?? t.french_form,
@@ -318,5 +341,5 @@ export async function translate(
     lexicon_id:   t.candidates[0]?.lexicon_id,
   }))
 
-  return { input, sentence, sentence_phonetic, unknowns, rules_applied, tokens, cached: false }
+  return { input, sentence, sentence_phonetic, unknowns, rules_applied, tokens, cached: false, debug: log }
 }

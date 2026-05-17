@@ -68,6 +68,34 @@ export function TranslatorOutput({ result }: Props) {
       <p className="text-xs text-muted-foreground">
         {result.cached ? '⚡ Depuis le cache' : '🤖 Traduction générée'}
       </p>
+
+      {result.debug && result.debug.length > 0 && (
+        <details className="text-xs">
+          <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-mono">
+            🔍 Pipeline log ({result.debug[result.debug.length - 1].ms}ms)
+          </summary>
+          <div className="mt-2 rounded border bg-zinc-950 text-zinc-100 p-3 font-mono overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-zinc-400 border-b border-zinc-700">
+                  <th className="text-left pr-4 pb-1 font-normal">ms</th>
+                  <th className="text-left pr-4 pb-1 font-normal">step</th>
+                  <th className="text-left pb-1 font-normal">detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.debug.map((entry, i) => (
+                  <tr key={i} className="border-b border-zinc-800 last:border-0">
+                    <td className="pr-4 py-0.5 text-zinc-500 whitespace-nowrap">{entry.ms}</td>
+                    <td className="pr-4 py-0.5 text-emerald-400 whitespace-nowrap">{entry.step}</td>
+                    <td className="py-0.5 text-zinc-200 break-all">{entry.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
     </div>
   )
 }
