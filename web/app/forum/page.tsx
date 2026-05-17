@@ -34,6 +34,8 @@ export default async function ForumPage({ searchParams }: Props) {
   const supabase = await createClient()
   const category = (cat && cat !== 'all' ? cat : null) as ForumCategory | null
   const threads = await getThreads(supabase, category)
+  const { data: { user } } = await supabase.auth.getUser()
+  const isAuthed = !!user
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-10 py-10">
@@ -65,13 +67,22 @@ export default async function ForumPage({ searchParams }: Props) {
           })}
         </div>
 
-        <Link
-          href="/forum/new"
-          className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 h-9 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Nouveau sujet
-        </Link>
+        {isAuthed ? (
+          <Link
+            href="/forum/new"
+            className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 h-9 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Nouveau sujet
+          </Link>
+        ) : (
+          <Link
+            href="/auth?next=/forum/new"
+            className="inline-flex items-center gap-2 border border-primary text-primary text-sm font-semibold px-4 h-9 rounded-lg hover:bg-primary/10 transition-colors shrink-0"
+          >
+            Connectez-vous pour poster
+          </Link>
+        )}
       </div>
 
       {threads.length === 0 ? (
@@ -79,11 +90,11 @@ export default async function ForumPage({ searchParams }: Props) {
           <MessageCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground mb-4">Aucun sujet pour l&apos;instant. Soyez le premier !</p>
           <Link
-            href="/forum/new"
+            href={isAuthed ? '/forum/new' : '/auth?next=/forum/new'}
             className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 h-9 rounded-lg hover:bg-primary/90 transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
-            Créer un sujet
+            {isAuthed ? 'Créer un sujet' : 'Se connecter pour créer un sujet'}
           </Link>
         </div>
       ) : (

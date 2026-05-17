@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 
-export function ForumReplyForm({ threadId }: { threadId: string }) {
+export function ForumReplyForm({ threadId, isAuthed }: { threadId: string; isAuthed: boolean }) {
   const router = useRouter()
   const supabaseRef = useRef(createClient())
   const [content, setContent]       = useState('')
@@ -43,6 +43,22 @@ export function ForumReplyForm({ threadId }: { threadId: string }) {
     if (err) { setError(err); return }
     setContent('')
     router.refresh()
+  }
+
+  if (!isAuthed) {
+    return (
+      <div className="bg-muted rounded-xl p-6 text-center">
+        <p className="text-sm text-muted-foreground mb-3">
+          Connectez-vous pour participer à la discussion.
+        </p>
+        <a
+          href={`/auth?next=/forum/${threadId}`}
+          className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 h-9 rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          Se connecter
+        </a>
+      </div>
+    )
   }
 
   return (

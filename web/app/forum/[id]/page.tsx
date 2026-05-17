@@ -29,6 +29,9 @@ export default async function ThreadPage({ params }: Props) {
     getThreadPosts(supabase, id),
   ])
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const isAuthed = !!user
+
   if (!t) notFound()
 
   return (
@@ -105,7 +108,7 @@ export default async function ThreadPage({ params }: Props) {
       </div>
 
       {/* Reply form */}
-      <ForumReplyForm threadId={id} />
+      <ForumReplyForm threadId={id} isAuthed={isAuthed} />
     </div>
   )
 }
