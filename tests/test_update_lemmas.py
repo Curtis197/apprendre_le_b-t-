@@ -12,6 +12,7 @@ def test_er_verb_inflections():
     assert lemmatize_fr("aimait") == "aimer"
     assert lemmatize_fr("aimées") == "aimer"
     assert lemmatize_fr("aimant") == "aimer"
+    assert lemmatize_fr("aimé") == "aimer"
 
 def test_ir_verb_inflections():
     assert lemmatize_fr("finissons") == "finir"

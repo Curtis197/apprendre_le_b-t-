@@ -22,28 +22,41 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
   const supabaseRef = useRef(createClient())
 
   useEffect(() => {
-    supabaseRef.current.auth.getUser().then(({ data }) => {
-      setIsAuthed(!!data.user)
+    const sb = supabaseRef.current
+    sb.auth.getUser().then(async ({ data }) => {
+      if (!data.user) { setIsAuthed(false); return }
+      setIsAuthed(true)
+      const { data: existing } = await sb
+        .from('user_votes')
+        .select('direction')
+        .eq('table_name', table)
+        .eq('row_id', id)
+        .maybeSingle()
+      setVoted((existing?.direction as 'up' | 'down') ?? null)
     })
-  }, [])
+  }, [table, id])
 
-  async function vote(direction: 'up' | 'down') {
-    if (voted === direction || !isAuthed) return
+  async function handleVote(direction: 'up' | 'down') {
+    if (!isAuthed) return
+
+    // Optimistic update
+    const prevVoted = voted
+    const prevUpvotes = upvotes
     const delta = direction === 'up'
-      ? (voted === 'down' ? 2 : 1)
-      : (voted === 'up' ? -2 : -1)
-
+      ? (voted === 'up' ? -1 : voted === 'down' ? 2 : 1)
+      : (voted === 'down' ? 1 : voted === 'up' ? -2 : -1)
     setUpvotes(v => Math.max(0, v + delta))
-    setVoted(direction)
+    setVoted(voted === direction ? null : direction)
 
     const { data, error } = await supabaseRef.current
-      .rpc('increment_upvotes', { table_name: table, row_id: id, delta })
+      .rpc('vote', { p_table_name: table, p_row_id: id, p_direction: direction })
 
-    if (error) {
-      setUpvotes(initialUpvotes)
-      setVoted(null)
-    } else if (typeof data === 'number') {
-      setUpvotes(data)
+    if (error || !data) {
+      setUpvotes(prevUpvotes)
+      setVoted(prevVoted)
+    } else {
+      setUpvotes(data.upvotes)
+      setVoted(data.direction ?? null)
     }
   }
 
@@ -69,7 +82,7 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
         variant={voted === 'up' ? 'default' : 'outline'}
         size="sm"
         aria-label="Voter pour"
-        onClick={() => vote('up')}
+        onClick={() => handleVote('up')}
       >
         ▲ {upvotes}
       </Button>
@@ -77,7 +90,7 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
         variant={voted === 'down' ? 'default' : 'outline'}
         size="sm"
         aria-label="Voter contre"
-        onClick={() => vote('down')}
+        onClick={() => handleVote('down')}
       >
         ▼
       </Button>

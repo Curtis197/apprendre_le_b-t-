@@ -12,36 +12,40 @@ IRREGULARS = {
     # être
     "suis": "être", "es": "être", "est": "être", "sommes": "être", "êtes": "être", "sont": "être",
     "étais": "être", "était": "être", "étions": "être", "étiez": "être", "étaient": "être",
+    "serai": "être", "seras": "être", "sera": "être", "serons": "être", "serez": "être", "seront": "être",
     "été": "être",
     # avoir
     "ai": "avoir", "as": "avoir", "avons": "avoir", "avez": "avoir", "ont": "avoir",
     "avais": "avoir", "avait": "avoir", "avions": "avoir", "aviez": "avoir", "avaient": "avoir",
+    "aurai": "avoir", "auras": "avoir", "aura": "avoir", "aurons": "avoir", "aurez": "avoir", "auront": "avoir",
     "eu": "avoir",
     # aller
     "vais": "aller", "vas": "aller", "va": "aller", "allons": "aller", "allez": "aller", "vont": "aller",
     "allais": "aller", "allait": "aller", "allaient": "aller",
+    "irai": "aller", "iras": "aller", "ira": "aller", "irons": "aller", "irez": "aller", "iront": "aller",
     # faire
     "fais": "faire", "fait": "faire", "faisons": "faire", "faites": "faire", "font": "faire",
     "faisais": "faire", "faisait": "faire", "faisaient": "faire",
+    "ferai": "faire", "feras": "faire", "fera": "faire", "ferons": "faire", "ferez": "faire", "feront": "faire",
     # pouvoir
     "peux": "pouvoir", "peut": "pouvoir", "pouvons": "pouvoir", "pouvez": "pouvoir", "peuvent": "pouvoir",
-    "pouvait": "pouvoir",
+    "pouvait": "pouvoir", "pouvaient": "pouvoir",
     # vouloir
     "veux": "vouloir", "veut": "vouloir", "voulons": "vouloir", "voulez": "vouloir", "veulent": "vouloir",
-    "voulait": "vouloir",
+    "voulait": "vouloir", "voulais": "vouloir", "voulaient": "vouloir",
     # venir
     "viens": "venir", "vient": "venir", "venons": "venir", "venez": "venir", "viennent": "venir",
-    "venait": "venir",
+    "venait": "venir", "venais": "venir", "venaient": "venir",
     # voir
     "vois": "voir", "voit": "voir", "voyons": "voir", "voyez": "voir", "voient": "voir",
-    "voyait": "voir",
+    "voyait": "voir", "voyais": "voir", "voyaient": "voir",
     # irregular plurals
     "chevaux": "cheval", "journaux": "journal", "travaux": "travail", "yeux": "œil",
 }
 
 STOPWORDS = {
     "le", "la", "les", "un", "une", "des", "du", "au", "aux", "de",
-    "et", "ou", "mais", "donc", "or", "ni", "car", "si", "que", "qui", "dont",
+    "et", "ou", "où", "mais", "donc", "or", "ni", "car", "si", "que", "qui", "dont",
     "je", "tu", "il", "elle", "nous", "vous", "ils", "elles", "on",
     "me", "te", "se", "lui", "y", "en", "ce", "cet", "cette", "ces",
     "mon", "ton", "son", "ma", "ta", "sa", "nos", "vos", "leur", "leurs",
@@ -63,11 +67,12 @@ RULES = [
     ("erons",    "er", 3),
     ("erez",     "er", 3),
     ("ées",      "er", 3),
+    ("ée",       "er", 3),
     ("ant",      "er", 3),
     ("ait",      "er", 3),
     ("ons",      "er", 3),
-    ("ée",       "er", 3),
     ("és",       "er", 3),
+    ("é",        "er", 3),
     ("ez",       "er", 3),
     ("es",       "e",  4),
     ("s",        "",   4),
