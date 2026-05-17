@@ -31,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NavLink href="/forum">Forum</NavLink>
               <NavLink href="/resources">Ressources</NavLink>
               <NavLink href="/contribute">Contribuer</NavLink>
+              <NavLink href="/contribute#soutenir">Soutenir</NavLink>
               <NavLink href="/contact">Contact</NavLink>
             </div>
             <div className="flex items-center gap-3 ml-auto">
