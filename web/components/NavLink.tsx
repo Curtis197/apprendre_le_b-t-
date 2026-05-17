@@ -13,7 +13,8 @@ interface Props {
 export function NavLink({ href, children, className }: Props) {
   const pathname = usePathname()
   const hrefPath = href.split('#')[0]
-  const isActive = pathname === hrefPath || (hrefPath !== '/' && pathname.startsWith(hrefPath))
+  const hasHash = href.includes('#')
+  const isActive = !hasHash && (pathname === hrefPath || (hrefPath !== '/' && pathname.startsWith(hrefPath)))
   return (
     <Link
       href={href}
