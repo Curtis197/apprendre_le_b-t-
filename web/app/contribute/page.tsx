@@ -1,11 +1,13 @@
 // web/app/contribute/page.tsx
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import { PenLine, ShieldCheck, CheckCircle2, Clock } from 'lucide-react'
 import { ContributionForm } from '@/components/ContributionForm'
 import { PendingContributions } from '@/components/PendingContributions'
 import { createClient } from '@/lib/supabase-server'
 import { DialectSelector } from '@/components/DialectSelector'
+import { DonateForm } from '@/components/DonateForm'
 
 const LEVELS = [
   { name: 'Débutant',      initial: 'D', min: 0,  next: 3  },
@@ -57,6 +59,13 @@ export default async function ContributePage() {
             Les contributions avec 3 votes sont intégrées au traducteur.
           </p>
         </div>
+      </div>
+
+      {/* Financial support */}
+      <div className="mb-8" id="soutenir">
+        <Suspense fallback={null}>
+          <DonateForm />
+        </Suspense>
       </div>
 
       {/* Two-column layout */}
