@@ -57,6 +57,7 @@ export default function ContactPage() {
   const supabase = useMemo(() => createClient(), [])
   const [entries, setEntries] = useState<DirectoryEntry[]>([])
   const [loadingDir, setLoadingDir] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
 
   const [typeFilter, setTypeFilter] = useState('all')
   const [canalFilter, setCanalFilter] = useState('all')
@@ -73,8 +74,16 @@ export default function ContactPage() {
       .select('id, name, type, canal, bio, contact, avatar_url, whatsapp_url, tiktok_url, instagram_url, facebook_url')
       .eq('is_public', true)
       .in('type', ['group', 'teacher'])
-      .then(({ data }) => {
-        setEntries((data as DirectoryEntry[]) ?? [])
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('directory fetch failed', error)
+          setFetchError(true)
+        } else {
+          const valid = ((data ?? []) as DirectoryEntry[]).filter(
+            e => e.canal !== null && e.canal in CANAL_META
+          )
+          setEntries(valid)
+        }
         setLoadingDir(false)
       })
   }, [supabase])
@@ -144,6 +153,10 @@ export default function ContactPage() {
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="bg-muted animate-pulse rounded-2xl h-44" />
           ))
+        ) : fetchError ? (
+          <div className="col-span-full bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+            <p className="text-sm text-red-700">Impossible de charger le répertoire. Veuillez réessayer.</p>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="col-span-full bg-muted rounded-2xl p-8 text-center">
             <p className="text-sm text-muted-foreground">Aucun résultat pour ces filtres.</p>
@@ -153,7 +166,7 @@ export default function ContactPage() {
             const meta = CANAL_META[entry.canal]
             const url  = canalUrl(entry)
             return (
-              <div key={entry.id} className={`bg-card border-2 ${meta.borderColor} rounded-2xl p-5 flex flex-col items-center text-center gap-2`}>
+              <div key={entry.id} className={`bg-card border-2 ${meta.borderColor} rounded-2xl p-5 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow`}>
                 <div className={`w-12 h-12 ${meta.iconBg} rounded-full flex items-center justify-center text-2xl overflow-hidden`}>
                   {entry.avatar_url
                     ? <img src={entry.avatar_url} alt={entry.name} className="w-12 h-12 rounded-full object-cover" referrerPolicy="no-referrer" />
