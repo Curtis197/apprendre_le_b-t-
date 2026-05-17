@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Users, Mic2 } from 'lucide-react'
 import { PatternDivider } from '@/components/PatternDivider'
 import { HomeTranslator } from '@/components/HomeTranslator'
+import { FundingWidget } from '@/components/FundingWidget'
 import { createClient } from '@/lib/supabase-server'
 import type { LexiconEntry } from '@/lib/types'
 
@@ -91,6 +92,9 @@ export default async function HomePage() {
 
       {/* Translator */}
       <HomeTranslator />
+
+      {/* Monthly funding */}
+      <FundingWidget />
 
       {/* 3 Words of the Day */}
       {words.length > 0 && (
