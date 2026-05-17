@@ -15,6 +15,9 @@ from pipeline.bootstrap_lexicon import (
 from pipeline.vectorize import vectorize_lexicon
 from pipeline.populate_examples import populate_examples
 from pipeline.tag_pos import tag_pos
+from pipeline.update_lemmas import update_lemmas
+from pipeline.vectorize_grammar import vectorize_grammar_rules
+from pipeline.mine_inflections import mine_inflections
 
 
 def _client():
@@ -77,6 +80,15 @@ def run(dialect: str) -> None:
 
     print("\nStep 7c/7 — Tag POS")
     tag_pos(dialect=dialect)
+
+    print("\nStep 8/10 — Update french_lemma")
+    update_lemmas(dialect=dialect)
+
+    print("\nStep 9/10 — Vectorize grammar rules")
+    vectorize_grammar_rules()
+
+    print("\nStep 10/10 — Mine inflected forms")
+    mine_inflections(dialect=dialect)
 
     print(f"\n=== Done: {name} ===\n")
 
