@@ -49,6 +49,12 @@ export function AuthNav() {
 
   return (
     <div className="ml-auto flex items-center gap-3">
+      <Link
+        href="/profile"
+        className="text-sm text-muted-foreground hover:text-foreground"
+      >
+        Mon profil
+      </Link>
       <span className="text-xs text-muted-foreground truncate max-w-[140px]" title={email}>
         {email}
       </span>
