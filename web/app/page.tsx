@@ -5,7 +5,6 @@ import { Suspense } from 'react'
 import { Users, Mic2 } from 'lucide-react'
 import { PatternDivider } from '@/components/PatternDivider'
 import { HomeTranslator } from '@/components/HomeTranslator'
-import { FundingWidget } from '@/components/FundingWidget'
 import { DonateForm } from '@/components/DonateForm'
 import { createClient } from '@/lib/supabase-server'
 import type { LexiconEntry } from '@/lib/types'
@@ -120,7 +119,6 @@ export default async function HomePage() {
       <PatternDivider />
 
       {/* Financial contribution */}
-      <FundingWidget />
       <Suspense fallback={null}>
         <DonateForm />
       </Suspense>

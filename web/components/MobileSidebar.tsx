@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Home, BookOpen, BookText, MessageCircle, Layers, PlusCircle, Phone, User } from 'lucide-react'
+import { Menu, X, Home, BookOpen, BookText, MessageCircle, Layers, PlusCircle, Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AuthNav } from './AuthNav'
-import { createClient } from '@/lib/supabase-browser'
 
 const links = [
   { href: '/', label: 'Accueil', icon: Home },
@@ -23,16 +22,6 @@ export function MobileSidebar() {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
-  const [isAuthed, setIsAuthed] = useState(false)
-
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setIsAuthed(!!data.user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthed(!!session?.user)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -89,21 +78,6 @@ export function MobileSidebar() {
               </Link>
             )
           })}
-          {isAuthed && (
-            <Link
-              href="/profile"
-              onClick={() => setOpen(false)}
-              className={cn(
-                'flex items-center gap-3 px-6 py-4 text-base transition-colors border-l-4',
-                pathname === '/profile'
-                  ? 'bg-primary/10 text-primary border-primary font-semibold'
-                  : 'text-foreground hover:bg-muted border-transparent'
-              )}
-            >
-              <User className="w-5 h-5 shrink-0" />
-              Mon Profil
-            </Link>
-          )}
         </nav>
         <div className="px-6 py-4 border-t border-border shrink-0">
           <AuthNav />

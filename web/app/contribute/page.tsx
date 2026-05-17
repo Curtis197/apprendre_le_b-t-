@@ -8,7 +8,6 @@ import { PendingContributions } from '@/components/PendingContributions'
 import { createClient } from '@/lib/supabase-server'
 import { DialectSelector } from '@/components/DialectSelector'
 import { DonateForm } from '@/components/DonateForm'
-import { FundingWidget } from '@/components/FundingWidget'
 
 const LEVELS = [
   { name: 'Débutant',      initial: 'D', min: 0,  next: 3  },
@@ -162,12 +161,9 @@ export default async function ContributePage() {
       </div>
 
       {/* Financial contribution */}
-      <FundingWidget />
-      <div className="mt-6">
-        <Suspense fallback={null}>
-          <DonateForm />
-        </Suspense>
-      </div>
+      <Suspense fallback={null}>
+        <DonateForm />
+      </Suspense>
     </div>
   )
 }

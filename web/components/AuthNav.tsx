@@ -8,8 +8,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export function AuthNav() {
   const router = useRouter()
   const supabaseRef = useRef<SupabaseClient | null>(null)
-  const [email, setEmail] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
+
+  function resolveName(user: { email?: string; user_metadata?: Record<string, unknown> } | null | undefined): string | null {
+    if (!user) return null
+    const name = user.user_metadata?.full_name as string | undefined
+    return name?.trim() || user.email || null
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -17,11 +23,11 @@ export function AuthNav() {
     let active = true
     supabase.auth.getUser().then(({ data }) => {
       if (!active) return
-      setEmail(data.user?.email ?? null)
+      setDisplayName(resolveName(data.user))
       setReady(true)
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user.email ?? null)
+      setDisplayName(resolveName(session?.user))
     })
     return () => {
       active = false
@@ -36,7 +42,7 @@ export function AuthNav() {
 
   if (!ready) return <div className="ml-auto h-6 w-20" />
 
-  if (!email) {
+  if (!displayName) {
     return (
       <Link
         href="/auth"
@@ -49,14 +55,8 @@ export function AuthNav() {
 
   return (
     <div className="ml-auto flex items-center gap-3">
-      <Link
-        href="/profile"
-        className="text-sm text-muted-foreground hover:text-foreground"
-      >
-        Mon profil
-      </Link>
-      <span className="text-xs text-muted-foreground truncate max-w-[140px]" title={email}>
-        {email}
+      <span className="text-sm text-muted-foreground truncate max-w-[160px]" title={displayName}>
+        {displayName}
       </span>
       <button
         onClick={handleSignOut}
