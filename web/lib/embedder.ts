@@ -3,7 +3,7 @@ import 'server-only'
 // Produces 384-dim vectors compatible with lexicon.embedding (same model as pipeline/vectorize.py)
 
 const HF_URL =
-  'https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+  'https://router.huggingface.co/hf-inference/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/pipeline/feature-extraction'
 
 function meanPool(tokenEmbeddings: number[][]): number[] {
   const dim = tokenEmbeddings[0].length
