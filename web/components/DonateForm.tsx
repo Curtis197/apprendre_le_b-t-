@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Heart } from 'lucide-react'
 
 const PRESETS = [
-  { label: '1€', cents: 100 },
   { label: '2€', cents: 200 },
   { label: '5€', cents: 500 },
   { label: '10€', cents: 1000 },
@@ -38,8 +37,8 @@ export function DonateForm() {
 
   async function handleSubmit() {
     const amount = getAmountCents()
-    if (!amount || amount < 100 || amount > 50000) {
-      setError('Veuillez choisir un montant entre 1€ et 500€.')
+    if (!amount || amount < 200 || amount > 50000) {
+      setError('Veuillez choisir un montant entre 2€ et 500€.')
       return
     }
     setError(null)

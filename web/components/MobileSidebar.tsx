@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Home, BookOpen, BookText, MessageCircle, Layers, PlusCircle, Phone, Heart, User } from 'lucide-react'
+import { Menu, X, Home, BookOpen, BookText, MessageCircle, Layers, PlusCircle, Phone, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AuthNav } from './AuthNav'
 import { createClient } from '@/lib/supabase-browser'
@@ -16,7 +16,6 @@ const links = [
   { href: '/forum', label: 'Forum', icon: MessageCircle },
   { href: '/resources', label: 'Ressources', icon: Layers },
   { href: '/contribute', label: 'Contribuer', icon: PlusCircle },
-  { href: '/contribute#soutenir', label: 'Soutenir', icon: Heart },
   { href: '/contact', label: 'Contact', icon: Phone },
 ]
 

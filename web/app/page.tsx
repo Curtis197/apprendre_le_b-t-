@@ -1,10 +1,12 @@
 // web/app/page.tsx
 import Link from 'next/link'
 import Image from 'next/image'
+import { Suspense } from 'react'
 import { Users, Mic2 } from 'lucide-react'
 import { PatternDivider } from '@/components/PatternDivider'
 import { HomeTranslator } from '@/components/HomeTranslator'
 import { FundingWidget } from '@/components/FundingWidget'
+import { DonateForm } from '@/components/DonateForm'
 import { createClient } from '@/lib/supabase-server'
 import type { LexiconEntry } from '@/lib/types'
 
@@ -93,9 +95,6 @@ export default async function HomePage() {
       {/* Translator */}
       <HomeTranslator />
 
-      {/* Monthly funding */}
-      <FundingWidget />
-
       {/* 3 Words of the Day */}
       {words.length > 0 && (
         <div className="grid md:grid-cols-3 gap-6">
@@ -119,6 +118,12 @@ export default async function HomePage() {
       )}
 
       <PatternDivider />
+
+      {/* Financial contribution */}
+      <FundingWidget />
+      <Suspense fallback={null}>
+        <DonateForm />
+      </Suspense>
     </div>
   )
 }

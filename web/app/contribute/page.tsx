@@ -8,6 +8,7 @@ import { PendingContributions } from '@/components/PendingContributions'
 import { createClient } from '@/lib/supabase-server'
 import { DialectSelector } from '@/components/DialectSelector'
 import { DonateForm } from '@/components/DonateForm'
+import { FundingWidget } from '@/components/FundingWidget'
 
 const LEVELS = [
   { name: 'Débutant',      initial: 'D', min: 0,  next: 3  },
@@ -59,13 +60,6 @@ export default async function ContributePage() {
             Les contributions avec 3 votes sont intégrées au traducteur.
           </p>
         </div>
-      </div>
-
-      {/* Financial support */}
-      <div className="mb-8" id="soutenir">
-        <Suspense fallback={null}>
-          <DonateForm />
-        </Suspense>
       </div>
 
       {/* Two-column layout */}
@@ -156,7 +150,7 @@ export default async function ContributePage() {
       </div>
 
       {/* Pending Contributions */}
-      <div>
+      <div className="mb-10">
         <h2 className="font-heading text-2xl font-bold mb-2 flex items-center gap-2">
           <Clock className="w-6 h-6 text-muted-foreground" />
           En attente de validation
@@ -165,6 +159,14 @@ export default async function ContributePage() {
           Votez pour valider les contributions de la communauté.
         </p>
         <PendingContributions />
+      </div>
+
+      {/* Financial contribution */}
+      <FundingWidget />
+      <div className="mt-6">
+        <Suspense fallback={null}>
+          <DonateForm />
+        </Suspense>
       </div>
     </div>
   )
