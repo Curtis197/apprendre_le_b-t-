@@ -14,9 +14,9 @@ interface VoteButtonsProps {
   upvotes: number
 }
 
-export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsProps) {
-  const [upvotes, setUpvotes] = useState(initialUpvotes)
-  const [voted, setVoted] = useState<'up' | null>(null)
+export function VoteButtons({ table, id, upvotes: initialScore }: VoteButtonsProps) {
+  const [score, setScore] = useState(initialScore)
+  const [voted, setVoted] = useState<'up' | 'down' | null>(null)
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null)
   const pathname = usePathname()
   const supabaseRef = useRef(createClient())
@@ -31,31 +31,31 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
         .eq('table_name', table)
         .eq('row_id', id)
         .maybeSingle()
-      setVoted(existing?.direction === 'up' ? 'up' : null)
+      setVoted((existing?.direction as 'up' | 'down') ?? null)
       setIsAuthed(true)
     })
   }, [table, id])
 
-  async function handleVote() {
+  async function handleVote(direction: 'up' | 'down') {
     if (!isAuthed) return
 
-    const direction = 'up'
     const prevVoted = voted
-    const prevUpvotes = upvotes
-    const delta = voted === 'up' ? -1 : 1
+    const prevScore = score
+    const delta = direction === 'up'
+      ? (voted === 'up' ? -1 : voted === 'down' ? 2 : 1)
+      : (voted === 'down' ? 1 : voted === 'up' ? -2 : -1)
 
-    // Optimistic update
-    setUpvotes(v => Math.max(0, v + delta))
-    setVoted(voted === 'up' ? null : 'up')
+    setScore(s => s + delta)
+    setVoted(voted === direction ? null : direction)
 
     const { data, error } = await supabaseRef.current
       .rpc('vote', { p_table_name: table, p_row_id: id, p_direction: direction })
 
     if (error || !data) {
-      setUpvotes(prevUpvotes)
+      setScore(prevScore)
       setVoted(prevVoted)
     } else {
-      setUpvotes(data.upvotes)
+      setScore(data.upvotes)
       setVoted(data.direction ?? null)
     }
   }
@@ -71,19 +71,30 @@ export function VoteButtons({ table, id, upvotes: initialUpvotes }: VoteButtonsP
         className="text-xs text-muted-foreground hover:text-primary transition-colors"
         title="Connectez-vous pour voter"
       >
-        ▲ {upvotes}
+        ▲ {score}
       </Link>
     )
   }
 
   return (
-    <Button
-      variant={voted === 'up' ? 'default' : 'outline'}
-      size="sm"
-      aria-label="Voter pour"
-      onClick={handleVote}
-    >
-      ▲ {upvotes}
-    </Button>
+    <div className="flex items-center gap-1">
+      <Button
+        variant={voted === 'up' ? 'default' : 'outline'}
+        size="sm"
+        aria-label="Voter pour"
+        onClick={() => handleVote('up')}
+      >
+        ▲
+      </Button>
+      <span className="text-sm font-semibold w-6 text-center tabular-nums">{score}</span>
+      <Button
+        variant={voted === 'down' ? 'default' : 'outline'}
+        size="sm"
+        aria-label="Voter contre"
+        onClick={() => handleVote('down')}
+      >
+        ▼
+      </Button>
+    </div>
   )
 }
