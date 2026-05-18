@@ -41,11 +41,11 @@ export function VoteButtons({ table, id, upvotes: initialScore }: VoteButtonsPro
 
     const prevVoted = voted
     const prevScore = score
-    const delta = direction === 'up'
-      ? (voted === 'up' ? -1 : voted === 'down' ? 2 : 1)
-      : (voted === 'down' ? 1 : voted === 'up' ? -2 : -1)
 
-    setScore(s => s + delta)
+    // Optimistic: undo old vote contribution, apply new one
+    const undo = voted === 'up' ? -1 : voted === 'down' ? 1 : 0
+    const apply = voted === direction ? 0 : direction === 'up' ? 1 : -1
+    setScore(s => s + undo + apply)
     setVoted(voted === direction ? null : direction)
 
     const { data, error } = await supabaseRef.current
