@@ -17,7 +17,7 @@ export function AuthNav() {
       .from('profiles')
       .select('name')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
     return data?.name?.trim() || fallback
   }
 
@@ -46,6 +46,7 @@ export function AuthNav() {
       } else {
         setDisplayName(null)
       }
+      setReady(true)
     })
 
     return () => {
