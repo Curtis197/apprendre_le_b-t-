@@ -26,14 +26,18 @@ export function AuthNav() {
     supabaseRef.current = supabase
     let active = true
 
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!active) return
-      if (data.user) {
-        const name = await fetchName(data.user.id, data.user.email ?? '')
-        if (active) setDisplayName(name)
-      }
-      setReady(true)
-    })
+    supabase.auth.getUser()
+      .then(async ({ data }) => {
+        if (!active) return
+        if (data.user) {
+          const name = await fetchName(data.user.id, data.user.email ?? '')
+          if (active) setDisplayName(name)
+        }
+        if (active) setReady(true)
+      })
+      .catch(() => {
+        if (active) setReady(true)
+      })
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
