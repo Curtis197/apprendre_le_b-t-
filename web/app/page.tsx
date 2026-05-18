@@ -46,49 +46,104 @@ export default async function HomePage() {
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10 space-y-10">
 
       {/* Hero: Patrimoine Vivant */}
-      <div className="relative rounded-2xl overflow-hidden border border-border min-h-[360px]">
-        <Image
-          src="/patrimoine-vivant.jpg"
-          alt="Patrimoine vivant — Culture bété de Côte d'Ivoire"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-        <div className="relative z-10 p-8 md:p-12 flex flex-col justify-end h-full min-h-[360px]">
-          <span className="bg-secondary text-white text-xs font-semibold rounded-full px-3 py-1 self-start mb-4">
-            Patrimoine Vivant
-          </span>
-          <h1 className="font-heading text-3xl md:text-5xl font-bold text-white mb-3 max-w-2xl leading-tight">
-            La langue bété,<br />une culture à préserver
-          </h1>
-          <p className="text-white/80 text-base md:text-lg mb-6 max-w-xl leading-relaxed">
-            Parlée par plus de 3 millions de personnes en Côte d&apos;Ivoire, la langue bété
-            est porteuse d&apos;une tradition orale exceptionnelle.
-          </p>
-          <div className="flex flex-wrap gap-3 mb-6">
-            <span className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 text-sm text-white flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" /> 3M+ Locuteurs
-            </span>
-            <span className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 text-sm text-white flex items-center gap-1.5">
-              <Mic2 className="w-3.5 h-3.5" /> Riche Folklore
-            </span>
+      <div className="rounded-2xl overflow-hidden border border-border">
+
+        {/* ── MOBILE: stacked (image then text) ───────────────────── */}
+        <div className="md:hidden">
+          <div className="relative w-full aspect-[3/4]">
+            <Image
+              src="/hero-mobile-image.jpg"
+              alt="Patrimoine vivant — Culture bété de Côte d'Ivoire"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
           </div>
-          <div className="flex gap-3">
-            <Link
-              href="/lexicon"
-              className="bg-white text-primary font-semibold px-6 h-10 inline-flex items-center rounded-lg text-sm hover:bg-white/90 transition-colors"
-            >
-              Explorer le Lexique
-            </Link>
-            <Link
-              href="/resources"
-              className="border border-white/60 text-white font-semibold px-6 h-10 inline-flex items-center rounded-lg text-sm hover:bg-white/10 transition-colors"
-            >
-              Voir les Ressources
-            </Link>
+          <div className="bg-primary text-primary-foreground px-5 py-7">
+            <span className="bg-secondary text-white text-xs font-semibold rounded-full px-3 py-1 inline-block mb-4">
+              Patrimoine Vivant
+            </span>
+            <h1 className="font-heading text-3xl font-bold mb-3 leading-tight">
+              La langue bété,<br />une culture à préserver
+            </h1>
+            <p className="text-primary-foreground/85 text-sm mb-5 leading-relaxed">
+              Parlée par plus de 3 millions de personnes en Côte d&apos;Ivoire, la langue bété
+              est porteuse d&apos;une tradition orale exceptionnelle.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-5">
+              <span className="bg-primary-foreground/15 rounded-full px-3 py-1.5 text-sm text-primary-foreground flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> 3M+ Locuteurs
+              </span>
+              <span className="bg-primary-foreground/15 rounded-full px-3 py-1.5 text-sm text-primary-foreground flex items-center gap-1.5">
+                <Mic2 className="w-3.5 h-3.5" /> Riche Folklore
+              </span>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <Link
+                href="/lexicon"
+                className="bg-white text-primary font-semibold px-6 h-10 inline-flex items-center rounded-lg text-sm hover:bg-white/90 transition-colors"
+              >
+                Explorer le Lexique
+              </Link>
+              <Link
+                href="/resources"
+                className="border border-primary-foreground/40 text-primary-foreground font-semibold px-6 h-10 inline-flex items-center rounded-lg text-sm hover:bg-primary-foreground/10 transition-colors"
+              >
+                Voir les Ressources
+              </Link>
+            </div>
           </div>
         </div>
+
+        {/* ── DESKTOP: image with overlay ─────────────────────────── */}
+        <div className="hidden md:block relative min-h-[360px]">
+          <Image
+            src="/patrimoine-vivant.jpg"
+            alt="Patrimoine vivant — Culture bété de Côte d'Ivoire"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+          <div className="relative z-10 p-12 flex flex-col justify-end h-full min-h-[360px]">
+            <span className="bg-secondary text-white text-xs font-semibold rounded-full px-3 py-1 self-start mb-4">
+              Patrimoine Vivant
+            </span>
+            <h1 className="font-heading text-5xl font-bold text-white mb-3 max-w-2xl leading-tight">
+              La langue bété,<br />une culture à préserver
+            </h1>
+            <p className="text-white/80 text-lg mb-6 max-w-xl leading-relaxed">
+              Parlée par plus de 3 millions de personnes en Côte d&apos;Ivoire, la langue bété
+              est porteuse d&apos;une tradition orale exceptionnelle.
+            </p>
+            <div className="flex flex-wrap gap-3 mb-6">
+              <span className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 text-sm text-white flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> 3M+ Locuteurs
+              </span>
+              <span className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 text-sm text-white flex items-center gap-1.5">
+                <Mic2 className="w-3.5 h-3.5" /> Riche Folklore
+              </span>
+            </div>
+            <div className="flex gap-3">
+              <Link
+                href="/lexicon"
+                className="bg-white text-primary font-semibold px-6 h-10 inline-flex items-center rounded-lg text-sm hover:bg-white/90 transition-colors"
+              >
+                Explorer le Lexique
+              </Link>
+              <Link
+                href="/resources"
+                className="border border-white/60 text-white font-semibold px-6 h-10 inline-flex items-center rounded-lg text-sm hover:bg-white/10 transition-colors"
+              >
+                Voir les Ressources
+              </Link>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Translator */}
