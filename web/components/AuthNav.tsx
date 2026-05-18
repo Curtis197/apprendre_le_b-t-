@@ -39,7 +39,13 @@ export function AuthNav() {
         if (active) setReady(true)
       })
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        await supabase.auth.signOut()
+        setDisplayName(null)
+        setReady(true)
+        return
+      }
       if (session?.user) {
         const name = await fetchName(session.user.id, session.user.email ?? '')
         setDisplayName(name)
