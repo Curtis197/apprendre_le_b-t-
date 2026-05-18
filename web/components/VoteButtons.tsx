@@ -52,6 +52,7 @@ export function VoteButtons({ table, id, upvotes: initialScore }: VoteButtonsPro
       .rpc('vote', { p_table_name: table, p_row_id: id, p_direction: direction })
 
     if (error || !data) {
+      console.error('[vote] rpc error', error)
       setScore(prevScore)
       setVoted(prevVoted)
     } else {
