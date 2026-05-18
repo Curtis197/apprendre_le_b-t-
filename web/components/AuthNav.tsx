@@ -55,9 +55,20 @@ export function AuthNav() {
       setReady(true)
     })
 
+    // Re-check session when user returns to the tab after leaving
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getUser().then(({ data }) => {
+          if (!data.user) setDisplayName(null)
+        })
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       active = false
       sub.subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
