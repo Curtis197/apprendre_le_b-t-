@@ -108,6 +108,19 @@ export function HomeTranslator() {
       {error && (
         <p className="text-sm text-destructive mt-2 text-center">{error}</p>
       )}
+
+      {/* Disclaimer */}
+      <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 px-4 py-3 flex gap-3 items-start">
+        <span className="text-amber-500 text-base leading-none mt-0.5">⚠️</span>
+        <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+          Ce traducteur est encore en cours de développement et peut produire des résultats imprécis.{' '}
+          <Link href="/contribute" className="font-semibold underline underline-offset-2 hover:text-amber-600 transition-colors">
+            Contribuez au projet
+          </Link>{' '}
+          pour l&apos;améliorer et enrichir le lexique bété.
+        </p>
+      </div>
+
       <div className="mt-3 text-right">
         <Link href="/translator" className="text-xs text-muted-foreground hover:text-primary transition-colors">
           Ouvrir le traducteur complet →
