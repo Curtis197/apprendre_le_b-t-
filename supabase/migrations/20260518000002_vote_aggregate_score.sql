@@ -1,6 +1,14 @@
 -- Replace delta-based vote() with aggregate recompute.
 -- After each vote, upvotes = SUM(up votes) - SUM(down votes) from user_votes.
 -- No delta logic, no floor, no drift possible.
+-- Drop non-negative check constraints: net score can go negative.
+alter table grammar_rules    drop constraint if exists grammar_rules_upvotes_check;
+alter table expressions      drop constraint if exists expressions_upvotes_check;
+alter table lexicon          drop constraint if exists lexicon_upvotes_check;
+alter table forum_threads    drop constraint if exists forum_threads_upvotes_check;
+alter table forum_posts      drop constraint if exists forum_posts_upvotes_check;
+alter table community_texts  drop constraint if exists community_texts_upvotes_check;
+
 create or replace function vote(
   p_table_name text,
   p_row_id     uuid,
