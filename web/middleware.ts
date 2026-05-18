@@ -2,6 +2,9 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  console.log('[middleware] request:', path)
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -13,6 +16,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
+          console.log('[middleware] setAll cookies:', cookiesToSet.map(c => c.name))
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
@@ -25,10 +29,12 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh the session — writes updated token into the response cookies
-  // so the next server component sees a valid session.
-  // Do NOT use getSession() here — getUser() validates with the auth server.
-  await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error) {
+    console.warn('[middleware] getUser error:', error.message, '| path:', path)
+  } else {
+    console.log('[middleware] getUser:', user ? `user=${user.id}` : 'anonymous', '| path:', path)
+  }
 
   return supabaseResponse
 }

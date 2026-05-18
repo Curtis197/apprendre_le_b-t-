@@ -12,53 +12,72 @@ export function AuthNav() {
   const [ready, setReady] = useState(false)
 
   async function fetchName(userId: string, fallback: string): Promise<string> {
+    console.log('[AuthNav] fetchName — querying profiles for user:', userId)
     const supabase = supabaseRef.current!
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('name')
       .eq('id', userId)
       .maybeSingle()
-    return data?.name?.trim() || fallback
+    if (error) console.error('[AuthNav] fetchName error:', error.message, error.code)
+    const result = data?.name?.trim() || fallback
+    console.log('[AuthNav] fetchName — resolved:', result)
+    return result
   }
 
   useEffect(() => {
     const supabase = createClient()
     supabaseRef.current = supabase
     let active = true
+    console.log('[AuthNav] mount — starting auth init')
 
     supabase.auth.getUser()
-      .then(async ({ data }) => {
+      .then(({ data }) => {
+        console.log('[AuthNav] getUser result:', data.user ? `user=${data.user.id} email=${data.user.email}` : 'no user')
         if (!active) return
         if (data.user) {
-          const name = await fetchName(data.user.id, data.user.email ?? '')
-          if (active) setDisplayName(name)
+          setDisplayName(data.user.email ?? data.user.id)
+          fetchName(data.user.id, data.user.email ?? '').then(name => {
+            console.log('[AuthNav] fetchName result:', name)
+            if (active) setDisplayName(name)
+          }).catch(err => console.error('[AuthNav] fetchName error:', err))
         }
-        if (active) setReady(true)
+        setReady(true)
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('[AuthNav] getUser error:', err)
         if (active) setReady(true)
       })
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AuthNav] onAuthStateChange:', event, session ? `user=${session.user?.id}` : 'no session')
       if (event === 'TOKEN_REFRESHED' && !session) {
-        await supabase.auth.signOut()
-        setDisplayName(null)
-        setReady(true)
+        console.warn('[AuthNav] TOKEN_REFRESHED with no session — signing out stale session')
+        supabase.auth.signOut().then(() => {
+          setDisplayName(null)
+          setReady(true)
+        })
         return
       }
       if (session?.user) {
-        const name = await fetchName(session.user.id, session.user.email ?? '')
-        setDisplayName(name)
+        setDisplayName(session.user.email ?? session.user.id)
+        setReady(true)
+        fetchName(session.user.id, session.user.email ?? '').then(name => {
+          console.log('[AuthNav] onAuthStateChange fetchName result:', name)
+          setDisplayName(name)
+        }).catch(err => console.error('[AuthNav] onAuthStateChange fetchName error:', err))
       } else {
+        console.log('[AuthNav] onAuthStateChange — clearing displayName')
         setDisplayName(null)
+        setReady(true)
       }
-      setReady(true)
     })
 
-    // Re-check session when user returns to the tab after leaving
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        console.log('[AuthNav] tab visible — re-checking session')
         supabase.auth.getUser().then(({ data }) => {
+          console.log('[AuthNav] visibility getUser:', data.user ? `user=${data.user.id}` : 'no user')
           if (!data.user) setDisplayName(null)
         })
       }
@@ -66,6 +85,7 @@ export function AuthNav() {
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
+      console.log('[AuthNav] unmount — cleaning up listeners')
       active = false
       sub.subscription.unsubscribe()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
@@ -73,13 +93,19 @@ export function AuthNav() {
   }, [])
 
   async function handleSignOut() {
+    console.log('[AuthNav] user clicked sign out')
     await supabaseRef.current?.auth.signOut()
+    console.log('[AuthNav] signOut complete — refreshing router')
     router.refresh()
   }
 
-  if (!ready) return <div className="ml-auto h-6 w-20" />
+  if (!ready) {
+    console.log('[AuthNav] render: skeleton placeholder (not ready yet)')
+    return <div className="ml-auto h-6 w-20" />
+  }
 
   if (!displayName) {
+    console.log('[AuthNav] render: "Se connecter" button (no user)')
     return (
       <Link href="/auth" className="ml-auto text-sm text-muted-foreground hover:text-foreground">
         Se connecter
@@ -87,6 +113,7 @@ export function AuthNav() {
     )
   }
 
+  console.log('[AuthNav] render: user nav — displayName:', displayName)
   return (
     <div className="ml-auto flex items-center gap-3">
       <Link

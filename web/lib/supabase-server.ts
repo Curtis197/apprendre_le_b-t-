@@ -16,8 +16,9 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
+            console.log('[supabase-server] setAll cookies written:', cookiesToSet.map(c => c.name))
           } catch {
-            // Server Component context — cookie writes are no-ops here
+            console.warn('[supabase-server] setAll blocked (Server Component context) — cookies:', cookiesToSet.map(c => c.name))
           }
         },
       },
