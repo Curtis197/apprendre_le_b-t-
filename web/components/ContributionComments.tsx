@@ -11,7 +11,7 @@ interface Comment {
 }
 
 interface Props {
-  targetTable: 'expressions' | 'grammar_rules'
+  targetTable: 'expressions' | 'grammar_rules' | 'lexicon'
   targetId: string
 }
 

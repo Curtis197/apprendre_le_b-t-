@@ -5,14 +5,21 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase-browser'
 
-type ContributionType = 'grammar_rule' | 'expression'
+type ContributionType = 'word' | 'expression' | 'grammar_rule'
 
 export function ContributionForm() {
-  const [type, setType] = useState<ContributionType>('expression')
+  const [type, setType] = useState<ContributionType>('word')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const supabaseRef = useRef(createClient())
+
+  // Word fields
+  const [wordBetePhonetic, setWordBetePhonetic] = useState('')
+  const [wordBeteIPA, setWordBeteIPA] = useState('')
+  const [wordFrench, setWordFrench] = useState('')
+  const [wordPos, setWordPos] = useState('noun')
+  const [wordNotes, setWordNotes] = useState('')
 
   // Grammar rule fields
   const [category, setCategory] = useState('verb')
@@ -39,7 +46,18 @@ export function ContributionForm() {
     }
     try {
       let error
-      if (type === 'grammar_rule') {
+      if (type === 'word') {
+        ({ error } = await supabaseRef.current.from('lexicon').insert({
+          bete_phonetic: wordBetePhonetic,
+          bete_word: wordBeteIPA || wordBetePhonetic,
+          top_french: wordFrench,
+          french_candidates: [{ word: wordFrench, prob: 1.0 }],
+          probability: 1.0,
+          pos: [wordPos],
+          notes: wordNotes || null,
+          created_by: user.id,
+        }))
+      } else if (type === 'grammar_rule') {
         ({ error } = await supabaseRef.current.from('grammar_rules').insert({
           category, pattern_french: patternFr, pattern_bete: patternBete,
           description, example_french: exFr || null, example_bete: exBete || null,
@@ -71,20 +89,57 @@ export function ContributionForm() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        {(['expression', 'grammar_rule'] as ContributionType[]).map(t => (
+      <div className="flex gap-2 flex-wrap">
+        {(['word', 'expression', 'grammar_rule'] as ContributionType[]).map(t => (
           <Button
             key={t}
             variant={type === t ? 'default' : 'outline'}
             size="sm"
             onClick={() => setType(t)}
           >
-            {t === 'expression' ? 'Expression' : 'Règle grammaticale'}
+            {t === 'word' ? 'Mot du lexique' : t === 'expression' ? 'Expression' : 'Règle grammaticale'}
           </Button>
         ))}
       </div>
 
-      {type === 'expression' ? (
+      {type === 'word' ? (
+        <div className="space-y-3">
+          <Input
+            placeholder="Mot en bété (forme phonétique latine) *"
+            value={wordBetePhonetic}
+            onChange={e => setWordBetePhonetic(e.target.value)}
+          />
+          <Input
+            placeholder="Transcription IPA (optionnel — si vous connaissez)"
+            value={wordBeteIPA}
+            onChange={e => setWordBeteIPA(e.target.value)}
+          />
+          <Input
+            placeholder="Traduction française *"
+            value={wordFrench}
+            onChange={e => setWordFrench(e.target.value)}
+          />
+          <select
+            className="w-full border rounded px-3 py-2 text-sm"
+            value={wordPos}
+            onChange={e => setWordPos(e.target.value)}
+          >
+            <option value="noun">Nom</option>
+            <option value="verb">Verbe</option>
+            <option value="adj">Adjectif</option>
+            <option value="adv">Adverbe</option>
+            <option value="pron">Pronom</option>
+            <option value="prep">Préposition</option>
+            <option value="other">Autre</option>
+          </select>
+          <Textarea
+            placeholder="Notes ou contexte d'usage (optionnel)"
+            value={wordNotes}
+            onChange={e => setWordNotes(e.target.value)}
+            rows={2}
+          />
+        </div>
+      ) : type === 'expression' ? (
         <div className="space-y-3">
           <Input placeholder="Phrase en français" value={frPhrase} onChange={e => setFrPhrase(e.target.value)} />
           <Input placeholder="Équivalent en bété (standard)" value={betePhrase} onChange={e => setBetePhrase(e.target.value)} />
@@ -124,7 +179,11 @@ export function ContributionForm() {
 
       <Button
         onClick={handleSubmit}
-        disabled={loading || (type === 'expression' ? !frPhrase || !betePhrase : !patternFr || !patternBete || !description)}
+        disabled={loading || (
+          type === 'word' ? !wordBetePhonetic || !wordFrench :
+          type === 'expression' ? !frPhrase || !betePhrase :
+          !patternFr || !patternBete || !description
+        )}
       >
         {loading ? 'Envoi…' : 'Soumettre la contribution'}
       </Button>

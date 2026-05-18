@@ -7,9 +7,20 @@ import { createClient } from '@/lib/supabase-browser'
 import { GrammarRule, Expression } from '@/lib/types'
 import { ContributionComments } from './ContributionComments'
 
+type LexiconWord = {
+  id: string
+  bete_phonetic: string
+  bete_word: string
+  top_french: string
+  pos: string[] | null
+  notes: string | null
+  upvotes: number
+}
+
 export function PendingContributions() {
   const [rules, setRules] = useState<GrammarRule[]>([])
   const [expressions, setExpressions] = useState<Expression[]>([])
+  const [words, setWords] = useState<LexiconWord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const supabaseRef = useRef(createClient())
@@ -21,12 +32,16 @@ export function PendingContributions() {
         .order('created_at', { ascending: false }).limit(10),
       client.from('expressions').select('*').eq('validated', false)
         .order('created_at', { ascending: false }).limit(10),
-    ]).then(([rulesRes, exprsRes]) => {
-      if (rulesRes.error || exprsRes.error) {
+      client.from('lexicon').select('id,bete_phonetic,bete_word,top_french,pos,notes,upvotes')
+        .eq('validated', false).not('created_by', 'is', null)
+        .order('created_at', { ascending: false }).limit(10),
+    ]).then(([rulesRes, exprsRes, wordsRes]) => {
+      if (rulesRes.error || exprsRes.error || wordsRes.error) {
         setError('Impossible de charger les contributions.')
       } else {
         setRules((rulesRes.data ?? []) as GrammarRule[])
         setExpressions((exprsRes.data ?? []) as Expression[])
+        setWords((wordsRes.data ?? []) as LexiconWord[])
       }
       setLoading(false)
     })
@@ -37,6 +52,35 @@ export function PendingContributions() {
 
   return (
     <div className="space-y-6">
+      {words.length > 0 && (
+        <section>
+          <h2 className="font-semibold text-lg mb-3">Mots du lexique en attente</h2>
+          <div className="space-y-3">
+            {words.map(word => (
+              <Card key={word.id}>
+                <CardHeader className="pb-1">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-base">{word.top_french}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      {word.pos?.[0] && <Badge variant="outline">{word.pos[0]}</Badge>}
+                      <VoteButtons table="lexicon" id={word.id} upvotes={word.upvotes} />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-sm space-y-1">
+                  <p className="font-bold">{word.bete_phonetic}</p>
+                  {word.bete_word !== word.bete_phonetic && (
+                    <p className="font-mono text-muted-foreground">[{word.bete_word}]</p>
+                  )}
+                  {word.notes && <p className="text-muted-foreground">{word.notes}</p>}
+                  <ContributionComments targetTable="lexicon" targetId={word.id} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       {expressions.length > 0 && (
         <section>
           <h2 className="font-semibold text-lg mb-3">Expressions en attente</h2>
@@ -89,7 +133,7 @@ export function PendingContributions() {
         </section>
       )}
 
-      {rules.length === 0 && expressions.length === 0 && (
+      {rules.length === 0 && expressions.length === 0 && words.length === 0 && (
         <p className="text-muted-foreground text-sm">Aucune contribution en attente.</p>
       )}
     </div>
