@@ -29,8 +29,8 @@ export default async function LexiconEntryPage({
         <section>
           <h2 className="font-semibold mb-3">Exemples du Nouveau Testament</h2>
           <div className="space-y-2">
-            {entry.lexicon_examples.map((ex, i) => (
-              <div key={i} className="border rounded p-3 text-sm space-y-1">
+            {entry.lexicon_examples.map((ex) => (
+              <div key={ex.id} className="border rounded p-3 text-sm space-y-1">
                 <p className="font-mono">{ex.bete_snippet}</p>
                 {ex.french_literal && (
                   <p className="text-muted-foreground">
