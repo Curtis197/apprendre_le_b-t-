@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { LexiconEntry } from '@/components/LexiconEntry'
 import { notFound } from 'next/navigation'
-import type { LexiconEntry as TLexiconEntry } from '@/lib/types'
+import type { LexiconEntry as TLexiconEntry, LexiconExample } from '@/lib/types'
 
 export default async function LexiconEntryPage({
   params,
@@ -19,7 +19,7 @@ export default async function LexiconEntryPage({
   if (!data) notFound()
 
   const entry = data as TLexiconEntry & {
-    lexicon_examples: { bete_snippet: string; french_snippet: string }[]
+    lexicon_examples: LexiconExample[]
   }
 
   return (
@@ -32,6 +32,11 @@ export default async function LexiconEntryPage({
             {entry.lexicon_examples.map((ex, i) => (
               <div key={i} className="border rounded p-3 text-sm space-y-1">
                 <p className="font-mono">{ex.bete_snippet}</p>
+                {ex.french_literal && (
+                  <p className="text-muted-foreground">
+                    <span className="font-medium">Mot à mot :</span> {ex.french_literal}
+                  </p>
+                )}
                 <p className="text-muted-foreground">{ex.french_snippet}</p>
               </div>
             ))}
