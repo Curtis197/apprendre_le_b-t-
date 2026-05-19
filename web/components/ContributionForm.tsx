@@ -31,6 +31,7 @@ export function ContributionForm() {
 
   // Expression fields
   const [frPhrase, setFrPhrase] = useState('')
+  const [frLiteral, setFrLiteral] = useState('')
   const [betePhrase, setBetePhrase] = useState('')
   const [betePhonetic, setBetePhonetic] = useState('')
   const [exprType, setExprType] = useState<'idiomatic' | 'fixed' | 'proverb'>('idiomatic')
@@ -65,8 +66,11 @@ export function ContributionForm() {
         }))
       } else {
         ({ error } = await supabaseRef.current.from('expressions').insert({
-          french_phrase: frPhrase, bete_phrase: betePhrase,
-          bete_phonetic: betePhonetic, type: exprType,
+          french_phrase: frPhrase,
+          french_literal: frLiteral.trim() || null,
+          bete_phrase: betePhrase,
+          bete_phonetic: betePhonetic,
+          type: exprType,
           created_by: user.id,
         }))
       }
@@ -141,9 +145,26 @@ export function ContributionForm() {
         </div>
       ) : type === 'expression' ? (
         <div className="space-y-3">
-          <Input placeholder="Phrase en français" value={frPhrase} onChange={e => setFrPhrase(e.target.value)} />
-          <Input placeholder="Équivalent en bété (standard)" value={betePhrase} onChange={e => setBetePhrase(e.target.value)} />
-          <Input placeholder="Forme phonétique" value={betePhonetic} onChange={e => setBetePhonetic(e.target.value)} />
+          <Input
+            placeholder="Phrase en bété (standard) *"
+            value={betePhrase}
+            onChange={e => setBetePhrase(e.target.value)}
+          />
+          <Input
+            placeholder="Forme phonétique *"
+            value={betePhonetic}
+            onChange={e => setBetePhonetic(e.target.value)}
+          />
+          <Input
+            placeholder="Traduction littérale mot par mot (ex : la pluie me bat)"
+            value={frLiteral}
+            onChange={e => setFrLiteral(e.target.value)}
+          />
+          <Input
+            placeholder="Sens réel en français (ex : il pleut) *"
+            value={frPhrase}
+            onChange={e => setFrPhrase(e.target.value)}
+          />
           <select
             className="w-full border rounded px-3 py-2 text-sm"
             value={exprType}
