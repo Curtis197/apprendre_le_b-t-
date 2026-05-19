@@ -18,9 +18,10 @@ export interface LexiconEntry {
 export interface LexiconExample {
   id: string
   lexicon_id: string
-  verse_id: string
+  verse_id: string | null
   bete_snippet: string
   french_snippet: string
+  french_literal: string | null   // word-for-word literal translation (optional)
 }
 
 export interface GrammarRule {
@@ -44,6 +45,7 @@ export interface Expression {
   bete_phrase: string
   bete_phonetic: string
   type: 'idiomatic' | 'fixed' | 'proverb'
+  french_literal: string | null   // word-for-word literal translation (optional)
   validated: boolean
   upvotes: number
   created_by: string | null
