@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { BookOpen } from 'lucide-react'
 import { cn, cleanBeteWord } from '@/lib/utils'
 import type { LexiconEntry } from '@/lib/types'
@@ -31,7 +32,7 @@ function semanticTags(pos: string[] | null): string[] {
 export function WordCard({ entry, featured = false, className }: Props) {
   if (featured) {
     return (
-      <div className={cn('bg-primary/10 border border-primary/20 rounded-xl p-6 relative overflow-hidden', className)}>
+      <Link href={`/lexicon/${entry.id}`} className={cn('bg-primary/10 border border-primary/20 rounded-xl p-6 relative overflow-hidden hover:border-primary/50 transition-colors block', className)}>
         <div className="flex items-start justify-between mb-4">
           <span className="bg-secondary/20 text-secondary text-xs font-semibold rounded-full px-3 py-1">
             Mot du Jour
@@ -42,13 +43,13 @@ export function WordCard({ entry, featured = false, className }: Props) {
         <div className="w-16 h-0.5 bg-primary/30 mb-3" />
         <p className="italic text-foreground/80">{entry.top_french}</p>
         <BookOpen className="absolute -bottom-4 -right-4 w-32 h-32 text-primary opacity-10" aria-hidden="true" />
-      </div>
+      </Link>
     )
   }
 
   return (
-    <div className={cn(
-      'bg-card rounded-xl p-6 border-2 border-transparent hover:border-primary hover:shadow-lg transition-all group',
+    <Link href={`/lexicon/${entry.id}`} className={cn(
+      'bg-card rounded-xl p-6 border-2 border-transparent hover:border-primary hover:shadow-lg transition-all group block',
       className
     )}>
       <div className="flex items-start justify-between mb-3">
@@ -78,6 +79,6 @@ export function WordCard({ entry, featured = false, className }: Props) {
           <span className="text-xs text-secondary font-semibold">✓ validé</span>
         )}
       </div>
-    </div>
+    </Link>
   )
 }
