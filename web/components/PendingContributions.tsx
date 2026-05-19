@@ -99,6 +99,11 @@ export function PendingContributions() {
                 <CardContent>
                   <p className="font-bold">{ex.bete_phrase}</p>
                   <p className="text-sm font-mono text-muted-foreground">[{ex.bete_phonetic}]</p>
+                  {ex.french_literal && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      <span className="font-medium">Mot à mot :</span> {ex.french_literal}
+                    </p>
+                  )}
                   <ContributionComments targetTable="expressions" targetId={ex.id} />
                 </CardContent>
               </Card>
