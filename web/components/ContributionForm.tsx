@@ -202,7 +202,7 @@ export function ContributionForm() {
         onClick={handleSubmit}
         disabled={loading || (
           type === 'word' ? !wordBetePhonetic || !wordFrench :
-          type === 'expression' ? !frPhrase || !betePhrase :
+          type === 'expression' ? !frPhrase || !betePhrase || !betePhonetic :
           !patternFr || !patternBete || !description
         )}
       >
