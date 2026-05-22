@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { TranslationResult, FeedbackToken } from '@/lib/types'
 import { FeedbackButton } from './FeedbackButton'
 import { Badge } from '@/components/ui/badge'
@@ -33,9 +34,18 @@ export function TranslatorOutput({ result }: Props) {
           </p>
           <div className="flex flex-wrap gap-2">
             {result.unknowns.map(w => (
-              <Badge key={w} variant="outline" className="text-red-600 border-red-300">
-                {w}
-              </Badge>
+              <Link
+                key={w}
+                href={`/contribute?word=${encodeURIComponent(w)}&type=word`}
+                className="inline-flex"
+              >
+                <Badge
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50 cursor-pointer transition-colors"
+                >
+                  {w} — Contribuer →
+                </Badge>
+              </Link>
             ))}
           </div>
         </div>

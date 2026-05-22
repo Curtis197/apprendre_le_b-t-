@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { LexiconEntry } from './LexiconEntry'
 import { createClient } from '@/lib/supabase-browser'
@@ -46,7 +47,15 @@ export function LexiconSearch() {
           <LexiconEntry key={entry.id} entry={entry} compact />
         ))}
         {query.trim() && !isPending && results.length === 0 && (
-          <p className="text-sm text-muted-foreground">Aucun résultat pour « {query.trim()} »</p>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>Aucun résultat pour « {query.trim()} »</p>
+            <Link
+              href={`/contribute?word=${encodeURIComponent(query.trim())}&type=word`}
+              className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+            >
+              Ajouter « {query.trim()} » au lexique →
+            </Link>
+          </div>
         )}
       </div>
     </div>

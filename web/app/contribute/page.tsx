@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
 import { PenLine, ShieldCheck, CheckCircle2, Clock } from 'lucide-react'
-import { ContributionForm } from '@/components/ContributionForm'
+import { ContributionFormWithParams } from '@/components/ContributionForm'
 import { PendingContributions } from '@/components/PendingContributions'
 import { createClient } from '@/lib/supabase-server'
 import { DialectSelector } from '@/components/DialectSelector'
@@ -75,7 +75,7 @@ export default async function ContributePage() {
               <PenLine className="w-6 h-6" />
               Ajouter une contribution
             </h2>
-            <ContributionForm />
+            <ContributionFormWithParams />
           </div>
         </div>
 

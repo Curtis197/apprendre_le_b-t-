@@ -28,6 +28,7 @@ def build_lexicon_from_alignments(
             "top_french":        top["word"],
             "probability":       top["score"],
             "validated":         False,
+            "source":            "seed",
             "dialect":           dialect,
         })
     entries.sort(key=lambda e: e["bete_word"])

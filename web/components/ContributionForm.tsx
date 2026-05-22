@@ -1,5 +1,6 @@
 'use client'
-import { useRef, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -7,8 +8,13 @@ import { createClient } from '@/lib/supabase-browser'
 
 type ContributionType = 'word' | 'expression' | 'grammar_rule'
 
-export function ContributionForm() {
-  const [type, setType] = useState<ContributionType>('word')
+interface ContributionFormProps {
+  initialWord?: string
+  initialType?: ContributionType
+}
+
+export function ContributionForm({ initialWord, initialType }: ContributionFormProps = {}) {
+  const [type, setType] = useState<ContributionType>(initialType ?? 'word')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -17,7 +23,7 @@ export function ContributionForm() {
   // Word fields
   const [wordBetePhonetic, setWordBetePhonetic] = useState('')
   const [wordBeteIPA, setWordBeteIPA] = useState('')
-  const [wordFrench, setWordFrench] = useState('')
+  const [wordFrench, setWordFrench] = useState(initialWord ?? '')
   const [wordPos, setWordPos] = useState('noun')
   const [wordNotes, setWordNotes] = useState('')
 
@@ -209,5 +215,24 @@ export function ContributionForm() {
         {loading ? 'Envoi…' : 'Soumettre la contribution'}
       </Button>
     </div>
+  )
+}
+
+function ContributionFormParamsReader() {
+  const params = useSearchParams()
+  const word = params.get('word') ?? undefined
+  const rawType = params.get('type')
+  const type: ContributionType | undefined =
+    rawType === 'word' || rawType === 'expression' || rawType === 'grammar_rule'
+      ? rawType
+      : undefined
+  return <ContributionForm initialWord={word} initialType={type} />
+}
+
+export function ContributionFormWithParams() {
+  return (
+    <Suspense fallback={<div className="h-48 bg-muted animate-pulse rounded-xl" />}>
+      <ContributionFormParamsReader />
+    </Suspense>
   )
 }

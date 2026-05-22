@@ -13,6 +13,7 @@ export interface LexiconEntry {
   notes: string | null
   validated: boolean
   upvotes: number
+  source: 'seed' | 'contributed'
 }
 
 export interface LexiconExample {

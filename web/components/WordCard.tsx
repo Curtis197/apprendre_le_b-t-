@@ -75,9 +75,10 @@ export function WordCard({ entry, featured = false, className }: Props) {
       <p className="italic text-muted-foreground text-sm mb-3">{entry.top_french}</p>
       <div className="border-t border-border pt-3 flex items-center justify-between opacity-60 group-hover:opacity-100 transition-opacity">
         <span className="text-xs text-muted-foreground font-mono">[{cleanBeteWord(entry.bete_word)}]</span>
-        {entry.validated && (
-          <span className="text-xs text-secondary font-semibold">✓ validé</span>
-        )}
+        {entry.validated
+          ? <span className="text-xs text-secondary font-semibold">✓ validé</span>
+          : entry.source === 'seed' && <span className="text-xs text-amber-600 font-medium">⚠ non validé</span>
+        }
       </div>
     </Link>
   )

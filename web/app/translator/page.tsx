@@ -1,18 +1,16 @@
 export const dynamic = 'force-dynamic'
 
-import { TranslatorInput } from '@/components/TranslatorInput'
-import { DialectSelector } from '@/components/DialectSelector'
+import { createClient } from '@/lib/supabase-server'
+import { getTranslatorCounts } from '@/lib/translator-threshold'
+import { TranslatorGate } from '@/components/TranslatorGate'
 
-export default function TranslatorPage() {
+export default async function TranslatorPage() {
+  const supabase = await createClient()
+  const counts = await getTranslatorCounts(supabase)
   return (
     <main className="max-w-2xl mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-2">Traducteur Français → Bété</h1>
-      <p className="text-muted-foreground mb-4">
-        Chaque mot est aligné avec sa correspondance en bété.
-        Signalez les erreurs pour améliorer le lexique.
-      </p>
-      <div className="mb-6"><DialectSelector /></div>
-      <TranslatorInput />
+      <TranslatorGate counts={counts} />
     </main>
   )
 }

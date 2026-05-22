@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { LexiconEntry as TLexiconEntry } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,6 +40,17 @@ export function LexiconEntry({ entry, compact = false }: Props) {
         </div>
       </CardHeader>
       <CardContent>
+        {entry.source === 'seed' && (
+          <div className="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 flex items-center justify-between gap-2">
+            <span>Traduction automatique — aidez à valider ou améliorer ce mot.</span>
+            <Link
+              href={`/contribute?word=${encodeURIComponent(entry.top_french)}&type=word`}
+              className="shrink-0 font-medium hover:underline"
+            >
+              Contribuer →
+            </Link>
+          </div>
+        )}
         <p className="font-semibold text-blue-700">{entry.top_french}</p>
         {!compact && (entry.french_candidates?.length ?? 0) > 1 && (
           <div className="mt-2">

@@ -4,9 +4,10 @@ import Image from 'next/image'
 import { Suspense } from 'react'
 import { Users, Mic2 } from 'lucide-react'
 import { PatternDivider } from '@/components/PatternDivider'
-import { HomeTranslator } from '@/components/HomeTranslator'
+import { TranslatorProgress } from '@/components/TranslatorProgress'
 import { DonateForm } from '@/components/DonateForm'
 import { createClient } from '@/lib/supabase-server'
+import { getTranslatorCounts } from '@/lib/translator-threshold'
 import type { LexiconEntry } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -40,7 +41,11 @@ async function getWordsOfDay(): Promise<LexiconEntry[]> {
 }
 
 export default async function HomePage() {
-  const words = await getWordsOfDay()
+  const supabase = await createClient()
+  const [words, translatorCounts] = await Promise.all([
+    getWordsOfDay(),
+    getTranslatorCounts(supabase),
+  ])
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10 space-y-10">
@@ -146,8 +151,18 @@ export default async function HomePage() {
 
       </div>
 
-      {/* Translator */}
-      <HomeTranslator />
+      {/* Translator progress — unlocks when community thresholds are met */}
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
+        <div>
+          <h2 className="font-heading text-2xl font-bold text-primary mb-1">
+            Traducteur Français → Bété
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Le traducteur ouvrira quand chaque dialecte aura atteint son seuil de contributions.
+          </p>
+        </div>
+        <TranslatorProgress counts={translatorCounts} />
+      </div>
 
       {/* 3 Words of the Day */}
       {words.length > 0 && (
