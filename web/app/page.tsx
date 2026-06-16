@@ -2,12 +2,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Suspense } from 'react'
-import { Users, Mic2 } from 'lucide-react'
+import { Users, Mic2, PenLine } from 'lucide-react'
 import { PatternDivider } from '@/components/PatternDivider'
-import { TranslatorProgress } from '@/components/TranslatorProgress'
+import { ContributionFormWithParams } from '@/components/ContributionForm'
 import { DonateForm } from '@/components/DonateForm'
 import { createClient } from '@/lib/supabase-server'
-import { getTranslatorCounts } from '@/lib/translator-threshold'
 import type { LexiconEntry } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -41,11 +40,7 @@ async function getWordsOfDay(): Promise<LexiconEntry[]> {
 }
 
 export default async function HomePage() {
-  const supabase = await createClient()
-  const [words, translatorCounts] = await Promise.all([
-    getWordsOfDay(),
-    getTranslatorCounts(supabase),
-  ])
+  const words = await getWordsOfDay()
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10 space-y-10">
@@ -151,17 +146,13 @@ export default async function HomePage() {
 
       </div>
 
-      {/* Translator progress — unlocks when community thresholds are met */}
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
-        <div>
-          <h2 className="font-heading text-2xl font-bold text-primary mb-1">
-            Traducteur Français → Bété
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Le traducteur ouvrira quand chaque dialecte aura atteint son seuil de contributions.
-          </p>
-        </div>
-        <TranslatorProgress counts={translatorCounts} />
+      {/* Contribution Form */}
+      <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
+        <h2 className="font-heading text-2xl text-primary flex items-center gap-2 mb-6">
+          <PenLine className="w-6 h-6" />
+          Ajouter une contribution
+        </h2>
+        <ContributionFormWithParams />
       </div>
 
       {/* 3 Words of the Day */}

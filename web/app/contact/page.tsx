@@ -1,7 +1,7 @@
 // web/app/contact/page.tsx
 'use client'
 import { useState, useMemo, useEffect } from 'react'
-import { Mail, Send, ExternalLink, Phone } from 'lucide-react'
+import { Mail, Send, ExternalLink, Phone, Check } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -61,6 +61,7 @@ export default function ContactPage() {
 
   const [typeFilter, setTypeFilter] = useState('all')
   const [canalFilter, setCanalFilter] = useState('all')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -165,31 +166,44 @@ export default function ContactPage() {
           filtered.map(entry => {
             const meta = CANAL_META[entry.canal]
             const url  = canalUrl(entry)
+            const isCopied = copiedId === entry.id
             return (
-              <div key={entry.id} className={`bg-card border-2 ${meta.borderColor} rounded-2xl p-5 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow`}>
-                <div className={`w-12 h-12 ${meta.iconBg} rounded-full flex items-center justify-center text-2xl overflow-hidden`}>
+              <div key={entry.id} className={`group relative bg-card border-2 ${meta.borderColor} rounded-2xl p-5 flex flex-col items-center text-center gap-2 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-default`}>
+                {/* Background overlay on hover */}
+                <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${meta.iconBg}`} />
+                
+                <div className={`relative z-10 w-12 h-12 ${meta.iconBg} rounded-full flex items-center justify-center text-2xl overflow-hidden group-hover:scale-110 transition-transform duration-300`}>
                   {entry.avatar_url
                     ? <img src={entry.avatar_url} alt={entry.name} className="w-12 h-12 rounded-full object-cover" referrerPolicy="no-referrer" />
                     : meta.icon}
                 </div>
-                <div>
+                <div className="relative z-10">
                   <p className="font-semibold text-sm text-foreground">{entry.name}</p>
                   {entry.bio && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{entry.bio}</p>}
                 </div>
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${meta.badgeColor}`}>
+                <span className={`relative z-10 text-[10px] font-medium px-2 py-0.5 rounded-full ${meta.badgeColor}`}>
                   {meta.label}
                 </span>
                 {entry.contact && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Phone className="w-3 h-3" />{entry.contact}
-                  </p>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(entry.contact!)
+                      setCopiedId(entry.id)
+                      setTimeout(() => setCopiedId(null), 2000)
+                    }}
+                    className="relative z-10 text-xs text-muted-foreground flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                    title="Copier le numéro"
+                  >
+                    {isCopied ? <Check className="w-3 h-3 text-green-600" /> : <Phone className="w-3 h-3" />}
+                    <span className={isCopied ? "text-green-600" : ""}>{entry.contact}</span>
+                  </button>
                 )}
                 {url !== '#' && (
                   <a
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`mt-1 text-white text-xs font-semibold px-4 py-1.5 rounded-full ${meta.ctaColor} flex items-center gap-1 transition-colors`}
+                    className={`relative z-10 mt-1 text-white text-xs font-semibold px-4 py-1.5 rounded-full ${meta.ctaColor} flex items-center gap-1 transition-all hover:scale-105 active:scale-95`}
                   >
                     {entry.type === 'group' ? 'Rejoindre' : 'Contacter'}
                     <ExternalLink className="w-3 h-3" />
