@@ -29,11 +29,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const { data: { session }, error } = await supabase.auth.getSession()
   if (error) {
-    console.warn('[middleware] getUser error:', error.message, '| path:', path)
+    console.warn('[middleware] getSession error:', error.message, '| path:', path)
   } else {
-    console.log('[middleware] getUser:', user ? `user=${user.id}` : 'anonymous', '| path:', path)
+    console.log('[middleware] getSession:', session?.user ? `user=${session.user.id}` : 'anonymous', '| path:', path)
   }
 
   return supabaseResponse
