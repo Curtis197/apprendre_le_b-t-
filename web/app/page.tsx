@@ -1,4 +1,4 @@
-﻿// web/app/page.tsx
+// web/app/page.tsx
 import Link from 'next/link'
 import Image from 'next/image'
 import { Suspense } from 'react'
@@ -66,11 +66,10 @@ export default async function HomePage() {
           </div>
           <div className="bg-primary text-primary-foreground px-5 py-7">
             <h1 className="font-heading text-3xl font-bold mb-3 leading-tight">
-              La langue bhété,<br />une culture à préserver
+              Apprendre et partager<br />la langue bhété
             </h1>
             <p className="text-primary-foreground/85 text-sm mb-5 leading-relaxed">
-              Parlée par plus de 3 millions de personnes en Côte d&apos;Ivoire, la langue bhété
-              est porteuse d&apos;une tradition orale exceptionnelle.
+              Notre plateforme collaborative a pour vocation de partager l&apos;apprentissage du bhété afin de sauvegarder notre héritage culturel pour les générations futures.
             </p>
             <div className="flex gap-3 flex-wrap">
               <Link
@@ -102,11 +101,10 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
           <div className="relative z-10 p-12 flex flex-col justify-end h-full min-h-[360px]">
             <h1 className="font-heading text-5xl font-bold text-white mb-3 max-w-2xl leading-tight">
-              La langue bhété,<br />une culture à préserver
+              Apprendre et partager<br />la langue bhété
             </h1>
             <p className="text-white/80 text-lg mb-6 max-w-xl leading-relaxed">
-              Parlée par plus de 3 millions de personnes en Côte d&apos;Ivoire, la langue bhété
-              est porteuse d&apos;une tradition orale exceptionnelle.
+              Notre plateforme collaborative a pour vocation de partager l&apos;apprentissage du bhété afin de sauvegarder notre héritage culturel pour les générations futures.
             </p>
             <div className="flex gap-3">
               <Link
