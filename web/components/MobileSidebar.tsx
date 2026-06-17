@@ -52,11 +52,12 @@ export function MobileSidebar() {
             Apprendre le bhété
           </span>
           <button
+            type="button"
             onClick={() => setOpen(false)}
-            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors cursor-pointer"
             aria-label="Fermer le menu"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 pointer-events-none" />
           </button>
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
@@ -67,7 +68,7 @@ export function MobileSidebar() {
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-6 py-3 transition-colors ${
+                className={`flex items-center gap-3 px-6 py-3 transition-colors cursor-pointer ${
                   active 
                     ? 'bg-primary/10 text-primary font-medium border-r-4 border-primary' 
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -91,11 +92,12 @@ export function MobileSidebar() {
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+        className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors cursor-pointer"
         aria-label="Ouvrir le menu"
       >
-        <Menu className="w-5 h-5" />
+        <Menu className="w-5 h-5 pointer-events-none" />
       </button>
       {panel}
     </>
