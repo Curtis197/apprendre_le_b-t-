@@ -14,6 +14,9 @@ const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: [
 export const metadata: Metadata = {
   title: 'Parlons Bété — Plateforme linguistique',
   description: 'Lexique, traducteur et ressources pour la langue bété',
+  icons: {
+    icon: '/logo.png'
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +25,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} ${lexend.variable}`}>
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border shadow-sm">
           <nav className="max-w-7xl mx-auto px-4 md:px-10 h-[72px] flex items-center gap-6">
-            <Link href="/" className="font-heading font-bold text-xl text-primary shrink-0">
+            <Link href="/" className="font-heading font-bold text-xl text-primary shrink-0 flex items-center gap-2">
+              <img src="/logo.png" alt="Parlons Bété Logo" className="w-8 h-8 object-contain" />
               Parlons Bété
             </Link>
             <div className="hidden md:flex items-center gap-8 flex-1">
