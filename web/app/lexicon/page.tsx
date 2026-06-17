@@ -52,17 +52,23 @@ function ListRow({ entry }: { entry: LexiconEntry }) {
       <span className="bg-secondary text-white text-xs font-semibold rounded-full px-2.5 py-0.5 shrink-0 w-16 text-center">
         {primaryLabel(entry.pos)}
       </span>
-      <div className="flex-1 min-w-0">
-        <span className={`font-heading font-bold transition-colors ${isPending ? 'text-muted-foreground' : 'text-foreground group-hover:text-primary'}`}>
-          {isPending ? 'À TRADUIRE' : entry.bete_phonetic}
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <span className={`font-heading font-bold transition-colors ${isPending ? 'text-primary/80' : 'text-foreground group-hover:text-primary'}`}>
+          {isPending ? entry.top_french : entry.bete_phonetic}
         </span>
-        {!isPending && (
-          <span className="text-xs font-mono text-muted-foreground ml-2">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
+        {isPending ? (
+          <span className="bg-amber-100 text-amber-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0">
+            À traduire
+          </span>
+        ) : (
+          <span className="text-xs font-mono text-muted-foreground">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
         )}
       </div>
-      <span className="text-sm text-muted-foreground italic truncate max-w-[200px] shrink-0">
-        {entry.top_french}
-      </span>
+      {!isPending && (
+        <span className="text-sm text-muted-foreground italic truncate max-w-[200px] shrink-0">
+          {entry.top_french}
+        </span>
+      )}
       {entry.validated ? (
         <span className="text-xs text-secondary font-semibold shrink-0">✓</span>
       ) : (
@@ -106,7 +112,7 @@ export default function LexiconPage() {
     }
     
     if (letter !== 'Tous') {
-      q = q.ilike('bete_phonetic', `${letter}%`)
+      q = q.or(`bete_phonetic.ilike.${letter}%,top_french.ilike.${letter}%`)
     }
 
     q.then(({ data, count, error }) => {

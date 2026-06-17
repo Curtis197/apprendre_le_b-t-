@@ -44,14 +44,16 @@ export function WordCard({ entry, featured = false, className }: Props) {
             {isPending ? 'Mot à Traduire du Jour' : 'Mot du Jour'}
           </span>
         </div>
-        <h2 className={cn("font-heading text-4xl font-bold mb-1", isPending ? "text-primary/70" : "text-primary")}>
-          {isPending ? 'À TRADUIRE' : entry.bete_phonetic}
+        <h2 className={cn("font-heading text-4xl font-bold mb-1", isPending ? "text-primary/80" : "text-primary")}>
+          {isPending ? entry.top_french : entry.bete_phonetic}
         </h2>
         {!isPending && (
           <p className="text-sm italic text-muted-foreground mb-3">[{cleanBeteWord(entry.bete_word)}]</p>
         )}
         <div className="w-16 h-0.5 bg-primary/30 mb-3 mt-3" />
-        <p className="italic text-foreground/80">{entry.top_french}</p>
+        {!isPending && (
+          <p className="italic text-foreground/80">{entry.top_french}</p>
+        )}
         <BookOpen className="absolute -bottom-4 -right-4 w-32 h-32 text-primary opacity-10" aria-hidden="true" />
       </Link>
     )
@@ -78,8 +80,8 @@ export function WordCard({ entry, featured = false, className }: Props) {
           ))}
         </div>
       </div>
-      <h3 className={cn("font-heading text-2xl font-bold mb-2", isPending ? "text-muted-foreground" : "text-foreground")}>
-        {isPending ? 'À TRADUIRE' : entry.bete_phonetic}
+      <h3 className={cn("font-heading text-2xl font-bold mb-2", isPending ? "text-primary/80" : "text-foreground")}>
+        {isPending ? entry.top_french : entry.bete_phonetic}
       </h3>
       <div
         className="w-16 h-1 mb-2 rounded-full"
@@ -88,7 +90,9 @@ export function WordCard({ entry, featured = false, className }: Props) {
           opacity: 0.25,
         }}
       />
-      <p className="italic text-muted-foreground text-sm mb-3">{entry.top_french}</p>
+      {!isPending && (
+        <p className="italic text-muted-foreground text-sm mb-3">{entry.top_french}</p>
+      )}
       <div className="border-t border-border pt-3 flex items-center justify-between opacity-60 group-hover:opacity-100 transition-opacity">
         <span className="text-xs text-muted-foreground font-mono">
           {isPending ? '' : `[${cleanBeteWord(entry.bete_word)}]`}
