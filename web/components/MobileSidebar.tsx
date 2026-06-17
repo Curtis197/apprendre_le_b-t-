@@ -42,7 +42,7 @@ export function MobileSidebar() {
   const panel = open && mounted && createPortal(
     <>
       <div
-        className="fixed inset-0 bg-black/40 z-[200]"
+        className="fixed inset-0 bg-black/40 z-[200] cursor-pointer"
         onClick={() => setOpen(false)}
       />
       <div className="fixed inset-y-0 left-0 z-[201] w-72 bg-background border-r border-border flex flex-col">
@@ -61,7 +61,7 @@ export function MobileSidebar() {
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
           {links.map(({ href, label, icon: Icon }) => {
-            const active = pathname.startsWith(href)
+            const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
             return (
               <Link
                 key={href}
