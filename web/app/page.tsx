@@ -65,9 +65,6 @@ export default async function HomePage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
           </div>
           <div className="bg-primary text-primary-foreground px-5 py-7">
-            <span className="bg-secondary text-white text-xs font-semibold rounded-full px-3 py-1 inline-block mb-4">
-              Patrimoine Vivant
-            </span>
             <h1 className="font-heading text-3xl font-bold mb-3 leading-tight">
               La langue bété,<br />une culture à préserver
             </h1>
@@ -75,14 +72,6 @@ export default async function HomePage() {
               Parlée par plus de 3 millions de personnes en Côte d&apos;Ivoire, la langue bété
               est porteuse d&apos;une tradition orale exceptionnelle.
             </p>
-            <div className="flex flex-wrap gap-2 mb-5">
-              <span className="bg-primary-foreground/15 rounded-full px-3 py-1.5 text-sm text-primary-foreground flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" /> 3M+ Locuteurs
-              </span>
-              <span className="bg-primary-foreground/15 rounded-full px-3 py-1.5 text-sm text-primary-foreground flex items-center gap-1.5">
-                <Mic2 className="w-3.5 h-3.5" /> Riche Folklore
-              </span>
-            </div>
             <div className="flex gap-3 flex-wrap">
               <Link
                 href="/lexicon"
@@ -112,9 +101,6 @@ export default async function HomePage() {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
           <div className="relative z-10 p-12 flex flex-col justify-end h-full min-h-[360px]">
-            <span className="bg-secondary text-white text-xs font-semibold rounded-full px-3 py-1 self-start mb-4">
-              Patrimoine Vivant
-            </span>
             <h1 className="font-heading text-5xl font-bold text-white mb-3 max-w-2xl leading-tight">
               La langue bété,<br />une culture à préserver
             </h1>
@@ -122,14 +108,6 @@ export default async function HomePage() {
               Parlée par plus de 3 millions de personnes en Côte d&apos;Ivoire, la langue bété
               est porteuse d&apos;une tradition orale exceptionnelle.
             </p>
-            <div className="flex flex-wrap gap-3 mb-6">
-              <span className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 text-sm text-white flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" /> 3M+ Locuteurs
-              </span>
-              <span className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 text-sm text-white flex items-center gap-1.5">
-                <Mic2 className="w-3.5 h-3.5" /> Riche Folklore
-              </span>
-            </div>
             <div className="flex gap-3">
               <Link
                 href="/lexicon"

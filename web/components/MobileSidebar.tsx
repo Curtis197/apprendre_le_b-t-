@@ -47,7 +47,10 @@ export function MobileSidebar() {
       />
       <div className="fixed inset-y-0 left-0 z-[201] w-72 bg-background border-r border-border flex flex-col">
         <div className="flex items-center justify-between px-6 h-[72px] border-b border-border shrink-0">
-          <span className="font-heading font-bold text-xl text-primary">Parlons Bété</span>
+          <span className="font-heading font-bold text-xl text-primary flex items-center gap-2">
+            <img src="/logo.png" alt="Apprendre le bhété Logo" className="w-8 h-8 object-contain" />
+            Apprendre le bhété
+          </span>
           <button
             onClick={() => setOpen(false)}
             className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
@@ -58,30 +61,27 @@ export function MobileSidebar() {
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
           {links.map(({ href, label, icon: Icon }) => {
-            const hrefPath = href.split('#')[0]
-            const hasHash = href.includes('#')
-            const isActive = !hasHash && (pathname === hrefPath || (hrefPath !== '/' && pathname.startsWith(hrefPath)))
+            const active = pathname.startsWith(href)
             return (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 px-6 py-4 text-base transition-colors border-l-4',
-                  isActive
-                    ? 'bg-primary/10 text-primary border-primary font-semibold'
-                    : 'text-foreground hover:bg-muted border-transparent'
-                )}
+                className={`flex items-center gap-3 px-6 py-3 transition-colors ${
+                  active 
+                    ? 'bg-primary/10 text-primary font-medium border-r-4 border-primary' 
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
               >
-                <Icon className="w-5 h-5 shrink-0" />
+                <Icon className="w-5 h-5" />
                 {label}
               </Link>
             )
           })}
         </nav>
-        <div className="px-6 py-4 border-t border-border shrink-0">
+        <div className="p-6 border-t border-border shrink-0">
           <AuthNav />
-          <p className="text-xs text-muted-foreground mt-3">Parlons Bété v1.0</p>
+          <p className="text-xs text-muted-foreground mt-3">Apprendre le bhété v1.0</p>
         </div>
       </div>
     </>,
