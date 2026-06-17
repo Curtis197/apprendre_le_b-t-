@@ -1,4 +1,4 @@
-// web/app/forum/page.tsx
+﻿// web/app/forum/page.tsx
 import Link from 'next/link'
 import { MessageCircle, PlusCircle, Clock } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
@@ -42,7 +42,7 @@ export default async function ForumPage({ searchParams }: Props) {
       <PageHeader
         badge="Communauté"
         title="Forum de Discussion"
-        subtitle="Partagez vos questions, corrections et observations sur la langue bété."
+        subtitle="Partagez vos questions, corrections et observations sur la langue bhété."
       />
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useTransition, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
@@ -36,7 +36,7 @@ export function LexiconSearch() {
   return (
     <div className="space-y-4">
       <Input
-        placeholder="Rechercher en français ou en bété (phonétique)…"
+        placeholder="Rechercher en français ou en bhété (phonétique)…"
         value={query}
         onChange={e => setQuery(e.target.value)}
         className="text-base"

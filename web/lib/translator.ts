@@ -1,4 +1,4 @@
-import 'server-only'
+﻿import 'server-only'
 // lib/translator.ts
 import Anthropic from '@anthropic-ai/sdk'
 import { SupabaseClient } from '@supabase/supabase-js'
@@ -177,13 +177,13 @@ function buildPrompt(
       ).join('\n')
     : '(aucune règle disponible — utilisez votre meilleur jugement)'
 
-  return `You are a French → Bété translator. Bété is a language from Côte d'Ivoire.
-Use ONLY the candidate words provided — never invent Bété vocabulary.
+  return `You are a French → Bhété translator. Bhété is a language from Côte d'Ivoire.
+Use ONLY the candidate words provided — never invent Bhété vocabulary.
 Unknown words must remain as French.
 
 French input: ${frenchText}
 
-Resolved token candidates (western Latin Bété forms):
+Resolved token candidates (western Latin Bhété forms):
 ${tokenLines.join('\n')}
 
 Active grammar rules:
@@ -191,7 +191,7 @@ ${ruleLines}
 
 Return ONLY this JSON (no explanation):
 {
-  "sentence": "<one fluent Bété sentence using western Latin forms>",
+  "sentence": "<one fluent Bhété sentence using western Latin forms>",
   "unknowns": ["<french word>", ...],
   "rules_applied": ["<short rule description>", ...]
 }`

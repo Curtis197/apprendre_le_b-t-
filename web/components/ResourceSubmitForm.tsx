@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
@@ -102,7 +102,7 @@ export function ResourceSubmitForm() {
       </div>
 
       <Textarea
-        placeholder="Texte en bété *"
+        placeholder="Texte en bhété *"
         value={contentBete}
         onChange={e => setContentBete(e.target.value)}
         rows={6}

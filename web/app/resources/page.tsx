@@ -1,4 +1,4 @@
-// web/app/resources/page.tsx
+﻿// web/app/resources/page.tsx
 import Link from 'next/link'
 import { Music, BookOpen, Feather, Quote, Mic, HelpCircle, Layers, PlusCircle, PlayCircle, Video, GraduationCap } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
@@ -115,7 +115,7 @@ export default async function ResourcesPage({ searchParams }: Props) {
       <PageHeader
         badge="Patrimoine Culturel"
         title="Ressources Communautaires"
-        subtitle="Chansons, contes, poèmes, vidéos et cours partagés par la communauté bété."
+        subtitle="Chansons, contes, poèmes, vidéos et cours partagés par la communauté bhété."
       />
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">

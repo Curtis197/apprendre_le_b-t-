@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { Suspense, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -122,7 +122,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
       {type === 'word' ? (
         <div className="space-y-3">
           <Input
-            placeholder="Mot en bété (forme phonétique latine) *"
+            placeholder="Mot en bhété (forme phonétique latine) *"
             value={wordBetePhonetic}
             onChange={e => setWordBetePhonetic(e.target.value)}
           />
@@ -159,7 +159,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
       ) : type === 'expression' ? (
         <div className="space-y-3">
           <Input
-            placeholder="Phrase en bété (standard) *"
+            placeholder="Phrase en bhété (standard) *"
             value={betePhrase}
             onChange={e => setBetePhrase(e.target.value)}
           />
@@ -202,10 +202,10 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
             <option value="other">Autre</option>
           </select>
           <Input placeholder="Patron français (ex: verbe + é)" value={patternFr} onChange={e => setPatternFr(e.target.value)} />
-          <Input placeholder="Patron bété correspondant" value={patternBete} onChange={e => setPatternBete(e.target.value)} />
+          <Input placeholder="Patron bhété correspondant" value={patternBete} onChange={e => setPatternBete(e.target.value)} />
           <Textarea placeholder="Description de la règle" value={description} onChange={e => setDescription(e.target.value)} rows={2} />
           <Input placeholder="Exemple français (optionnel)" value={exFr} onChange={e => setExFr(e.target.value)} />
-          <Input placeholder="Exemple bété (optionnel)" value={exBete} onChange={e => setExBete(e.target.value)} />
+          <Input placeholder="Exemple bhété (optionnel)" value={exBete} onChange={e => setExBete(e.target.value)} />
         </div>
       )}
 

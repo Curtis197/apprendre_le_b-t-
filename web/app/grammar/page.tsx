@@ -1,4 +1,4 @@
-// web/app/grammar/page.tsx
+﻿// web/app/grammar/page.tsx
 import Link from 'next/link'
 import { Music2, BookOpen, Layers, PenLine } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
@@ -32,7 +32,7 @@ export default async function GrammarPage() {
       <PageHeader
         badge="Piliers Linguistiques"
         title="Architecture Grammaticale"
-        subtitle="La langue bété possède une structure tonale et aspectuelle unique qui reflète la richesse de la tradition orale ivoirienne."
+        subtitle="La langue bhété possède une structure tonale et aspectuelle unique qui reflète la richesse de la tradition orale ivoirienne."
       />
 
       <div className="mb-6">
@@ -53,7 +53,7 @@ export default async function GrammarPage() {
             </div>
           </div>
           <p className="text-muted-foreground mb-6 leading-relaxed">
-            Le bété est une langue à tons. Le ton (hauteur mélodique d&apos;une syllabe) est phonémique :
+            Le bhété est une langue à tons. Le ton (hauteur mélodique d&apos;une syllabe) est phonémique :
             il distingue des mots de forme identique. On distingue principalement le ton haut et le ton bas.
           </p>
           <div className="grid md:grid-cols-2 gap-4">
@@ -77,7 +77,7 @@ export default async function GrammarPage() {
             Structure Verbale
           </h2>
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            Les verbes bété s&apos;organisent selon un système aspectuel distinguant l&apos;accompli de l&apos;inaccompli.
+            Les verbes bhété s&apos;organisent selon un système aspectuel distinguant l&apos;accompli de l&apos;inaccompli.
           </p>
           <ul className="space-y-2">
             {[

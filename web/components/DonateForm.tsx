@@ -1,4 +1,4 @@
-// web/components/DonateForm.tsx
+﻿// web/components/DonateForm.tsx
 'use client'
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -64,7 +64,7 @@ export function DonateForm() {
       {showThanks && (
         <div className="mb-6 flex items-start justify-between gap-4 bg-secondary/10 border border-secondary/30 rounded-lg px-4 py-3">
           <p className="text-sm text-secondary font-medium">
-            Merci pour votre contribution ! Vous aidez à préserver la langue bété.
+            Merci pour votre contribution ! Vous aidez à préserver la langue bhété.
           </p>
           <button
             onClick={() => setShowThanks(false)}
@@ -82,7 +82,7 @@ export function DonateForm() {
       </h2>
       <p className="text-sm text-muted-foreground mb-6">
         La plateforme est financée par des contributions volontaires. Chaque euro aide à couvrir
-        l&apos;hébergement et les coûts API pour préserver la langue bété.
+        l&apos;hébergement et les coûts API pour préserver la langue bhété.
       </p>
 
       {/* Preset buttons */}

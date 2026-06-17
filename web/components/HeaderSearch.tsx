@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef, useTransition } from 'react'
 import { Search, X } from 'lucide-react'
 import Link from 'next/link'
@@ -72,7 +72,7 @@ export function HeaderSearch() {
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Rechercher en français ou bété…"
+              placeholder="Rechercher en français ou bhété…"
               className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
             />
             {query && (

@@ -1,4 +1,4 @@
-import Stripe from 'stripe'
+﻿import Stripe from 'stripe'
 import { NextRequest, NextResponse } from 'next/server'
 import { validateDonationAmount } from '@/lib/donation'
 
@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
             currency: 'eur',
             unit_amount: amount,
             product_data: {
-              name: 'Soutien à Parlons Bété',
-              description: 'Contribution au financement de la plateforme linguistique bété.',
+              name: 'Soutien à Parlons Bhété',
+              description: 'Contribution au financement de la plateforme linguistique bhété.',
             },
           },
           quantity: 1,

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
 export const runtime = 'edge'
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { error } = await resend.emails.send({
-    from: 'Parlons Bété <onboarding@resend.dev>',
+    from: 'Parlons Bhété <onboarding@resend.dev>',
     to: 'curtiscapre@gmail.com',
     replyTo: email,
     subject: `[Contact] ${subject || 'Sans sujet'} — de ${name}`,

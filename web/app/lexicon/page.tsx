@@ -1,4 +1,4 @@
-// web/app/lexicon/page.tsx
+﻿// web/app/lexicon/page.tsx
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, LayoutGrid, List } from 'lucide-react'
@@ -148,8 +148,8 @@ export default function LexiconPage() {
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10">
       <PageHeader
         badge="Dictionnaire"
-        title="Lexique Bété"
-        subtitle="Explorez les mots de la langue bété, leur prononciation et leur traduction en français."
+        title="Lexique Bhété"
+        subtitle="Explorez les mots de la langue bhété, leur prononciation et leur traduction en français."
       />
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-4">

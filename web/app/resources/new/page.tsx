@@ -1,4 +1,4 @@
-// web/app/resources/new/page.tsx
+﻿// web/app/resources/new/page.tsx
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { ResourceSubmitForm } from '@/components/ResourceSubmitForm'
@@ -17,7 +17,7 @@ export default function NewResourcePage() {
       <div className="mb-8">
         <h1 className="font-heading text-3xl font-bold mb-2">Soumettre une ressource</h1>
         <p className="text-muted-foreground text-sm">
-          Partagez une chanson, un conte, un poème, un proverbe ou tout autre texte en bété.
+          Partagez une chanson, un conte, un poème, un proverbe ou tout autre texte en bhété.
           Votre contribution sera visible après validation par l&apos;équipe.
         </p>
       </div>

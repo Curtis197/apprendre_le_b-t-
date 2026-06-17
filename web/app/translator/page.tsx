@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase-server'
 import { getTranslatorCounts } from '@/lib/translator-threshold'
@@ -9,7 +9,7 @@ export default async function TranslatorPage() {
   const counts = await getTranslatorCounts(supabase)
   return (
     <main className="max-w-2xl mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-2">Traducteur Français → Bété</h1>
+      <h1 className="text-3xl font-bold mb-2">Traducteur Français → Bhété</h1>
       <TranslatorGate counts={counts} />
     </main>
   )

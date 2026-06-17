@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeftRight, Copy, Mic, Sparkles } from 'lucide-react'
@@ -54,7 +54,7 @@ export function HomeTranslator() {
         <div className="flex items-center gap-3">
           <span className="bg-muted rounded-full px-4 py-1.5 text-sm font-semibold">Français</span>
           <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-          <span className="bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-semibold">Bété</span>
+          <span className="bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-semibold">Bhété</span>
         </div>
         {remaining !== null && (
           <span className={`text-xs font-medium ${remaining <= 2 ? 'text-destructive' : 'text-muted-foreground'}`}>
@@ -117,7 +117,7 @@ export function HomeTranslator() {
           <Link href="/contribute" className="font-semibold underline underline-offset-2 hover:text-amber-600 transition-colors">
             Contribuez au projet
           </Link>{' '}
-          pour l&apos;améliorer et enrichir le lexique bété.
+          pour l&apos;améliorer et enrichir le lexique bhété.
         </p>
       </div>
 

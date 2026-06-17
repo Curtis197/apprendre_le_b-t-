@@ -1,4 +1,4 @@
-// web/app/forum/new/page.tsx
+﻿// web/app/forum/new/page.tsx
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
@@ -23,7 +23,7 @@ export default async function NewThreadPage() {
       <div className="mb-8">
         <h1 className="font-heading text-3xl font-bold mb-2">Nouveau sujet</h1>
         <p className="text-muted-foreground text-sm">
-          Posez une question, partagez une observation ou lancez une discussion sur la langue bété.
+          Posez une question, partagez une observation ou lancez une discussion sur la langue bhété.
         </p>
       </div>
 

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -45,7 +45,7 @@ export function TranslatorInput() {
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">{text.length}/500</span>
         <Button onClick={handleTranslate} disabled={loading || !text.trim()}>
-          {loading ? 'Traduction…' : 'Traduire en Bété'}
+          {loading ? 'Traduction…' : 'Traduire en Bhété'}
         </Button>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

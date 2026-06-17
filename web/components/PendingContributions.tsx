@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -129,7 +129,7 @@ export function PendingContributions() {
                 </CardHeader>
                 <CardContent className="text-sm space-y-1">
                   <p><span className="text-muted-foreground">FR:</span> {rule.pattern_french}</p>
-                  <p><span className="text-muted-foreground">Bété:</span> {rule.pattern_bete}</p>
+                  <p><span className="text-muted-foreground">Bhété:</span> {rule.pattern_bete}</p>
                   <ContributionComments targetTable="grammar_rules" targetId={rule.id} />
                 </CardContent>
               </Card>

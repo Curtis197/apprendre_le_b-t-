@@ -1,4 +1,4 @@
-// lib/types.ts
+﻿// lib/types.ts
 
 export type { DialectKey } from './dialect'
 
@@ -139,9 +139,9 @@ export interface TranslationLogEntry {
 
 export interface TranslationResult {
   input:             string
-  sentence:          string    // fluent Bété — western Latin alphabet (bete_phonetic values)
-  sentence_phonetic: string    // fluent Bété — IPA/Bible phonetic form (bete_word values)
-  unknowns:          string[]  // French words with no Bété candidate
+  sentence:          string    // fluent Bhété — western Latin alphabet (bete_phonetic values)
+  sentence_phonetic: string    // fluent Bhété — IPA/Bible phonetic form (bete_word values)
+  unknowns:          string[]  // French words with no Bhété candidate
   rules_applied:     string[]  // grammar rule descriptions used
   tokens:            FeedbackToken[]  // kept for word-level feedback
   cached:            boolean

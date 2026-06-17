@@ -1,9 +1,9 @@
-export type DialectKey = 'western' | 'northern' | 'eastern'
+﻿export type DialectKey = 'western' | 'northern' | 'eastern'
 
 export const DIALECTS: Record<DialectKey, { name: string }> = {
-  western:  { name: 'Bété Occidental (Guiberoua)' },
-  northern: { name: 'Bété Septentrional (Gagnoa)' },
-  eastern:  { name: 'Bété Oriental (Daloa)' },
+  western:  { name: 'Bhété Occidental (Guiberoua)' },
+  northern: { name: 'Bhété Septentrional (Gagnoa)' },
+  eastern:  { name: 'Bhété Oriental (Daloa)' },
 }
 
 export const DIALECT_KEYS = Object.keys(DIALECTS) as DialectKey[]

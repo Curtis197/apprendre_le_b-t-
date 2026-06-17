@@ -1,4 +1,4 @@
-// web/app/layout.tsx
+﻿// web/app/layout.tsx
 import type { Metadata } from 'next'
 import { Inter, Lexend } from 'next/font/google'
 import './globals.css'
@@ -13,7 +13,7 @@ const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: [
 
 export const metadata: Metadata = {
   title: 'Apprendre le bhété — Plateforme linguistique',
-  description: 'Lexique, traducteur et ressources pour la langue bété',
+  description: 'Lexique, traducteur et ressources pour la langue bhété',
   icons: {
     icon: '/logo.png'
   }

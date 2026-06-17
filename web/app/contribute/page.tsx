@@ -1,4 +1,4 @@
-// web/app/contribute/page.tsx
+﻿// web/app/contribute/page.tsx
 export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
@@ -52,7 +52,7 @@ export default async function ContributePage() {
         <div className="pattern-bg absolute inset-0" aria-hidden="true" />
         <div className="relative z-10">
           <h1 className="font-heading text-4xl font-bold max-w-2xl mb-3">
-            Contribuez au Patrimoine Bété
+            Contribuez au Patrimoine Bhété
           </h1>
           <p className="text-lg opacity-90 max-w-xl leading-relaxed">
             Chaque mot que vous ajoutez renforce la préservation d&apos;une langue vivante.

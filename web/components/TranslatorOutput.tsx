@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { TranslationResult, FeedbackToken } from '@/lib/types'
 import { FeedbackButton } from './FeedbackButton'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +16,7 @@ export function TranslatorOutput({ result }: Props) {
       </p>
 
       <div className="rounded-lg border p-4 bg-muted/30">
-        <p className="text-xs text-muted-foreground mb-1">Bété (écriture courante)</p>
+        <p className="text-xs text-muted-foreground mb-1">Bhété (écriture courante)</p>
         <p className="text-xl font-semibold">{result.sentence}</p>
       </div>
 
