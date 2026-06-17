@@ -1,12 +1,16 @@
 // web/components/MobileSidebar.tsx
 'use client'
-import { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Home, BookOpen, BookText, MessageCircle, Layers, PlusCircle, Phone } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Menu, Home, BookOpen, BookText, MessageCircle, Layers, PlusCircle, Phone } from 'lucide-react'
 import { AuthNav } from './AuthNav'
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle
+} from "@/components/ui/sheet"
 
 const links = [
   { href: '/', label: 'Accueil', icon: Home },
@@ -20,45 +24,26 @@ const links = [
 
 export function MobileSidebar() {
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
 
-  useEffect(() => { setMounted(true) }, [])
-
-  useEffect(() => {
-    document.documentElement.style.overflow = open ? 'hidden' : ''
-    return () => { document.documentElement.style.overflow = '' }
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [open])
-
-  const panel = open && mounted && createPortal(
-    <>
-      <div
-        className="fixed inset-0 bg-black/40 z-[200] cursor-pointer"
-        onClick={() => setOpen(false)}
-      />
-      <div className="fixed inset-y-0 left-0 z-[201] w-72 bg-background border-r border-border flex flex-col">
-        <div className="flex items-center justify-between px-6 h-[72px] border-b border-border shrink-0">
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors cursor-pointer"
+          aria-label="Ouvrir le menu"
+        >
+          <Menu className="w-5 h-5 pointer-events-none" />
+        </button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-72 p-0 flex flex-col border-r border-border">
+        <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
+        <div className="flex items-center px-6 h-[72px] border-b border-border shrink-0">
           <span className="font-heading font-bold text-xl text-primary flex items-center gap-2">
             <img src="/logo.png" alt="Apprendre le bhété Logo" className="w-8 h-8 object-contain" />
             Apprendre le bhété
           </span>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors cursor-pointer"
-            aria-label="Fermer le menu"
-          >
-            <X className="w-5 h-5 pointer-events-none" />
-          </button>
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
           {links.map(({ href, label, icon: Icon }) => {
@@ -84,22 +69,8 @@ export function MobileSidebar() {
           <AuthNav />
           <p className="text-xs text-muted-foreground mt-3">Apprendre le bhété v1.0</p>
         </div>
-      </div>
-    </>,
-    document.body
-  )
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors cursor-pointer"
-        aria-label="Ouvrir le menu"
-      >
-        <Menu className="w-5 h-5 pointer-events-none" />
-      </button>
-      {panel}
-    </>
+      </SheetContent>
+    </Sheet>
   )
 }
+
