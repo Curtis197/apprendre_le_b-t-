@@ -39,25 +39,34 @@ function primaryLabel(pos: string[] | null): string {
 }
 
 function ListRow({ entry }: { entry: LexiconEntry }) {
+  const isPending = !entry.bete_phonetic
+  const href = isPending 
+    ? `/contribute?type=word&word=${encodeURIComponent(entry.top_french)}&id=${entry.id}`
+    : `/lexicon/${entry.id}`
+
   return (
     <Link
-      href={`/lexicon/${entry.id}`}
+      href={href}
       className="flex items-center gap-4 px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
     >
       <span className="bg-secondary text-white text-xs font-semibold rounded-full px-2.5 py-0.5 shrink-0 w-16 text-center">
         {primaryLabel(entry.pos)}
       </span>
       <div className="flex-1 min-w-0">
-        <span className="font-heading font-bold text-foreground group-hover:text-primary transition-colors">
-          {entry.bete_phonetic}
+        <span className={`font-heading font-bold transition-colors ${isPending ? 'text-muted-foreground' : 'text-foreground group-hover:text-primary'}`}>
+          {isPending ? 'À TRADUIRE' : entry.bete_phonetic}
         </span>
-        <span className="text-xs font-mono text-muted-foreground ml-2">[{entry.bete_word}]</span>
+        {!isPending && (
+          <span className="text-xs font-mono text-muted-foreground ml-2">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
+        )}
       </div>
       <span className="text-sm text-muted-foreground italic truncate max-w-[200px] shrink-0">
         {entry.top_french}
       </span>
-      {entry.validated && (
+      {entry.validated ? (
         <span className="text-xs text-secondary font-semibold shrink-0">✓</span>
+      ) : (
+        <span className="text-xs text-amber-600 font-medium shrink-0">⚠</span>
       )}
     </Link>
   )
@@ -65,15 +74,17 @@ function ListRow({ entry }: { entry: LexiconEntry }) {
 
 export default function LexiconPage() {
   const [category, setCategory] = useState('Tous')
+  const [letter, setLetter] = useState('Tous')
   const [entries, setEntries] = useState<LexiconEntry[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [wordOfTheDay, setWordOfTheDay] = useState<LexiconEntry | null>(null)
   const supabaseRef = useRef(createClient())
   const { dialect } = useDialect()
 
-  useEffect(() => { setPage(0) }, [category, dialect])
+  useEffect(() => { setPage(0) }, [category, letter, dialect])
 
   useEffect(() => {
     let cancelled = false
@@ -93,6 +104,10 @@ export default function LexiconPage() {
     if (filter?.tag) {
       q = q.contains('pos', [filter.tag])
     }
+    
+    if (letter !== 'Tous') {
+      q = q.ilike('bete_phonetic', `${letter}%`)
+    }
 
     q.then(({ data, count, error }) => {
       if (cancelled) return
@@ -103,10 +118,25 @@ export default function LexiconPage() {
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [category, page, dialect])
+  }, [category, letter, page, dialect])
+
+  useEffect(() => {
+    let cancelled = false
+    supabaseRef.current
+      .from('lexicon')
+      .select('*')
+      .eq('bete_phonetic', '')
+      .eq('dialect', dialect)
+      .limit(1)
+      .then(({ data }) => {
+        if (!cancelled && data && data.length > 0) {
+          setWordOfTheDay(data[0] as LexiconEntry)
+        }
+      })
+    return () => { cancelled = true }
+  }, [dialect])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const [featured, ...rest] = entries
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10">
@@ -120,9 +150,12 @@ export default function LexiconPage() {
         <DialectSelector />
       </div>
 
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-        <FilterPills options={FILTER_LABELS} value={category} onChange={setCategory} />
-        <div className="flex items-center gap-3 shrink-0">
+      <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 mb-6">
+        <div className="flex flex-col gap-3 max-w-full overflow-hidden">
+          <FilterPills options={FILTER_LABELS} value={category} onChange={setCategory} />
+          <FilterPills options={['Tous', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')]} value={letter} onChange={setLetter} />
+        </div>
+        <div className="flex items-center gap-3 shrink-0 xl:pt-1">
           <span className="text-sm text-muted-foreground">
             {loading ? '…' : `${total} mot${total !== 1 ? 's' : ''} trouvé${total !== 1 ? 's' : ''}`}
           </span>
@@ -165,15 +198,15 @@ export default function LexiconPage() {
         </p>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {featured && (
+          {page === 0 && wordOfTheDay && (
             <WordCard
-              key={featured.id}
-              entry={featured}
+              key={wordOfTheDay.id}
+              entry={wordOfTheDay}
               featured
               className="md:col-span-2 xl:col-span-1"
             />
           )}
-          {rest.map(entry => (
+          {entries.map(entry => (
             <WordCard key={entry.id} entry={entry} />
           ))}
         </div>

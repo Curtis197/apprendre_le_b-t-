@@ -11,9 +11,10 @@ type ContributionType = 'word' | 'expression' | 'grammar_rule'
 interface ContributionFormProps {
   initialWord?: string
   initialType?: ContributionType
+  initialId?: string
 }
 
-export function ContributionForm({ initialWord, initialType }: ContributionFormProps = {}) {
+export function ContributionForm({ initialWord, initialType, initialId }: ContributionFormProps = {}) {
   const [type, setType] = useState<ContributionType>(initialType ?? 'word')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -54,7 +55,7 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
     try {
       let error
       if (type === 'word') {
-        ({ error } = await supabaseRef.current.from('lexicon').insert({
+        const payload = {
           bete_phonetic: wordBetePhonetic,
           bete_word: wordBeteIPA || wordBetePhonetic,
           top_french: wordFrench,
@@ -63,7 +64,13 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
           pos: [wordPos],
           notes: wordNotes || null,
           created_by: user.id,
-        }))
+          source: 'contributed',
+        }
+        if (initialId) {
+          ({ error } = await supabaseRef.current.from('lexicon').update(payload).eq('id', initialId))
+        } else {
+          ({ error } = await supabaseRef.current.from('lexicon').insert(payload))
+        }
       } else if (type === 'grammar_rule') {
         ({ error } = await supabaseRef.current.from('grammar_rules').insert({
           category, pattern_french: patternFr, pattern_bete: patternBete,
@@ -226,7 +233,8 @@ function ContributionFormParamsReader() {
     rawType === 'word' || rawType === 'expression' || rawType === 'grammar_rule'
       ? rawType
       : undefined
-  return <ContributionForm initialWord={word} initialType={type} />
+  const id = params.get('id') ?? undefined
+  return <ContributionForm initialWord={word} initialType={type} initialId={id} />
 }
 
 export function ContributionFormWithParams() {

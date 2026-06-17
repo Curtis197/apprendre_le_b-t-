@@ -30,25 +30,39 @@ function semanticTags(pos: string[] | null): string[] {
 }
 
 export function WordCard({ entry, featured = false, className }: Props) {
+  const isPending = !entry.bete_phonetic
+
   if (featured) {
+    const href = isPending 
+      ? `/contribute?type=word&word=${encodeURIComponent(entry.top_french)}&id=${entry.id}`
+      : `/lexicon/${entry.id}`
+
     return (
-      <Link href={`/lexicon/${entry.id}`} className={cn('bg-primary/10 border border-primary/20 rounded-xl p-6 relative overflow-hidden hover:border-primary/50 transition-colors block', className)}>
+      <Link href={href} className={cn('bg-primary/10 border border-primary/20 rounded-xl p-6 relative overflow-hidden hover:border-primary/50 transition-colors block', className)}>
         <div className="flex items-start justify-between mb-4">
           <span className="bg-secondary/20 text-secondary text-xs font-semibold rounded-full px-3 py-1">
-            Mot du Jour
+            {isPending ? 'Mot à Traduire du Jour' : 'Mot du Jour'}
           </span>
         </div>
-        <h2 className="font-heading text-4xl font-bold text-primary mb-1">{entry.bete_phonetic}</h2>
-        <p className="text-sm italic text-muted-foreground mb-3">[{cleanBeteWord(entry.bete_word)}]</p>
-        <div className="w-16 h-0.5 bg-primary/30 mb-3" />
+        <h2 className={cn("font-heading text-4xl font-bold mb-1", isPending ? "text-primary/70" : "text-primary")}>
+          {isPending ? 'À TRADUIRE' : entry.bete_phonetic}
+        </h2>
+        {!isPending && (
+          <p className="text-sm italic text-muted-foreground mb-3">[{cleanBeteWord(entry.bete_word)}]</p>
+        )}
+        <div className="w-16 h-0.5 bg-primary/30 mb-3 mt-3" />
         <p className="italic text-foreground/80">{entry.top_french}</p>
         <BookOpen className="absolute -bottom-4 -right-4 w-32 h-32 text-primary opacity-10" aria-hidden="true" />
       </Link>
     )
   }
 
+  const href = isPending 
+    ? `/contribute?type=word&word=${encodeURIComponent(entry.top_french)}&id=${entry.id}`
+    : `/lexicon/${entry.id}`
+
   return (
-    <Link href={`/lexicon/${entry.id}`} className={cn(
+    <Link href={href} className={cn(
       'bg-card rounded-xl p-6 border-2 border-transparent hover:border-primary hover:shadow-lg transition-all group block',
       className
     )}>
@@ -64,7 +78,9 @@ export function WordCard({ entry, featured = false, className }: Props) {
           ))}
         </div>
       </div>
-      <h3 className="font-heading text-2xl font-bold text-foreground mb-2">{entry.bete_phonetic}</h3>
+      <h3 className={cn("font-heading text-2xl font-bold mb-2", isPending ? "text-muted-foreground" : "text-foreground")}>
+        {isPending ? 'À TRADUIRE' : entry.bete_phonetic}
+      </h3>
       <div
         className="w-16 h-1 mb-2 rounded-full"
         style={{
@@ -74,10 +90,12 @@ export function WordCard({ entry, featured = false, className }: Props) {
       />
       <p className="italic text-muted-foreground text-sm mb-3">{entry.top_french}</p>
       <div className="border-t border-border pt-3 flex items-center justify-between opacity-60 group-hover:opacity-100 transition-opacity">
-        <span className="text-xs text-muted-foreground font-mono">[{cleanBeteWord(entry.bete_word)}]</span>
+        <span className="text-xs text-muted-foreground font-mono">
+          {isPending ? '' : `[${cleanBeteWord(entry.bete_word)}]`}
+        </span>
         {entry.validated
           ? <span className="text-xs text-secondary font-semibold">✓ validé</span>
-          : entry.source === 'seed' && <span className="text-xs text-amber-600 font-medium">⚠ non validé</span>
+          : <span className="text-xs text-amber-600 font-medium">⚠ non validé</span>
         }
       </div>
     </Link>
