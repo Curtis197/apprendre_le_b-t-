@@ -28,14 +28,16 @@ export function MobileSidebar() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors cursor-pointer"
-          aria-label="Ouvrir le menu"
-        >
-          <Menu className="w-5 h-5 pointer-events-none" />
-        </button>
+      <SheetTrigger
+        render={
+          <button
+            type="button"
+            className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors cursor-pointer"
+            aria-label="Ouvrir le menu"
+          />
+        }
+      >
+        <Menu className="w-5 h-5 pointer-events-none" />
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0 flex flex-col border-r border-border">
         <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
