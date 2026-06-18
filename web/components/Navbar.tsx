@@ -150,14 +150,13 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Mobile menu button */}
-        <button
+        {/* Mobile nav test link */}
+        <Link
+          href="/lexicon"
           className="md:hidden px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
         >
-          {menuOpen ? 'Fermer' : 'Menu'}
-        </button>
+          Menu
+        </Link>
       </div>
 
       {/* Mobile menu — inside <header>, normal block element, no fixed/absolute positioning */}
