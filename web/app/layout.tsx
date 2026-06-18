@@ -17,9 +17,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <body className={`${inter.variable} ${lexend.variable}`}>
-        {/* TEMP: Eruda in-page DevTools for mobile debugging — remove before shipping */}
-        <script src="https://cdn.jsdelivr.net/npm/eruda" />
-        <script dangerouslySetInnerHTML={{ __html: 'eruda.init()' }} />
+        {/* TEMP: Eruda mobile DevTools — only loads when NEXT_PUBLIC_ENABLE_ERUDA=1 */}
+        {process.env.NEXT_PUBLIC_ENABLE_ERUDA === '1' && (
+          <>
+            <script src="https://cdn.jsdelivr.net/npm/eruda@3.4.0" />
+            <script dangerouslySetInnerHTML={{ __html: 'eruda.init()' }} />
+          </>
+        )}
         <Navbar />
         <DialectProvider>
           <main>{children}</main>
