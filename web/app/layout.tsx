@@ -19,10 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} ${lexend.variable}`}>
         {/* TEMP: Eruda mobile DevTools — only loads when NEXT_PUBLIC_ENABLE_ERUDA=1 */}
         {process.env.NEXT_PUBLIC_ENABLE_ERUDA === '1' && (
-          <>
-            <script src="https://cdn.jsdelivr.net/npm/eruda@3.4.0" />
-            <script dangerouslySetInnerHTML={{ __html: 'eruda.init()' }} />
-          </>
+          <script dangerouslySetInnerHTML={{ __html:
+            "var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/eruda@3.4.0';s.onload=function(){eruda.init()};document.head.appendChild(s);"
+          }} />
         )}
         <Navbar />
         <DialectProvider>
