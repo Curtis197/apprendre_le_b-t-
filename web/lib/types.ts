@@ -1,4 +1,4 @@
-﻿// lib/types.ts
+// lib/types.ts
 
 export type { DialectKey } from './dialect'
 

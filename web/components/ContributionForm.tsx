@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { Suspense, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'

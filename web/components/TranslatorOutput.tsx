@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import { TranslationResult, FeedbackToken } from '@/lib/types'
 import { FeedbackButton } from './FeedbackButton'
 import { Badge } from '@/components/ui/badge'

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useTransition, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'

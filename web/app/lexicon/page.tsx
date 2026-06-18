@@ -1,4 +1,4 @@
-﻿// web/app/lexicon/page.tsx
+// web/app/lexicon/page.tsx
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, LayoutGrid, List } from 'lucide-react'

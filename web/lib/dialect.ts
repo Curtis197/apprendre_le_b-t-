@@ -1,4 +1,4 @@
-﻿export type DialectKey = 'western' | 'northern' | 'eastern'
+export type DialectKey = 'western' | 'northern' | 'eastern'
 
 export const DIALECTS: Record<DialectKey, { name: string }> = {
   western:  { name: 'Bhété Occidental (Guiberoua)' },
