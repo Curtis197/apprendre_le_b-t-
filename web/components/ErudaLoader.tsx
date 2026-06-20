@@ -1,14 +1,12 @@
 'use client'
-import Script from 'next/script'
+import { useEffect } from 'react'
 
 export function ErudaLoader() {
-  return (
-    <Script
-      src="https://cdn.jsdelivr.net/npm/eruda@3.4.0"
-      strategy="afterInteractive"
-      onLoad={() => {
-        ;(window as any).eruda?.init()
-      }}
-    />
-  )
+  useEffect(() => {
+    const s = document.createElement('script')
+    s.src = 'https://cdn.jsdelivr.net/npm/eruda@3.4.0'
+    s.onload = () => { (window as any).eruda?.init() }
+    document.head.appendChild(s)
+  }, [])
+  return null
 }
