@@ -150,12 +150,14 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Mobile menu trigger — uses <a> because onClick on <button> doesn't fire on mobile Chrome in this project */}
+        {/* Mobile menu trigger — <a> + onTouchEnd for iOS WebKit compatibility */}
         <a
           href="#menu"
           role="button"
+          onTouchEnd={(e) => { e.preventDefault(); setMenuOpen(o => !o) }}
           onClick={(e) => { e.preventDefault(); setMenuOpen(o => !o) }}
-          className="md:hidden px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors select-none"
+          className="md:hidden px-3 py-1.5 text-sm font-medium transition-colors select-none"
+          style={{ color: '#594238' }}
           aria-expanded={menuOpen}
           aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
         >
@@ -165,7 +167,7 @@ export function Navbar() {
 
       {/* Mobile menu — inside <header>, normal block element, no fixed/absolute positioning */}
       {menuOpen && (
-        <div className="md:hidden border-t border-border bg-background px-4 py-3 space-y-1">
+        <div className="md:hidden border-t border-border px-4 py-3 space-y-1" style={{ backgroundColor: 'var(--background, #fbf9f5)' }}>
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
