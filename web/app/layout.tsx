@@ -18,8 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <body className={`${inter.variable} ${lexend.variable}`}>
-        {/* TEMP: Eruda mobile DevTools — only loads when NEXT_PUBLIC_ENABLE_ERUDA=1 */}
-        {process.env.NEXT_PUBLIC_ENABLE_ERUDA === '1' && <ErudaLoader />}
+        {/* TEMP: Eruda mobile DevTools — unconditional for testing */}
+        <ErudaLoader />
         <Navbar />
         <DialectProvider>
           <main>{children}</main>
