@@ -4,6 +4,7 @@ import { Inter, Lexend } from 'next/font/google'
 import './globals.css'
 import { Navbar } from '@/components/Navbar'
 import { DialectProvider } from '@/context/DialectContext'
+import { ErudaLoader } from '@/components/ErudaLoader'
 
 const inter  = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: ['400', '600', '700'] })
@@ -18,11 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr">
       <body className={`${inter.variable} ${lexend.variable}`}>
         {/* TEMP: Eruda mobile DevTools — only loads when NEXT_PUBLIC_ENABLE_ERUDA=1 */}
-        {process.env.NEXT_PUBLIC_ENABLE_ERUDA === '1' && (
-          <script dangerouslySetInnerHTML={{ __html:
-            "var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/eruda@3.4.0';s.onload=function(){eruda.init()};document.head.appendChild(s);"
-          }} />
-        )}
+        {process.env.NEXT_PUBLIC_ENABLE_ERUDA === '1' && <ErudaLoader />}
         <Navbar />
         <DialectProvider>
           <main>{children}</main>
