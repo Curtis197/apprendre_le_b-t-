@@ -8,6 +8,8 @@ import { ContributionFormWithParams } from '@/components/ContributionForm'
 import { DonateForm } from '@/components/DonateForm'
 import { createClient } from '@/lib/supabase-server'
 import type { LexiconEntry } from '@/lib/types'
+import { JsonLd } from '@/components/JsonLd'
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,8 +47,28 @@ async function getWordsOfDay(): Promise<LexiconEntry[]> {
 export default async function HomePage() {
   const words = await getWordsOfDay()
 
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE_NAME,
+      alternateName: 'Apprendre le bété',
+      url: SITE_URL,
+      inLanguage: 'fr',
+      description: SITE_DESCRIPTION,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: `${SITE_URL}/logo.png`,
+    },
+  ]
+
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10 space-y-10">
+      <JsonLd data={jsonLd} />
 
       {/* Hero: Patrimoine Vivant */}
       <div className="rounded-2xl overflow-hidden border border-border">

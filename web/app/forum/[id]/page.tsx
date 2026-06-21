@@ -7,6 +7,8 @@ import { ChevronLeft, Clock, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase-server'
 import { getThread, getThreadPosts } from '@/lib/community'
 import { ForumReplyForm } from '@/components/ForumReplyForm'
+import { JsonLd } from '@/components/JsonLd'
+import { SITE_URL } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,8 +61,34 @@ export default async function ThreadPage({ params }: Props) {
 
   if (!t) notFound()
 
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'DiscussionForumPosting',
+      headline: t.title,
+      ...(t.body && { articleBody: t.body }),
+      url: `${SITE_URL}/forum/${id}`,
+      datePublished: t.created_at,
+      author: { '@type': 'Person', name: t.author_name || 'Anonyme' },
+      interactionStatistic: [
+        { '@type': 'InteractionCounter', interactionType: 'https://schema.org/LikeAction', userInteractionCount: t.upvotes ?? 0 },
+        { '@type': 'InteractionCounter', interactionType: 'https://schema.org/CommentAction', userInteractionCount: replies?.length ?? 0 },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Accueil', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Forum', item: `${SITE_URL}/forum` },
+        { '@type': 'ListItem', position: 3, name: t.title, item: `${SITE_URL}/forum/${id}` },
+      ],
+    },
+  ]
+
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-10 py-10">
+      <JsonLd data={jsonLd} />
       <Link
         href="/forum"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"

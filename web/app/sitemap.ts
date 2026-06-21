@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createPublicClient } from '@/lib/supabase-public'
 import { SITE_URL } from '@/lib/site'
+import { cleanBeteForm } from '@/lib/lexicon'
 
 // Regenerate at most once a day (ISR); the cookie-free client keeps this cacheable.
 export const revalidate = 86400
@@ -30,15 +31,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = createPublicClient()
     const [lex, threads] = await Promise.all([
-      supabase.from('lexicon').select('id').limit(50000),
+      supabase.from('lexicon').select('id, bete_word, bete_phonetic').limit(50000),
       supabase.from('forum_threads').select('id, created_at').limit(50000),
     ])
 
-    const lexEntries: MetadataRoute.Sitemap = (lex.data ?? []).map((row) => ({
-      url: `${SITE_URL}/lexicon/${row.id}`,
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    }))
+    // Only list entries that actually have a translation (skip "_pending_" stubs).
+    const lexEntries: MetadataRoute.Sitemap = (lex.data ?? [])
+      .filter((row) => cleanBeteForm(row.bete_phonetic) || cleanBeteForm(row.bete_word))
+      .map((row) => ({
+        url: `${SITE_URL}/lexicon/${row.id}`,
+        changeFrequency: 'monthly',
+        priority: 0.6,
+      }))
 
     const threadEntries: MetadataRoute.Sitemap = (threads.data ?? []).map((row) => ({
       url: `${SITE_URL}/forum/${row.id}`,
