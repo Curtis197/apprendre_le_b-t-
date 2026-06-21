@@ -3,6 +3,13 @@
 import { createClient } from '@/lib/supabase-server'
 import { getTranslatorCounts } from '@/lib/translator-threshold'
 import { TranslatorGate } from '@/components/TranslatorGate'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Traducteur français → bété',
+  description: 'Traduisez du français vers le bété (bhété) : forme en alphabet latin et forme phonétique, mot à mot.',
+  alternates: { canonical: '/translator' },
+}
 
 export default async function TranslatorPage() {
   const supabase = await createClient()

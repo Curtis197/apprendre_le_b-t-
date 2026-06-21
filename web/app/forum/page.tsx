@@ -5,8 +5,15 @@ import { PageHeader } from '@/components/PageHeader'
 import { createClient } from '@/lib/supabase-server'
 import { getThreads } from '@/lib/community'
 import type { ForumCategory } from '@/lib/types'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Forum communautaire',
+  description: 'Échangez autour de la langue et de la culture bété (bhété) : questions, traductions, grammaire et lexique.',
+  alternates: { canonical: '/forum' },
+}
 
 const CATEGORIES = [
   { value: null,         label: 'Tous' },

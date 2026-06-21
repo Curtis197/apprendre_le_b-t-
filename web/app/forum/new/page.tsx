@@ -4,6 +4,12 @@ import { redirect } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { ForumNewThreadForm } from '@/components/ForumNewThreadForm'
 import { createClient } from '@/lib/supabase-server'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Nouvelle discussion',
+  robots: { index: false, follow: true },
+}
 
 export default async function NewThreadPage() {
   const supabase = await createClient()

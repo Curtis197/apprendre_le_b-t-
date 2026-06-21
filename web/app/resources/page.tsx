@@ -7,8 +7,15 @@ import { getCommunityTexts } from '@/lib/community'
 import { extractYouTubeId } from '@/lib/utils'
 import type { ContentType, CommunityText } from '@/lib/types'
 import { PendingResources } from '@/components/PendingResources'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Ressources pour apprendre le bété',
+  description: 'Chants, contes, proverbes, vidéos et cours pour apprendre et préserver la langue bété (bhété) de Côte d’Ivoire.',
+  alternates: { canonical: '/resources' },
+}
 
 const TYPES = [
   { value: null,      label: 'Tous',       icon: Layers },

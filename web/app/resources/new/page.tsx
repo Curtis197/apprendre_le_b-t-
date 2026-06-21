@@ -2,6 +2,12 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { ResourceSubmitForm } from '@/components/ResourceSubmitForm'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Proposer une ressource',
+  robots: { index: false, follow: true },
+}
 
 export default function NewResourcePage() {
   return (

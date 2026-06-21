@@ -1,4 +1,6 @@
 // web/app/forum/[id]/page.tsx
+import { cache } from 'react'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Clock, MessageCircle } from 'lucide-react'
@@ -7,6 +9,12 @@ import { getThread, getThreadPosts } from '@/lib/community'
 import { ForumReplyForm } from '@/components/ForumReplyForm'
 
 export const dynamic = 'force-dynamic'
+
+// Cached so generateMetadata and the page share a single thread query per request.
+const getThreadCached = cache(async (id: string) => {
+  const supabase = await createClient()
+  return getThread(supabase, id)
+})
 
 const CATEGORY_LABELS: Record<string, string> = {
   general:     'Général',
@@ -20,12 +28,29 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const t = await getThreadCached(id)
+  if (!t) return { title: 'Discussion introuvable', robots: { index: false } }
+
+  const description =
+    t.body?.trim().replace(/\s+/g, ' ').slice(0, 160) ||
+    `Discussion ${CATEGORY_LABELS[t.category] ?? ''} sur le forum de la langue bété.`
+
+  return {
+    title: t.title,
+    description,
+    alternates: { canonical: `/forum/${id}` },
+    openGraph: { title: t.title, description, type: 'article', url: `/forum/${id}` },
+  }
+}
+
 export default async function ThreadPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
 
   const [t, replies] = await Promise.all([
-    getThread(supabase, id),
+    getThreadCached(id),
     getThreadPosts(supabase, id),
   ])
 

@@ -6,8 +6,15 @@ import { PatternDivider } from '@/components/PatternDivider'
 import { createClient } from '@/lib/supabase-server'
 import type { GrammarRule } from '@/lib/types'
 import { DialectSelector } from '@/components/DialectSelector'
+import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Grammaire bété',
+  description: 'Règles de grammaire de la langue bété (bhété) : conjugaison, accords et structure des phrases, illustrées par des exemples français-bété.',
+  alternates: { canonical: '/grammar' },
+}
 
 const CATEGORY_LABELS: Record<string, string> = {
   verb: 'Verbe',

@@ -8,6 +8,13 @@ import { PendingContributions } from '@/components/PendingContributions'
 import { createClient } from '@/lib/supabase-server'
 import { DialectSelector } from '@/components/DialectSelector'
 import { DonateForm } from '@/components/DonateForm'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Contribuer',
+  description: 'Enrichissez le dictionnaire bété : ajoutez des mots et des traductions, ou soutenez la préservation de la langue bhété.',
+  alternates: { canonical: '/contribute' },
+}
 
 const LEVELS = [
   { name: 'Débutant',      initial: 'D', min: 0,  next: 3  },
