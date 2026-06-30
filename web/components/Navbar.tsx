@@ -34,12 +34,18 @@ export function Navbar() {
     supabaseRef.current = supabase
     let alive = true
 
+    console.log('[Navbar] mount — starting auth init')
+
     async function resolveName(userId: string, fallback: string) {
-      const { data } = await supabase.from('profiles').select('name').eq('id', userId).maybeSingle()
+      console.log('[Navbar] resolveName — querying profiles for user:', userId)
+      const { data, error } = await supabase.from('profiles').select('name').eq('id', userId).maybeSingle()
+      if (error) console.error('[Navbar] resolveName error:', error.message, error.code)
+      console.log('[Navbar] resolveName result:', data)
       return data?.name?.trim() || fallback
     }
 
-    supabase.auth.getUser().then(async ({ data }) => {
+    supabase.auth.getUser().then(async ({ data, error }) => {
+      console.log('[Navbar] getUser resolved — user:', data.user?.id ?? 'none', '| error:', error?.message ?? 'none')
       if (!alive) return
       if (data.user) {
         setDisplayName(data.user.email ?? data.user.id)
@@ -47,10 +53,12 @@ export function Navbar() {
         if (alive) setDisplayName(name)
       }
       setAuthReady(true)
-    }).catch(() => { if (alive) setAuthReady(true) })
+    }).catch((err) => { console.error('[Navbar] getUser threw:', err); if (alive) setAuthReady(true) })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[Navbar] onAuthStateChange:', event, '| user:', session?.user?.id ?? 'none')
       if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('[Navbar] TOKEN_REFRESHED with no session — signing out stale session')
         await supabase.auth.signOut()
         if (alive) setDisplayName(null)
         return
@@ -78,7 +86,9 @@ export function Navbar() {
   }, [])
 
   async function handleSignOut() {
-    await supabaseRef.current?.auth.signOut()
+    console.log('[Navbar] handleSignOut — clicked')
+    const { error } = await supabaseRef.current?.auth.signOut() ?? {}
+    console.log('[Navbar] handleSignOut — signOut complete, error:', error?.message ?? 'none')
     router.refresh()
   }
 

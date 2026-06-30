@@ -49,19 +49,24 @@ export default function ProfilePage() {
   const [facebookUrl, setFacebookUrl] = useState('')
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
+    console.log('[ProfilePage] mount — calling getUser()')
+    supabase.auth.getUser().then(async ({ data, error: userError }) => {
+      console.log('[ProfilePage] getUser resolved — user:', data.user?.id ?? 'none', '| error:', userError?.message ?? 'none')
       if (!data.user) {
         setLoading(false)
+        console.warn('[ProfilePage] no user — redirecting to /auth')
         router.replace('/auth?next=/profile')
         return
       }
       setUserId(data.user.id)
 
+      console.log('[ProfilePage] fetching profiles row for id:', data.user.id)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single()
+      console.log('[ProfilePage] profiles fetch resolved — profile:', profile, '| error:', profileError)
 
       if (profileError) {
         setError(profileError.message)
@@ -82,6 +87,10 @@ export default function ProfilePage() {
         setInstagramUrl(profile.instagram_url ?? '')
         setFacebookUrl(profile.facebook_url ?? '')
       }
+      setLoading(false)
+    }).catch((err) => {
+      console.error('[ProfilePage] unhandled error in getUser/profile chain:', err)
+      setError(err instanceof Error ? err.message : 'Erreur inattendue')
       setLoading(false)
     })
   }, [supabase, router])
