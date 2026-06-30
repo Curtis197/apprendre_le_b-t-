@@ -55,18 +55,25 @@ export function Navbar() {
       setAuthReady(true)
     }).catch((err) => { console.error('[Navbar] getUser threw:', err); if (alive) setAuthReady(true) })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // IMPORTANT: never await other Supabase calls directly inside this callback — the
+    // client holds an internal lock while dispatching the event, and any nested auth/
+    // data call (even from another component sharing the same client) re-enters that
+    // lock and deadlocks every pending Supabase call on the page. Defer with setTimeout
+    // per Supabase's documented workaround: https://github.com/supabase/auth-js/issues/762
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[Navbar] onAuthStateChange:', event, '| user:', session?.user?.id ?? 'none')
       if (event === 'TOKEN_REFRESHED' && !session) {
         console.warn('[Navbar] TOKEN_REFRESHED with no session — signing out stale session')
-        await supabase.auth.signOut()
-        if (alive) setDisplayName(null)
+        setTimeout(() => {
+          supabase.auth.signOut().then(() => { if (alive) setDisplayName(null) })
+        }, 0)
         return
       }
       if (session?.user) {
         if (alive) { setDisplayName(session.user.email ?? session.user.id); setAuthReady(true) }
-        const name = await resolveName(session.user.id, session.user.email ?? '')
-        if (alive) setDisplayName(name)
+        setTimeout(() => {
+          resolveName(session.user.id, session.user.email ?? '').then(name => { if (alive) setDisplayName(name) })
+        }, 0)
       } else {
         if (alive) { setDisplayName(null); setAuthReady(true) }
       }

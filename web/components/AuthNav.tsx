@@ -49,23 +49,32 @@ export function AuthNav() {
         if (active) setReady(true)
       })
 
+    // IMPORTANT: never call other Supabase methods directly inside this callback — the
+    // client holds an internal lock while dispatching the event, and a nested auth/data
+    // call (even from another component sharing the same client) re-enters that lock and
+    // deadlocks every pending Supabase call on the page. Defer with setTimeout per
+    // Supabase's documented workaround: https://github.com/supabase/auth-js/issues/762
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[AuthNav] onAuthStateChange:', event, session ? `user=${session.user?.id}` : 'no session')
       if (event === 'TOKEN_REFRESHED' && !session) {
         console.warn('[AuthNav] TOKEN_REFRESHED with no session — signing out stale session')
-        supabase.auth.signOut().then(() => {
-          setDisplayName(null)
-          setReady(true)
-        })
+        setTimeout(() => {
+          supabase.auth.signOut().then(() => {
+            setDisplayName(null)
+            setReady(true)
+          })
+        }, 0)
         return
       }
       if (session?.user) {
         setDisplayName(session.user.email ?? session.user.id)
         setReady(true)
-        fetchName(session.user.id, session.user.email ?? '').then(name => {
-          console.log('[AuthNav] onAuthStateChange fetchName result:', name)
-          setDisplayName(name)
-        }).catch(err => console.error('[AuthNav] onAuthStateChange fetchName error:', err))
+        setTimeout(() => {
+          fetchName(session.user.id, session.user.email ?? '').then(name => {
+            console.log('[AuthNav] onAuthStateChange fetchName result:', name)
+            setDisplayName(name)
+          }).catch(err => console.error('[AuthNav] onAuthStateChange fetchName error:', err))
+        }, 0)
       } else {
         console.log('[AuthNav] onAuthStateChange — clearing displayName')
         setDisplayName(null)
