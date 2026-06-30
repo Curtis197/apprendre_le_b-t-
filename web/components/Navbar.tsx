@@ -113,7 +113,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop links */}
-        <nav className="hidden md:flex items-center gap-1 flex-1 ml-4">
+        <nav className="hidden lg:flex items-center gap-1 flex-1 ml-4">
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
@@ -130,7 +130,7 @@ export function Navbar() {
         </nav>
 
         {/* Desktop auth */}
-        <div className="hidden md:flex items-center gap-2 shrink-0">
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
           {!authReady ? (
             <div className="h-8 w-20 animate-pulse rounded-md bg-muted" />
           ) : displayName ? (
@@ -171,7 +171,7 @@ export function Navbar() {
         <button
           type="button"
           onClick={() => setMenuOpen(o => !o)}
-          className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          className="lg:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
           aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
@@ -190,7 +190,7 @@ export function Navbar() {
 
       {/* Mobile menu — inside <header>, normal block element, no fixed/absolute positioning */}
       {menuOpen && (
-        <div id="mobile-menu" className="md:hidden border-t border-border px-4 py-3 space-y-1" style={{ backgroundColor: 'var(--background, #fbf9f5)' }}>
+        <div id="mobile-menu" className="lg:hidden border-t border-border px-4 py-3 space-y-1" style={{ backgroundColor: 'var(--background, #fbf9f5)' }}>
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
