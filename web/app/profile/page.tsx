@@ -2,7 +2,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, User } from 'lucide-react'
+import { Camera, Loader2, Save, Trash2, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,10 @@ export default function ProfilePage() {
   const [name, setName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [bio, setBio] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [showManualUrl, setShowManualUrl] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [type, setType] = useState<ProfileType>('member')
   const [isPublic, setIsPublic] = useState(false)
   const [contact, setContact] = useState('')
@@ -101,6 +105,56 @@ export default function ProfilePage() {
     }
   }, [])
 
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !userId) return
+
+    // Validate size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("L'image est trop volumineuse (max 2 Mo)")
+      return
+    }
+
+    // Validate type
+    if (!file.type.startsWith('image/')) {
+      setUploadError("Le fichier doit être une image")
+      return
+    }
+
+    setUploading(true)
+    setUploadError(null)
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`
+
+      // Upload to storage
+      const { error: uploadErr } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        })
+
+      if (uploadErr) {
+        throw uploadErr
+      }
+
+      // Get public URL
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
+      if (!data?.publicUrl) {
+        throw new Error("Impossible de récupérer l'URL publique de l'image")
+      }
+
+      setAvatarUrl(data.publicUrl)
+    } catch (err) {
+      console.error('[ProfilePage] Error uploading avatar:', err)
+      setUploadError(err instanceof Error ? err.message : "Erreur lors du téléchargement de l'image")
+    } finally {
+      setUploading(false)
+    }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!userId) return
@@ -162,9 +216,89 @@ export default function ProfilePage() {
             <label className="text-sm font-medium">Nom d&apos;affichage</label>
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex : Kouamé Bah" required />
           </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">URL de l&apos;avatar</label>
-            <Input value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="https://…" type="url" />
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Avatar</label>
+            
+            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-muted/20 rounded-xl border border-border/60">
+              <div className="relative group w-20 h-20 rounded-full overflow-hidden border-2 border-primary/20 shadow-sm transition-all duration-300 hover:border-primary/50 flex-shrink-0">
+                {uploading ? (
+                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  </div>
+                ) : null}
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <User className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1 space-y-2 text-center sm:text-left">
+                <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="cursor-pointer flex items-center gap-1.5 transition-transform active:scale-95"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    {uploading ? 'Envoi...' : 'Choisir une photo'}
+                  </Button>
+                  {avatarUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAvatarUrl('')}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Supprimer
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  PNG, JPG ou WEBP. Max 2 Mo.
+                </p>
+                {uploadError && (
+                  <p className="text-xs text-red-600 font-medium">{uploadError}</p>
+                )}
+              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarUpload}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setShowManualUrl(!showManualUrl)}
+                className="text-xs text-muted-foreground hover:text-foreground underline transition-colors cursor-pointer"
+              >
+                {showManualUrl ? "Masquer l'option URL" : "Ou utiliser une URL d'image existante..."}
+              </button>
+            </div>
+
+            {showManualUrl && (
+              <div className="space-y-1 pt-1 animate-fade-in">
+                <label className="text-xs font-medium text-muted-foreground">URL de l&apos;avatar</label>
+                <Input 
+                  value={avatarUrl} 
+                  onChange={e => setAvatarUrl(e.target.value)} 
+                  placeholder="https://example.com/avatar.jpg" 
+                  type="url" 
+                  className="text-sm h-9"
+                />
+              </div>
+            )}
           </div>
           <div className="space-y-1">
             <label className="text-sm font-medium">Bio</label>
