@@ -1,10 +1,11 @@
 'use client'
 import { Suspense, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase-browser'
+import { useContributeRefresh } from '@/context/ContributeRefreshContext'
 
 type ContributionType = 'word' | 'expression' | 'grammar_rule'
 
@@ -20,6 +21,8 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const supabaseRef = useRef(createClient())
+  const router = useRouter()
+  const { bumpRefresh } = useContributeRefresh()
 
   // Word fields
   const [wordBetePhonetic, setWordBetePhonetic] = useState('')
@@ -89,6 +92,8 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
       }
       if (error) throw error
       setSubmitted(true)
+      bumpRefresh()
+      router.refresh()
     } catch (e) {
       setSubmitError('Erreur lors de l\'envoi. Veuillez réessayer.')
     } finally {

@@ -8,6 +8,7 @@ import { PendingContributions } from '@/components/PendingContributions'
 import { createClient } from '@/lib/supabase-server'
 import { DialectSelector } from '@/components/DialectSelector'
 import { DonateForm } from '@/components/DonateForm'
+import { ContributeRefreshProvider } from '@/context/ContributeRefreshContext'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -73,6 +74,7 @@ export default async function ContributePage() {
         <DialectSelector />
       </div>
 
+      <ContributeRefreshProvider>
       <div className="grid lg:grid-cols-12 gap-8 mb-10">
 
         {/* Contribution Form — col 8 */}
@@ -166,6 +168,7 @@ export default async function ContributePage() {
         </p>
         <PendingContributions />
       </div>
+      </ContributeRefreshProvider>
 
       {/* Financial contribution */}
       <Suspense fallback={null}>

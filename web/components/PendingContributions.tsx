@@ -6,6 +6,7 @@ import { VoteButtons } from './VoteButtons'
 import { createClient } from '@/lib/supabase-browser'
 import { GrammarRule, Expression } from '@/lib/types'
 import { ContributionComments } from './ContributionComments'
+import { useContributeRefresh } from '@/context/ContributeRefreshContext'
 
 type LexiconWord = {
   id: string
@@ -17,6 +18,19 @@ type LexiconWord = {
   upvotes: number
 }
 
+const POS_LABELS: Record<string, string> = {
+  noun: 'Nom', verb: 'Verbe', adj: 'Adj.', adv: 'Adv.',
+  pron: 'Pron.', prep: 'Prép.', other: 'Autre',
+}
+
+const EXPRESSION_TYPE_LABELS: Record<string, string> = {
+  idiomatic: 'Idiomatique', fixed: 'Expression figée', proverb: 'Proverbe',
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  verb: 'Verbe', noun: 'Nom', tense: 'Temps', agreement: 'Accord', other: 'Autre',
+}
+
 export function PendingContributions() {
   const [rules, setRules] = useState<GrammarRule[]>([])
   const [expressions, setExpressions] = useState<Expression[]>([])
@@ -24,6 +38,7 @@ export function PendingContributions() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const supabaseRef = useRef(createClient())
+  const { refreshKey } = useContributeRefresh()
 
   useEffect(() => {
     const client = supabaseRef.current
@@ -45,7 +60,7 @@ export function PendingContributions() {
       }
       setLoading(false)
     })
-  }, [])
+  }, [refreshKey])
 
   if (loading) return <p className="text-sm text-muted-foreground">Chargement…</p>
   if (error) return <p className="text-sm text-red-600">{error}</p>
@@ -62,7 +77,7 @@ export function PendingContributions() {
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-base">{word.top_french}</CardTitle>
                     <div className="flex items-center gap-2">
-                      {word.pos?.[0] && <Badge variant="outline">{word.pos[0]}</Badge>}
+                      {word.pos?.[0] && <Badge variant="outline">{POS_LABELS[word.pos[0]] ?? word.pos[0]}</Badge>}
                       <VoteButtons table="lexicon" id={word.id} upvotes={word.upvotes} />
                     </div>
                   </div>
@@ -91,7 +106,7 @@ export function PendingContributions() {
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-base">{ex.french_phrase}</CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{ex.type}</Badge>
+                      <Badge variant="outline">{EXPRESSION_TYPE_LABELS[ex.type] ?? ex.type}</Badge>
                       <VoteButtons table="expressions" id={ex.id} upvotes={ex.upvotes} />
                     </div>
                   </div>
@@ -122,7 +137,7 @@ export function PendingContributions() {
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-base">{rule.description}</CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{rule.category}</Badge>
+                      <Badge variant="outline">{CATEGORY_LABELS[rule.category] ?? rule.category}</Badge>
                       <VoteButtons table="grammar_rules" id={rule.id} upvotes={rule.upvotes} />
                     </div>
                   </div>
