@@ -28,6 +28,7 @@
 
 | File | Responsibility |
 |---|---|
+| `supabase/migrations/20260925000000_fix_handle_new_user_search_path.sql` | Makes signup work on a fresh database (pins `handle_new_user()` search_path) |
 | `supabase/migrations/20260925000001_courses_core.sql` | Roles, courses, sections, lessons, lesson contents, enrollments, helper functions, RLS |
 | `supabase/migrations/20260925000002_progress_reports.sql` | `lesson_progress`, `course_reports`, RLS |
 | `web/lib/courses/types.ts` | Shared types (`Course`, `Lesson`, `OutlineSection`, `Result`, …) |
@@ -57,6 +58,7 @@
 - Modify: `web/package.json` (scripts)
 - Create: `web/__tests__/rls/helpers.ts`
 - Create: `web/__tests__/rls/smoke.test.ts`
+- Create: `supabase/migrations/20260925000000_fix_handle_new_user_search_path.sql`
 
 **Interfaces:**
 - Produces (`helpers.ts`): `admin: SupabaseClient` (service role), `anonClient(): SupabaseClient`, `createUser(label: string): Promise<TestUser>`, `makeAdmin(userId: string): Promise<void>`, `must<T>(res, what): T`, `uid(): string`, `interface TestUser { id: string; email: string; client: SupabaseClient }`.
@@ -252,20 +254,50 @@ describe('local Supabase smoke test', () => {
 })
 ```
 
-- [ ] **Step 8: Run the RLS smoke test**
+- [ ] **Step 8: Fix signup on a freshly created database**
+
+Found while running the smoke test: on a fresh database (local stack, CI) every signup fails with "Database error saving new user", because the existing `handle_new_user()` trigger function has no pinned `search_path` and GoTrue runs it with a search_path of just `auth`, so the unqualified `profiles` does not resolve. Every RLS test creates users, so this must be fixed first. The fix keeps the function body and qualifies the schema (safe to apply to production too, and the Supabase-recommended pattern for `SECURITY DEFINER` functions).
+
+Create `supabase/migrations/20260925000000_fix_handle_new_user_search_path.sql`:
+
+```sql
+-- handle_new_user() runs as SECURITY DEFINER but without a pinned search_path, and
+-- GoTrue executes the auth.users trigger as supabase_auth_admin, whose search_path is
+-- just "auth". On a fresh database (local stack, CI) the unqualified `profiles` then
+-- fails to resolve ("relation "profiles" does not exist") and every signup returns
+-- "Database error saving new user". Same body as 20260516000001, with the schema
+-- qualified and the search_path pinned.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $
+BEGIN
+  INSERT INTO public.profiles (id, name)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1))
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$;
+```
+
+Apply it to the running local stack from the repo root: `supabase migration up`
+Expected: `Applying migration 20260925000000_fix_handle_new_user_search_path.sql...`.
+
+- [ ] **Step 9: Run the RLS smoke test**
 
 Run from `web/`: `npm run test:rls`
 Expected: 3 tests PASS. (There is no red phase: this task only proves the harness works.) If `createUser` fails with an auth error, run `supabase status` to confirm the stack is healthy.
 
-- [ ] **Step 9: Confirm the default suite is unaffected**
+- [ ] **Step 10: Confirm the default suite is unaffected**
 
 Run from `web/`: `npm test`
 Expected: the existing `donation.test.ts` passes and no `rls` tests run.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
-git add web/vitest.config.ts web/vitest.rls.config.ts web/scripts/test-rls.mjs web/package.json web/__tests__/rls/helpers.ts web/__tests__/rls/smoke.test.ts
+git add web/vitest.config.ts web/vitest.rls.config.ts web/scripts/test-rls.mjs web/package.json web/__tests__/rls/helpers.ts web/__tests__/rls/smoke.test.ts supabase/migrations/20260925000000_fix_handle_new_user_search_path.sql
 git commit -m "test: add local-Supabase RLS test harness" -m "Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 ```
 
@@ -5115,7 +5147,7 @@ Expected: containers stopped. (`web/.env.development.local` stays on disk, gitig
 
 Report that phase 1 is implemented and verified locally, and list the two production steps that need the user's explicit go-ahead (they change a shared database):
 
-1. Apply the two migrations (`20260925000001_courses_core.sql`, `20260925000002_progress_reports.sql`) to the production Supabase project (for example `supabase link` then `supabase db push`, or the Supabase MCP `apply_migration`).
+1. Apply the three migrations (`20260925000000_fix_handle_new_user_search_path.sql`, `20260925000001_courses_core.sql`, `20260925000002_progress_reports.sql`) to the production Supabase project. Note the first one replaces the existing `handle_new_user()` signup trigger function (same behavior, pinned `search_path`), so it touches production signup; tell the user before they apply it (for example `supabase link` then `supabase db push`, or the Supabase MCP `apply_migration`).
 2. Make the first admin, in the production SQL editor:
 
 ```sql
