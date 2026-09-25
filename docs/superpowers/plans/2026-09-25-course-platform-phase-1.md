@@ -268,7 +268,7 @@ Create `supabase/migrations/20260925000000_fix_handle_new_user_search_path.sql`:
 -- "Database error saving new user". Same body as 20260516000001, with the schema
 -- qualified and the search_path pinned.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   INSERT INTO public.profiles (id, name)
   VALUES (
@@ -278,7 +278,7 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
-$;
+$$;
 ```
 
 Apply it to the running local stack from the repo root: `supabase migration up`
@@ -4887,10 +4887,10 @@ export default async function AdminReportsPage() {
 Run from the repo root (replace the email with a confirmed local user you created in Studio):
 
 ```bash
-docker exec supabase_db_traduction_b_t_ psql -U postgres -c "insert into user_roles (user_id, role) select id, 'admin' from auth.users where email = 'teacher@test.local' on conflict do nothing;"
+docker exec "$(docker ps --format '{{.Names}}' | grep -m1 "^supabase_db_$(cat supabase/.temp/project-ref 2>/dev/null || echo traduction_b_t_)$")" psql -U postgres -c "insert into user_roles (user_id, role) select id, 'admin' from auth.users where email = 'teacher@test.local' on conflict do nothing;"
 ```
 
-Expected: `INSERT 0 1`. (The container name is `supabase_db_` plus `project_id` from `supabase/config.toml`; if it differs, `docker ps` lists it.)
+Expected: `INSERT 0 1`. (The container is named `supabase_db_` plus the linked project ref from `supabase/.temp/project-ref`, or the `project_id` from `supabase/config.toml` when the project is not linked; `docker ps` lists it. If Docker port-range errors make `supabase start` fail, see the port overrides in the Task 1 report.)
 
 - [ ] **Step 4: Type-check, lint, verify**
 
