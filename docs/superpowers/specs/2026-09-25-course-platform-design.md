@@ -1,6 +1,6 @@
 # Online Course Platform — Design Spec
 **Date:** 2026-09-25
-**Status:** Draft — awaiting review
+**Status:** Approved
 
 ---
 
@@ -60,7 +60,10 @@ All new tables use `uuid` primary keys with `gen_random_uuid()` and `timestamptz
 `id`, `course_id` (→ `courses`), `title`, `position`.
 
 **`lessons`**
-`id`, `section_id` (→ `course_sections`), `course_id` (denormalized for cheap RLS), `title`, `position`, `kind` (`text | audio | video | quiz | assignment`), `is_preview` (bool, default false), plus content columns for the kind: `body_md` (text), and later `audio_path`, `media_asset_id`.
+`id`, `section_id`, `course_id` (denormalized for cheap RLS; a composite foreign key on `(section_id, course_id)` keeps it consistent with the section), `title`, `position`, `kind` (`text | audio | video | quiz | assignment`), `is_preview` (bool, default false). Metadata only, so the outline is public for published courses.
+
+**`lesson_contents`**
+`lesson_id` (primary key → `lessons`), `body_md`, `updated_at`. Lesson bodies live in their own table because RLS is row-level: lesson titles must be readable by everyone for published courses while bodies are gated by `can_access_lesson()`. A trigger creates an empty row for every new lesson. Later phases add `audio_path` and `media_asset_id` here.
 
 **`enrollments`**
 `user_id`, `course_id`, `created_at`; primary key `(user_id, course_id)`. Free courses use self-enrollment. Paid courses (phase 5) get rows from payment webhooks. This table is the single source of truth for "may this user open this course".
@@ -92,7 +95,8 @@ All new tables use `uuid` primary keys with `gen_random_uuid()` and `timestamptz
 | `/courses/[slug]/learn/[lessonId]` | Lesson player (login + enrollment, or preview) |
 | `/teach` | Teacher dashboard: own courses, status |
 | `/teach/[courseId]` | Course builder: sections, lessons, reorder, publish |
-| Profile page | "My courses" and "My learning" sections |
+| Profile page | "My courses" and "My learning" sections, rendered from `profile/layout.tsx` |
+| `/admin/reports` | Admin-only moderation queue: open reports, suspend or restore courses |
 | Navbar | New "Cours" item |
 
 The catalog and preview lessons are public so they can be indexed for SEO.
@@ -103,7 +107,9 @@ The catalog and preview lessons are public so they can be indexed for SEO.
 
 - Only a course's owner can create or edit its sections and lessons. Draft courses are visible only to the owner.
 - Published courses appear in the public catalog.
-- Lesson content is readable if the lesson `is_preview`, the user is enrolled, or the user is the course owner or an admin.
+- Courses are created as `draft` with `access = 'free'`. Only an admin can set `suspended`, and a suspended course is read-only for its owner. Only draft courses can be deleted.
+- `archived` hides a course from the catalog; enrolled learners keep access.
+- Lesson content is readable if the lesson `is_preview` (published courses only), the user is enrolled (published or archived courses), or the user is the course owner or an admin.
 - Helper functions `can_access_lesson(lesson_id)` and `is_admin()` keep policies short. Policies wrap `auth.uid()` as `(select auth.uid())`, as the avatars policies already do.
 - `user_roles` has no insert/update/delete policy for regular users.
 
