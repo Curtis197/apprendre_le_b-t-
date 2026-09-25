@@ -14,7 +14,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:rls": "node scripts/test-rls.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.2",
