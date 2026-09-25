@@ -39,36 +39,23 @@ function primaryLabel(pos: string[] | null): string {
 }
 
 function ListRow({ entry }: { entry: LexiconEntry }) {
-  const isPending = !entry.bete_phonetic
-  const href = isPending 
-    ? `/contribute?type=word&word=${encodeURIComponent(entry.top_french)}&id=${entry.id}`
-    : `/lexicon/${entry.id}`
-
   return (
     <Link
-      href={href}
+      href={`/lexicon/${entry.id}`}
       className="flex items-center gap-4 px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
     >
       <span className="bg-secondary text-white text-xs font-semibold rounded-full px-2.5 py-0.5 shrink-0 w-16 text-center">
         {primaryLabel(entry.pos)}
       </span>
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className={`font-heading font-bold transition-colors ${isPending ? 'text-primary/80' : 'text-foreground group-hover:text-primary'}`}>
-          {isPending ? entry.top_french : entry.bete_phonetic}
+        <span className="font-heading font-bold transition-colors text-foreground group-hover:text-primary">
+          {entry.bete_phonetic}
         </span>
-        {isPending ? (
-          <span className="bg-amber-100 text-amber-800 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shrink-0">
-            À traduire
-          </span>
-        ) : (
-          <span className="text-xs font-mono text-muted-foreground">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
-        )}
+        <span className="text-xs font-mono text-muted-foreground">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
       </div>
-      {!isPending && (
-        <span className="text-sm text-muted-foreground italic truncate max-w-[200px] shrink-0">
-          {entry.top_french}
-        </span>
-      )}
+      <span className="text-sm text-muted-foreground italic truncate max-w-[200px] shrink-0">
+        {entry.top_french}
+      </span>
       {entry.validated ? (
         <span className="text-xs text-secondary font-semibold shrink-0">✓</span>
       ) : (
@@ -86,7 +73,6 @@ export default function LexiconPage() {
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [wordOfTheDay, setWordOfTheDay] = useState<LexiconEntry | null>(null)
   const supabaseRef = useRef(createClient())
   const { dialect } = useDialect()
 
@@ -104,6 +90,8 @@ export default function LexiconPage() {
       .select('*', { count: 'exact' })
       .not('pos', 'cs', '{"fragment"}')
       .eq('dialect', dialect)
+      // Untranslated placeholders (empty bete_phonetic) are not dictionary entries yet.
+      .neq('bete_phonetic', '')
       .order('upvotes', { ascending: false })
       .range(from, to)
 
@@ -125,22 +113,6 @@ export default function LexiconPage() {
     })
     return () => { cancelled = true }
   }, [category, letter, page, dialect])
-
-  useEffect(() => {
-    let cancelled = false
-    supabaseRef.current
-      .from('lexicon')
-      .select('*')
-      .eq('bete_phonetic', '')
-      .eq('dialect', dialect)
-      .limit(1)
-      .then(({ data }) => {
-        if (!cancelled && data && data.length > 0) {
-          setWordOfTheDay(data[0] as LexiconEntry)
-        }
-      })
-    return () => { cancelled = true }
-  }, [dialect])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -204,14 +176,6 @@ export default function LexiconPage() {
         </p>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {page === 0 && wordOfTheDay && (
-            <WordCard
-              key={wordOfTheDay.id}
-              entry={wordOfTheDay}
-              featured
-              className="md:col-span-2 xl:col-span-1"
-            />
-          )}
           {entries.map(entry => (
             <WordCard key={entry.id} entry={entry} />
           ))}
