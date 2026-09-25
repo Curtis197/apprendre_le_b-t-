@@ -59,3 +59,62 @@ export async function makeAdmin(userId: string): Promise<void> {
   const { error } = await admin.from('user_roles').insert({ user_id: userId, role: 'admin' })
   if (error) throw new Error(`makeAdmin: ${error.message}`)
 }
+
+export interface Seed {
+  course: { id: string; slug: string }
+  section: { id: string }
+  preview: { id: string }
+  locked: { id: string }
+}
+
+/** Creates a course with one section and two text lessons (one preview, one locked) via the service role. */
+export async function seedCourse(
+  ownerId: string,
+  overrides: { status?: string; access?: string } = {},
+): Promise<Seed> {
+  const course = must(
+    await admin
+      .from('courses')
+      .insert({
+        owner_id: ownerId,
+        title: 'Cours de test',
+        slug: `t-${uid()}`,
+        status: 'published',
+        ...overrides,
+      })
+      .select('id, slug')
+      .single(),
+    'seed course',
+  )
+  const section = must(
+    await admin
+      .from('course_sections')
+      .insert({ course_id: course.id, title: 'Section 1', position: 0 })
+      .select('id')
+      .single(),
+    'seed section',
+  )
+  const lessonBase = { section_id: section.id, course_id: course.id, kind: 'text' }
+  const preview = must(
+    await admin
+      .from('lessons')
+      .insert({ ...lessonBase, title: 'Aperçu', position: 0, is_preview: true })
+      .select('id')
+      .single(),
+    'seed preview lesson',
+  )
+  const locked = must(
+    await admin
+      .from('lessons')
+      .insert({ ...lessonBase, title: 'Verrouillée', position: 1, is_preview: false })
+      .select('id')
+      .single(),
+    'seed locked lesson',
+  )
+  const contents = await admin.from('lesson_contents').upsert([
+    { lesson_id: preview.id, body_md: 'contenu aperçu' },
+    { lesson_id: locked.id, body_md: 'contenu verrouillé' },
+  ])
+  if (contents.error) throw new Error(`seed contents: ${contents.error.message}`)
+  return { course, section, preview, locked }
+}
