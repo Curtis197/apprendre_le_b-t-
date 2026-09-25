@@ -6,6 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase-browser'
 import { useContributeRefresh } from '@/context/ContributeRefreshContext'
+import { useDialect } from '@/context/DialectContext'
+import { DIALECTS, DIALECT_KEYS, type DialectKey } from '@/lib/dialect'
+import {
+  buildExampleRow,
+  buildWordPayload,
+  contributionErrorMessage,
+  exampleState,
+} from '@/lib/contribution'
 
 type ContributionType = 'word' | 'expression' | 'grammar_rule'
 
@@ -23,6 +31,8 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
   const supabaseRef = useRef(createClient())
   const router = useRouter()
   const { bumpRefresh } = useContributeRefresh()
+  // Same source of truth as the page-level DialectSelector, so the two never disagree.
+  const { dialect, setDialect } = useDialect()
 
   // Word fields
   const [wordBetePhonetic, setWordBetePhonetic] = useState('')
@@ -30,6 +40,10 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
   const [wordFrench, setWordFrench] = useState(initialWord ?? '')
   const [wordPos, setWordPos] = useState('noun')
   const [wordNotes, setWordNotes] = useState('')
+  const [wordExBete, setWordExBete] = useState('')
+  const [wordExFrench, setWordExFrench] = useState('')
+  // The word saved but its example sentence did not (two separate writes).
+  const [exampleSaveFailed, setExampleSaveFailed] = useState(false)
 
   // Grammar rule fields
   const [category, setCategory] = useState('verb')
@@ -46,9 +60,12 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
   const [betePhonetic, setBetePhonetic] = useState('')
   const [exprType, setExprType] = useState<'idiomatic' | 'fixed' | 'proverb'>('idiomatic')
 
+  const exampleIncomplete = exampleState(wordExBete, wordExFrench) === 'incomplete'
+
   async function handleSubmit() {
     setLoading(true)
     setSubmitError(null)
+    setExampleSaveFailed(false)
     const { data: { user } } = await supabaseRef.current.auth.getUser()
     if (!user) {
       setLoading(false)
@@ -58,21 +75,30 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
     try {
       let error
       if (type === 'word') {
-        const payload = {
-          bete_phonetic: wordBetePhonetic,
-          bete_word: wordBeteIPA || wordBetePhonetic,
-          top_french: wordFrench,
-          french_candidates: [{ word: wordFrench, prob: 1.0 }],
-          probability: 1.0,
-          pos: [wordPos],
-          notes: wordNotes || null,
-          created_by: user.id,
-          source: 'contributed',
-        }
+        const payload = buildWordPayload({
+          betePhonetic: wordBetePhonetic,
+          beteIPA: wordBeteIPA,
+          french: wordFrench,
+          pos: wordPos,
+          notes: wordNotes,
+          dialect,
+          userId: user.id,
+        })
+        let lexiconId = initialId
         if (initialId) {
           ({ error } = await supabaseRef.current.from('lexicon').update(payload).eq('id', initialId))
         } else {
-          ({ error } = await supabaseRef.current.from('lexicon').insert(payload))
+          const res = await supabaseRef.current.from('lexicon').insert(payload).select('id').single()
+          error = res.error
+          lexiconId = res.data?.id
+        }
+        if (!error && lexiconId && exampleState(wordExBete, wordExFrench) === 'complete') {
+          const { error: exampleError } = await supabaseRef.current
+            .from('lexicon_examples')
+            .insert(buildExampleRow(lexiconId, {
+              bete: wordExBete, french: wordExFrench, dialect, userId: user.id,
+            }))
+          if (exampleError) setExampleSaveFailed(true)
         }
       } else if (type === 'grammar_rule') {
         ({ error } = await supabaseRef.current.from('grammar_rules').insert({
@@ -95,7 +121,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
       bumpRefresh()
       router.refresh()
     } catch (e) {
-      setSubmitError('Erreur lors de l\'envoi. Veuillez réessayer.')
+      setSubmitError(contributionErrorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -105,7 +131,22 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
     <div className="p-4 border rounded text-center space-y-2">
       <p className="font-semibold">Contribution envoyée ✓</p>
       <p className="text-sm text-muted-foreground">Elle sera visible après validation par la communauté.</p>
-      <Button variant="outline" onClick={() => setSubmitted(false)}>Ajouter une autre</Button>
+      {exampleSaveFailed && (
+        <p className="text-sm text-red-600">
+          Le mot a bien été enregistré, mais la phrase d&apos;exemple n&apos;a pas pu l&apos;être.
+        </p>
+      )}
+      <Button
+        variant="outline"
+        onClick={() => {
+          // A stale sentence would attach itself to the next word.
+          setWordExBete('')
+          setWordExFrench('')
+          setSubmitted(false)
+        }}
+      >
+        Ajouter une autre
+      </Button>
     </div>
   )
 
@@ -126,6 +167,24 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
 
       {type === 'word' ? (
         <div className="space-y-3">
+          <div className="space-y-1">
+            <label
+              htmlFor="contribution-dialect"
+              className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+            >
+              Dialecte de cette contribution
+            </label>
+            <select
+              id="contribution-dialect"
+              className="w-full border rounded px-3 py-2 text-sm"
+              value={dialect}
+              onChange={e => setDialect(e.target.value as DialectKey)}
+            >
+              {DIALECT_KEYS.map(key => (
+                <option key={key} value={key}>{DIALECTS[key].name}</option>
+              ))}
+            </select>
+          </div>
           <Input
             placeholder="Mot en bhété (forme phonétique latine) *"
             value={wordBetePhonetic}
@@ -160,6 +219,26 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
             onChange={e => setWordNotes(e.target.value)}
             rows={2}
           />
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Phrase d&apos;exemple (optionnel)
+            </p>
+            <Input
+              placeholder="Phrase en bhété utilisant ce mot"
+              value={wordExBete}
+              onChange={e => setWordExBete(e.target.value)}
+            />
+            <Input
+              placeholder="Traduction française de la phrase"
+              value={wordExFrench}
+              onChange={e => setWordExFrench(e.target.value)}
+            />
+            {exampleIncomplete && (
+              <p className="text-xs text-red-600">
+                Renseignez la phrase et sa traduction, ou laissez les deux champs vides.
+              </p>
+            )}
+          </div>
         </div>
       ) : type === 'expression' ? (
         <div className="space-y-3">
@@ -219,7 +298,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
       <Button
         onClick={handleSubmit}
         disabled={loading || (
-          type === 'word' ? !wordBetePhonetic || !wordFrench :
+          type === 'word' ? !wordBetePhonetic || !wordFrench || exampleIncomplete :
           type === 'expression' ? !frPhrase || !betePhrase || !betePhonetic :
           !patternFr || !patternBete || !description
         )}

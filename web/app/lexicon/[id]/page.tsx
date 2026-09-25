@@ -114,7 +114,7 @@ export default async function LexiconEntryPage({
       <LexiconEntry entry={entry} />
       {entry.lexicon_examples?.length > 0 && (
         <section>
-          <h2 className="font-semibold mb-3">Exemples du Nouveau Testament</h2>
+          <h2 className="font-semibold mb-3">Exemples</h2>
           <div className="space-y-2">
             {entry.lexicon_examples.map((ex) => (
               <div key={ex.id} className="border rounded p-3 text-sm space-y-1">
