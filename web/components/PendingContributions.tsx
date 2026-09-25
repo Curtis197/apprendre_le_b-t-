@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { GrammarRule, Expression } from '@/lib/types'
 import { ContributionComments } from './ContributionComments'
 import { useContributeRefresh } from '@/context/ContributeRefreshContext'
+import { useDialect } from '@/context/DialectContext'
 
 type LexiconWord = {
   id: string
@@ -39,8 +40,11 @@ export function PendingContributions() {
   const [error, setError] = useState<string | null>(null)
   const supabaseRef = useRef(createClient())
   const { refreshKey } = useContributeRefresh()
+  // Only lexicon words carry a dialect; rules and expressions are not filtered.
+  const { dialect } = useDialect()
 
   useEffect(() => {
+    let cancelled = false
     const client = supabaseRef.current
     Promise.all([
       client.from('grammar_rules').select('*').eq('validated', false)
@@ -48,9 +52,10 @@ export function PendingContributions() {
       client.from('expressions').select('*').eq('validated', false)
         .order('created_at', { ascending: false }).limit(10),
       client.from('lexicon').select('id,bete_phonetic,bete_word,top_french,pos,notes,upvotes')
-        .eq('validated', false).not('created_by', 'is', null)
+        .eq('validated', false).not('created_by', 'is', null).eq('dialect', dialect)
         .order('created_at', { ascending: false }).limit(10),
     ]).then(([rulesRes, exprsRes, wordsRes]) => {
+      if (cancelled) return  // a newer dialect/refresh superseded this request
       if (rulesRes.error || exprsRes.error || wordsRes.error) {
         setError('Impossible de charger les contributions.')
       } else {
@@ -60,7 +65,8 @@ export function PendingContributions() {
       }
       setLoading(false)
     })
-  }, [refreshKey])
+    return () => { cancelled = true }
+  }, [refreshKey, dialect])
 
   if (loading) return <p className="text-sm text-muted-foreground">Chargement…</p>
   if (error) return <p className="text-sm text-red-600">{error}</p>

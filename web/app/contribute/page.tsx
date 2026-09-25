@@ -70,10 +70,6 @@ export default async function ContributePage() {
       </div>
 
       {/* Two-column layout */}
-      <div className="mb-6">
-        <DialectSelector />
-      </div>
-
       <ContributeRefreshProvider>
       <div className="grid lg:grid-cols-12 gap-8 mb-10">
 
@@ -163,9 +159,13 @@ export default async function ContributePage() {
           <Clock className="w-6 h-6 text-muted-foreground" />
           En attente de validation
         </h2>
-        <p className="text-muted-foreground text-sm mb-6">
+        <p className="text-muted-foreground text-sm mb-4">
           Votez pour valider les contributions de la communauté.
         </p>
+        <div className="flex items-center gap-3 flex-wrap mb-6">
+          <DialectSelector />
+          <span className="text-xs text-muted-foreground">Filtre les mots du lexique en attente.</span>
+        </div>
         <PendingContributions />
       </div>
       </ContributeRefreshProvider>
