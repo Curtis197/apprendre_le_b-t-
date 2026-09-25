@@ -84,7 +84,9 @@ export async function POST(req: NextRequest) {
   `.trim()
 
   const { error } = await resend.emails.send({
-    from: 'Parlons Bhété <onboarding@resend.dev>',
+    // Resend's onboarding@resend.dev sandbox sender only delivers to the account owner, so
+    // set RESEND_FROM_EMAIL to an address on a verified domain (resend.com/domains) in prod.
+    from: process.env.RESEND_FROM_EMAIL ?? 'Parlons Bhété <onboarding@resend.dev>',
     to: email,
     subject: `Bienvenue sur Parlons Bhété, ${displayName} !`,
     html,

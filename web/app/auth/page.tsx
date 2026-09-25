@@ -43,7 +43,7 @@ function AuthForm() {
         router.push(next)
         router.refresh()
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -52,13 +52,23 @@ function AuthForm() {
           },
         })
         if (error) throw error
-        // Send welcome email via edge function
+        // Send welcome email via edge function (best-effort: never blocks signup)
         fetch('/api/send-welcome', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, name: name.trim() }),
-        }).catch(() => {})
-        setInfo('Vérifiez votre courriel pour confirmer votre compte.')
+        })
+          .then(res => {
+            if (!res.ok) console.error('[signup] welcome email failed:', res.status)
+          })
+          .catch(err => console.error('[signup] welcome email request failed:', err))
+        // With email confirmation off, signUp returns a session: the user is already logged in.
+        if (data.session) {
+          router.push(next)
+          router.refresh()
+        } else {
+          setInfo('Vérifiez votre courriel pour confirmer votre compte.')
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur d\'authentification')
