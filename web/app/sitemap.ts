@@ -13,6 +13,7 @@ const STATIC_ROUTES: { path: string; changeFrequency: ChangeFreq; priority: numb
   { path: '/lexicon',    changeFrequency: 'daily',   priority: 0.9 },
   { path: '/translator', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/grammar',    changeFrequency: 'weekly',  priority: 0.7 },
+  { path: '/courses',    changeFrequency: 'weekly',  priority: 0.8 },
   { path: '/forum',      changeFrequency: 'daily',   priority: 0.7 },
   { path: '/resources',  changeFrequency: 'weekly',  priority: 0.7 },
   { path: '/contribute', changeFrequency: 'monthly', priority: 0.5 },
@@ -30,9 +31,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const supabase = createPublicClient()
-    const [lex, threads] = await Promise.all([
+    const [lex, threads, courses] = await Promise.all([
       supabase.from('lexicon').select('id, bete_word, bete_phonetic').limit(50000),
       supabase.from('forum_threads').select('id, created_at').limit(50000),
+      supabase.from('courses').select('slug, updated_at').eq('status', 'published').limit(50000),
     ])
 
     // Only list entries that actually have a translation (skip "_pending_" stubs).
@@ -51,7 +53,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     }))
 
-    return [...staticEntries, ...lexEntries, ...threadEntries]
+    const courseEntries: MetadataRoute.Sitemap = (courses.data ?? []).map((row) => ({
+      url: `${SITE_URL}/courses/${row.slug}`,
+      lastModified: row.updated_at ? new Date(row.updated_at as string) : now,
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    }))
+
+    return [...staticEntries, ...lexEntries, ...threadEntries, ...courseEntries]
   } catch {
     // If the DB is unreachable at build/revalidate time, still ship static routes.
     return staticEntries
