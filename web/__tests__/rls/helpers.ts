@@ -25,13 +25,13 @@ export function anonClient(): SupabaseClient {
 export const uid = () => randomUUID().slice(0, 8)
 
 export function must<T>(
-  res: { data: T | null; error: { message: string } | null },
+  res: { data: T; error: { message: string } | null },
   what: string,
-): T {
+): NonNullable<T> {
   if (res.error || res.data === null) {
     throw new Error(`${what}: ${res.error?.message ?? 'no data returned'}`)
   }
-  return res.data
+  return res.data as NonNullable<T>
 }
 
 export interface TestUser {
