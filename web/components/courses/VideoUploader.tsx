@@ -38,24 +38,29 @@ export function VideoUploader({ lessonId, mediaAsset, videoQuota, disabled = fal
     setError(null)
     setProgress(5)
 
-    // 1. Request direct upload URL from server
+    // 1. Request direct upload URL from server via API route
     console.log('[VideoUploader] 📡 Requesting Mux direct upload URL from server for lesson:', lessonId)
-    const res = await createVideoUploadUrl(supabase, lessonId)
-    if (res.error || !res.data) {
-      console.error('[VideoUploader] ❌ Server failed to return Mux upload URL:', res.error)
+    const apiRes = await fetch('/api/mux/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lessonId }),
+    })
+    const res = await apiRes.json().catch(() => ({}))
+    if (!apiRes.ok || !res.uploadUrl) {
+      console.error('[VideoUploader] ❌ Server API failed to return Mux upload URL:', res.error)
       setUploading(false)
       setError(res.error ?? 'Erreur lors de la création du lien de versement.')
       return
     }
 
     console.log('[VideoUploader] ✅ Mux direct upload URL received:', {
-      assetId: res.data.assetId,
-      uploadUrl: res.data.uploadUrl.substring(0, 45) + '...',
+      assetId: res.assetId,
+      uploadUrl: res.uploadUrl.substring(0, 45) + '...',
     })
 
     // 2. Upload video file directly to Mux via XMLHttpRequest for progress tracking
     const xhr = new XMLHttpRequest()
-    xhr.open('PUT', res.data.uploadUrl, true)
+    xhr.open('PUT', res.uploadUrl, true)
     xhr.setRequestHeader('Content-Type', file.type || 'video/mp4')
 
     xhr.upload.onprogress = event => {
