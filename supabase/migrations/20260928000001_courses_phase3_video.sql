@@ -67,6 +67,8 @@ create policy media_assets_write_owner on media_assets
   );
 
 -- ── 3. Helper Function: Get User Video Quota Usage ──────────────────────────
+drop function if exists get_user_video_quota(uuid);
+
 create or replace function get_user_video_quota(p_user_id uuid)
 returns table (
   max_minutes int,
@@ -81,9 +83,13 @@ declare
   v_max int;
   v_used bigint;
 begin
-  select coalesce(q.max_minutes, 30) into v_max
-  from (select p_user_id) u
-  left join video_quotas q on q.user_id = p_user_id;
+  select vq.max_minutes into v_max
+  from video_quotas vq
+  where vq.user_id = p_user_id;
+
+  if v_max is null then
+    v_max := 30;
+  end if;
 
   select coalesce(sum(ma.duration_seconds), 0) into v_used
   from media_assets ma
