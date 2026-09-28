@@ -15,7 +15,7 @@ interface Props {
   courseTitle?: string
   access?: 'free' | 'paid'
   priceCents?: number | null
-  currency?: string
+  currency?: string | null
   paidApproved?: boolean
   isAuthed: boolean
   isOwner: boolean

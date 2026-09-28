@@ -14,10 +14,11 @@ export interface CourseOrder {
   updated_at: string
 }
 
-export function formatCoursePrice(priceCents?: number | null, currency = 'eur'): string {
+export function formatCoursePrice(priceCents?: number | null, currency: string | null = 'eur'): string {
   if (!priceCents || priceCents <= 0) return 'Gratuit'
 
-  if (currency.toLowerCase() === 'xof') {
+  const curr = (currency || 'eur').toLowerCase()
+  if (curr === 'xof') {
     const fcfa = Math.round(priceCents / 100)
     return `${fcfa.toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, ' ')} FCFA`
   }

@@ -8,12 +8,12 @@ interface Props {
   courseId: string
   courseTitle: string
   priceCents: number
-  currency?: string
+  currency?: string | null
   open: boolean
   onClose: () => void
 }
 
-export function PaidCheckoutModal({ courseId, courseTitle, priceCents, currency = 'eur', open, onClose }: Props) {
+export function PaidCheckoutModal({ courseId, courseTitle, priceCents, currency, open, onClose }: Props) {
   const [rail, setRail] = useState<PaymentRail>('stripe')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
