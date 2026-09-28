@@ -399,7 +399,7 @@ export async function createVideoUploadUrl(
   if (!user) return fail('Connectez-vous pour verser une vidéo.')
 
   const muxTokenId = process.env.MUX_TOKEN_ID
-  const muxTokenSecret = process.env.MUX_TOKEN_SECRET
+  const muxTokenSecret = process.env.MUX_TOKEN_SECRET || process.env.MUX_SECRET_ID
 
   if (!muxTokenId || !muxTokenSecret) {
     return fail('Le service Mux n’est pas configuré sur le serveur.')
@@ -454,7 +454,7 @@ export async function deleteMediaAsset(
 ): Promise<Result<null>> {
   if (muxAssetId) {
     const muxTokenId = process.env.MUX_TOKEN_ID
-    const muxTokenSecret = process.env.MUX_TOKEN_SECRET
+    const muxTokenSecret = process.env.MUX_TOKEN_SECRET || process.env.MUX_SECRET_ID
     if (muxTokenId && muxTokenSecret) {
       const authHeader = `Basic ${Buffer.from(`${muxTokenId}:${muxTokenSecret}`).toString('base64')}`
       await fetch(`https://api.mux.com/video/v1/assets/${muxAssetId}`, {

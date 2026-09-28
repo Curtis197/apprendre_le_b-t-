@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   const rawBody = await request.text()
   const signatureHeader = request.headers.get('mux-signature')
-  const webhookSecret = process.env.MUX_WEBHOOK_SECRET
+  const webhookSecret = process.env.MUX_WEBHOOK_SECRET || process.env.MUX_WEBHOOK_SIGNING_SECRET
 
   if (webhookSecret) {
     const isValid = await verifyMuxWebhookSignature(rawBody, signatureHeader, webhookSecret)

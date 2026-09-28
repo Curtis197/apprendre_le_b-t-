@@ -253,7 +253,7 @@ export async function getVideoQuota(client: SupabaseClient, userId: string): Pro
 export async function getSignedMuxPlaybackToken(playbackId: string | null): Promise<string | null> {
   if (!playbackId) return null
   const keyId = process.env.MUX_SIGNING_KEY_ID
-  const privateKey = process.env.MUX_PRIVATE_KEY
+  const privateKey = process.env.MUX_PRIVATE_KEY || process.env.MUX_SIGNING_KEY_SECRET
 
   if (!keyId || !privateKey) {
     return null
