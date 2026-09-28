@@ -8,13 +8,18 @@ import {
   getCompletedLessonIds,
   getCourseBySlug,
   getCourseOutline,
+  getLessonAudioPath,
+  getLessonAudioUrl,
   getLessonContent,
+  getQuizForLesson,
   isEnrolled,
 } from '@/lib/courses/queries'
 import { flattenLessons, nextLessonId } from '@/lib/courses/outline'
 import { LessonMarkdown } from '@/components/LessonMarkdown'
 import { LessonOutline } from '@/components/courses/LessonOutline'
 import { CompleteButton } from '@/components/courses/CompleteButton'
+import { AudioPlayer } from '@/components/courses/AudioPlayer'
+import { QuizPlayer } from '@/components/courses/QuizPlayer'
 import { primaryLinkClass, secondaryLinkClass } from '@/components/courses/styles'
 
 export const dynamic = 'force-dynamic'
@@ -69,6 +74,11 @@ export default async function LessonPage({ params }: Props) {
   const hasFullAccess = enrolled || isOwner
   const completed = user ? await getCompletedLessonIds(supabase, user.id, flat.map(l => l.id)) : []
 
+  // Prefetch audio and quiz data if applicable
+  const audioPath = await getLessonAudioPath(supabase, lesson.id)
+  const signedAudioUrl = audioPath ? await getLessonAudioUrl(supabase, audioPath) : null
+  const quizQuestions = lesson.kind === 'quiz' ? await getQuizForLesson(supabase, lesson.id) : []
+
   const next = flat.find(l => l.id === nextLessonId(flat, lesson.id))
   const nextHref = next && (hasFullAccess || next.is_preview) ? `/courses/${slug}/learn/${next.id}` : null
 
@@ -94,9 +104,42 @@ export default async function LessonPage({ params }: Props) {
       <article className="order-1 lg:order-2 space-y-8 min-w-0">
         <h1 className="font-heading text-3xl font-bold">{lesson.title}</h1>
 
-        {lesson.kind === 'text' ? (
-          <LessonMarkdown source={body} />
-        ) : (
+        {lesson.kind === 'text' && (
+          <div className="space-y-6">
+            {signedAudioUrl && (
+              <AudioPlayer src={signedAudioUrl} title="Version audio de la leçon" />
+            )}
+            <LessonMarkdown source={body} />
+          </div>
+        )}
+
+        {lesson.kind === 'audio' && (
+          <div className="space-y-6">
+            {signedAudioUrl ? (
+              <AudioPlayer src={signedAudioUrl} title={lesson.title} />
+            ) : (
+              <div className="p-6 border border-dashed border-border rounded-xl text-center text-muted-foreground text-sm">
+                L’enregistrement audio de cette leçon sera bientôt disponible.
+              </div>
+            )}
+            {body.trim() && <LessonMarkdown source={body} />}
+          </div>
+        )}
+
+        {lesson.kind === 'quiz' && (
+          <div className="space-y-6">
+            {body.trim() && <LessonMarkdown source={body} />}
+            {quizQuestions.length > 0 ? (
+              <QuizPlayer lessonId={lesson.id} questions={quizQuestions} />
+            ) : (
+              <div className="p-6 border border-dashed border-border rounded-xl text-center text-muted-foreground text-sm">
+                Ce quiz n’a pas encore de questions enregistrées.
+              </div>
+            )}
+          </div>
+        )}
+
+        {lesson.kind !== 'text' && lesson.kind !== 'audio' && lesson.kind !== 'quiz' && (
           <p className="text-muted-foreground">Ce type de leçon sera bientôt disponible.</p>
         )}
 
