@@ -1,5 +1,6 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
+import Hls from 'hls.js'
 import { Play, Pause, Maximize, RotateCcw, Volume2, VolumeX, AlertTriangle } from 'lucide-react'
 import { formatVideoDuration } from '@/lib/courses/video'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,8 @@ const MEDIA_ERROR_MAP: Record<number, string> = {
 export function VideoPlayer({ playbackId, signedToken, title, className = '' }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const hlsRef = useRef<Hls | null>(null)
+
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -47,6 +50,8 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
+
+    setPlaybackError(null)
 
     const updateTime = () => setCurrentTime(video.currentTime)
     const updateDuration = () => {
@@ -92,18 +97,20 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
       const code = mediaError?.code ?? 0
       const errorMsg = mediaError?.message || MEDIA_ERROR_MAP[code] || 'Erreur de lecture vidéo inconnue.'
 
-      console.error('[VideoPlayer] ❌ HTML5 Video Error Details:', {
+      console.error('[VideoPlayer] ❌ HTML5 Video Native Error:', {
         code,
         codeDescription: MEDIA_ERROR_MAP[code] ?? 'UNKNOWN_ERROR',
         message: mediaError?.message,
         nativeEvent: e,
         playbackId,
         hasSignedToken: Boolean(signedToken),
-        streamUrl: streamUrl.replace(/token=([^&]+)/, 'token=[REDACTED]'),
       })
 
-      setPlaybackError(`Erreur de lecture (${code}): ${errorMsg}`)
-      setIsPlaying(false)
+      // Only display native error if hls.js didn't handle it
+      if (!hlsRef.current) {
+        setPlaybackError(`Erreur de lecture (${code}): ${errorMsg}`)
+        setIsPlaying(false)
+      }
     }
 
     video.addEventListener('timeupdate', updateTime)
@@ -116,6 +123,67 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
     video.addEventListener('waiting', onWaiting)
     video.addEventListener('error', onError)
 
+    // ── HLS Engine Initialization (hls.js vs Native Safari) ──────────────────
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      console.log('[VideoPlayer] 🍎 Native Safari HLS engine detected. Setting video.src directly...')
+      video.src = streamUrl
+    } else if (Hls.isSupported()) {
+      console.log('[VideoPlayer] ⚡ Initializing Hls.js engine for Chrome/Firefox/Edge...')
+      if (hlsRef.current) {
+        hlsRef.current.destroy()
+      }
+
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+      })
+      hlsRef.current = hls
+
+      hls.loadSource(streamUrl)
+      hls.attachMedia(video)
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+        console.log('[VideoPlayer] 📜 Hls.js manifest parsed successfully:', {
+          levelsCount: data.levels.length,
+          levels: data.levels.map(l => ({ width: l.width, height: l.height, bitrate: l.bitrate })),
+        })
+      })
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        console.error('[VideoPlayer] ❌ Hls.js Error Event:', {
+          type: data.type,
+          details: data.details,
+          fatal: data.fatal,
+          responseCode: data.response?.code,
+        })
+
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.error('[VideoPlayer] 🌐 Fatal network error in Hls.js, attempting reload...')
+              if (data.response?.code === 403 || data.response?.code === 401) {
+                setPlaybackError('Jeton de lecture vidéo Mux expiré ou non autorisé (403/401).')
+              } else {
+                hls.startLoad()
+              }
+              break
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.error('[VideoPlayer] 🎞️ Fatal media error in Hls.js, attempting recovery...')
+              hls.recoverMediaError()
+              break
+            default:
+              console.error('[VideoPlayer] 💥 Unrecoverable Hls.js fatal error. Destroying instance...')
+              setPlaybackError(`Erreur HLS (${data.details}). Impossible de lire le flux vidéo.`)
+              hls.destroy()
+              break
+          }
+        }
+      })
+    } else {
+      console.error('[VideoPlayer] ❌ Browser does not support HLS streaming natively or via Hls.js!')
+      setPlaybackError('Votre navigateur ne supporte pas le format de streaming vidéo HLS.')
+    }
+
     return () => {
       video.removeEventListener('timeupdate', updateTime)
       video.removeEventListener('loadedmetadata', updateDuration)
@@ -126,6 +194,12 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
       video.removeEventListener('canplay', onCanPlay)
       video.removeEventListener('waiting', onWaiting)
       video.removeEventListener('error', onError)
+
+      if (hlsRef.current) {
+        console.log('[VideoPlayer] 🧹 Destroying Hls.js instance on cleanup')
+        hlsRef.current.destroy()
+        hlsRef.current = null
+      }
     }
   }, [playbackId, signedToken, streamUrl])
 
@@ -135,15 +209,15 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
     if (isPlaying) {
       video.pause()
     } else {
-      console.log('[VideoPlayer] 🖱️ User clicked play. Attempting video.play()...')
+      console.log('[VideoPlayer] 🖱️ User clicked play button. Invoking video.play()...')
       video
         .play()
         .then(() => {
-          console.log('[VideoPlayer] ✅ video.play() promise resolved cleanly')
+          console.log('[VideoPlayer] ✅ video.play() resolved successfully')
         })
         .catch(err => {
           console.error('[VideoPlayer] ❌ video.play() rejected:', err)
-          setPlaybackError(`Impossible de lancer la lecture : ${err.message}`)
+          setPlaybackError(`Impossible de démarrer la vidéo : ${err.message}`)
           setIsPlaying(false)
         })
     }
@@ -161,7 +235,7 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
   const toggleSpeed = () => {
     const nextIndex = (speedIndex + 1) % SPEEDS.length
     const nextSpeed = SPEEDS[nextIndex]
-    console.log('[VideoPlayer] ⏩ Playback speed changed to:', nextSpeed, 'x')
+    console.log('[VideoPlayer] ⏩ Playback speed set to:', nextSpeed, 'x')
     setSpeedIndex(nextIndex)
     if (videoRef.current) {
       videoRef.current.playbackRate = nextSpeed
@@ -171,7 +245,7 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
   const toggleMute = () => {
     if (videoRef.current) {
       const nextMuted = !isMuted
-      console.log('[VideoPlayer] 🔊 Audio muted toggled to:', nextMuted)
+      console.log('[VideoPlayer] 🔊 Audio muted set to:', nextMuted)
       videoRef.current.muted = nextMuted
       setIsMuted(nextMuted)
     }
@@ -180,12 +254,12 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
   const toggleFullscreen = () => {
     if (containerRef.current) {
       if (!document.fullscreenElement) {
-        console.log('[VideoPlayer] 🖥️ Requesting fullscreen mode')
+        console.log('[VideoPlayer] 🖥️ Entering fullscreen')
         containerRef.current.requestFullscreen().catch(err => {
-          console.warn('[VideoPlayer] ⚠️ Fullscreen request failed:', err)
+          console.warn('[VideoPlayer] ⚠️ Fullscreen failed:', err)
         })
       } else {
-        console.log('[VideoPlayer] 🖥️ Exiting fullscreen mode')
+        console.log('[VideoPlayer] 🖥️ Exiting fullscreen')
         document.exitFullscreen().catch(() => null)
       }
     }
@@ -202,7 +276,6 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
 
       <video
         ref={videoRef}
-        src={streamUrl}
         playsInline
         preload="metadata"
         onClick={togglePlay}
