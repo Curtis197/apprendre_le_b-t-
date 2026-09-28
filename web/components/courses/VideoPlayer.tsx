@@ -296,8 +296,6 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
       <video
         ref={videoRef}
         playsInline
-        // @ts-expect-error webkit-playsinline is required for legacy iOS Safari
-        webkit-playsinline="true"
         preload="metadata"
         onClick={togglePlay}
         className="w-full aspect-video object-contain cursor-pointer"
