@@ -9,6 +9,7 @@ import type { QuizAnswerKey, QuizOption, QuizQuestion } from './quiz'
 import type { Course, CourseLevel, Lesson, OutlineSection, Section } from './types'
 import type { MediaAsset, VideoQuota } from './video'
 import { generateMuxPlaybackToken } from './video'
+import type { Submission, PendingReviewItem } from './assignment'
 
 export async function getPublishedCourses(
   client: SupabaseClient,
@@ -265,5 +266,75 @@ export async function getSignedMuxPlaybackToken(playbackId: string | null): Prom
     return null
   }
 }
+
+// ── Phase 4: Assignment Queries ───────────────────────────────────────────
+
+/** Fetches a learner's submission for a lesson. */
+export async function getSubmissionForLesson(
+  client: SupabaseClient,
+  lessonId: string,
+  userId: string,
+): Promise<Submission | null> {
+  const { data } = await client
+    .from('submissions')
+    .select('*')
+    .eq('lesson_id', lessonId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  return (data ?? null) as Submission | null
+}
+
+/** Fetches pending and reviewed submissions for courses owned by the teacher. */
+export async function getPendingReviewsForTeacher(
+  client: SupabaseClient,
+  teacherUserId: string,
+): Promise<PendingReviewItem[]> {
+  // 1. Fetch courses owned by teacher
+  const { data: courses } = await client.from('courses').select('id, title, slug').eq('owner_id', teacherUserId)
+  if (!courses || courses.length === 0) return []
+
+  const courseIds = courses.map(c => c.id)
+  const courseMap = new Map(courses.map(c => [c.id, c]))
+
+  // 2. Fetch lessons in those courses
+  const { data: lessons } = await client.from('lessons').select('id, title, course_id').in('course_id', courseIds)
+  if (!lessons || lessons.length === 0) return []
+
+  const lessonIds = lessons.map(l => l.id)
+  const lessonMap = new Map(lessons.map(l => [l.id, l]))
+
+  // 3. Fetch submissions for those lessons
+  const { data: submissions } = await client
+    .from('submissions')
+    .select('*')
+    .in('lesson_id', lessonIds)
+    .order('created_at', { ascending: false })
+
+  if (!submissions || submissions.length === 0) return []
+
+  // 4. Fetch learner profiles
+  const userIds = Array.from(new Set(submissions.map(s => s.user_id)))
+  const { data: profiles } = await client.from('profiles').select('id, full_name').in('id', userIds)
+  const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
+
+  return submissions.map(sub => {
+    const lesson = lessonMap.get(sub.lesson_id)!
+    const course = courseMap.get(lesson.course_id)!
+    const profile = profileMap.get(sub.user_id)
+
+    return {
+      submission: sub as Submission,
+      lesson,
+      course,
+      learner: {
+        id: sub.user_id,
+        email: null,
+        full_name: profile?.full_name ?? 'Apprenant',
+      },
+    }
+  })
+}
+
 
 

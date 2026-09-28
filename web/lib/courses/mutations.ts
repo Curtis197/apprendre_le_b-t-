@@ -5,8 +5,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { isValidAudioFile } from './audio'
 import type { QuizInput, QuizSubmissionResult } from './quiz'
 import { buildSlug } from './slug'
-import type { CourseInput, Result } from './types'
 import type { MediaAsset } from './video'
+import type { Submission } from './assignment'
+import { sendSubmissionReviewedEmail } from './assignment-email'
 
 const PG_UNIQUE_VIOLATION = '23505'
 
@@ -467,5 +468,102 @@ export async function deleteMediaAsset(
   const { error } = await client.from('media_assets').delete().eq('id', assetId)
   return done(error)
 }
+
+// ── Phase 4: Assignment Mutations ─────────────────────────────────────────
+
+/** Submits an assignment (text or audio) and marks lesson complete automatically. */
+export async function submitAssignment(
+  client: SupabaseClient,
+  lessonId: string,
+  answerText: string | null,
+  audioPath: string | null,
+): Promise<Result<Submission>> {
+  const user = await getAuthUser(client)
+  if (!user) return fail('Connectez-vous pour remettre un devoir.')
+
+  if (!answerText?.trim() && !audioPath) {
+    return fail('Veuillez fournir une réponse écrite ou un enregistrement audio.')
+  }
+
+  const { data, error } = await client
+    .from('submissions')
+    .upsert(
+      {
+        lesson_id: lessonId,
+        user_id: user.id,
+        answer_text: answerText?.trim() || null,
+        audio_path: audioPath || null,
+        status: 'submitted',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,lesson_id' },
+    )
+    .select('*')
+    .single()
+
+  if (error || !data) return fail(error?.message ?? 'Erreur lors de la remise du devoir.')
+
+  // Mark lesson as complete in lesson_progress so learner is never blocked by teacher review queue
+  await client.from('lesson_progress').upsert({
+    user_id: user.id,
+    lesson_id: lessonId,
+    completed_at: new Date().toISOString(),
+  })
+
+  return ok(data as Submission)
+}
+
+/** Teacher submits review feedback and optional grade for a submission. */
+export async function reviewSubmission(
+  client: SupabaseClient,
+  submissionId: string,
+  feedback: string,
+  grade: number | null,
+): Promise<Result<null>> {
+  const user = await getAuthUser(client)
+  if (!user) return fail('Connectez-vous pour corriger ce devoir.')
+
+  if (!feedback.trim()) return fail('Veuillez saisir un commentaire de correction.')
+
+  const { data: sub, error: fetchError } = await client
+    .from('submissions')
+    .select('*, lessons(title, courses(title))')
+    .eq('id', submissionId)
+    .single()
+
+  if (fetchError || !sub) return fail('Devoir introuvable.')
+
+  const { error: updateError } = await client
+    .from('submissions')
+    .update({
+      status: 'reviewed',
+      teacher_feedback: feedback.trim(),
+      grade: grade !== null && grade !== undefined ? Math.min(100, Math.max(0, grade)) : null,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', submissionId)
+
+  if (updateError) return fail(updateError.message)
+
+  // Send feedback notification email asynchronously
+  const lessonTitle = (sub.lessons as { title?: string })?.title ?? 'Devoir'
+  const courseTitle = ((sub.lessons as { courses?: { title?: string } })?.courses)?.title ?? 'Cours'
+
+  // Fetch learner auth email if possible
+  const { data: learnerUser } = await client.auth.admin.getUserById(sub.user_id).catch(() => ({ data: null }))
+  if (learnerUser?.user?.email) {
+    sendSubmissionReviewedEmail({
+      learnerEmail: learnerUser.user.email,
+      courseTitle,
+      lessonTitle,
+      feedback: feedback.trim(),
+      grade,
+    })
+  }
+
+  return ok(null)
+}
+
 
 
