@@ -231,7 +231,8 @@ export async function getLessonAudioUrl(client: SupabaseClient, audioPath: strin
 
 /** Fetches ready or processing media asset for a lesson. */
 export async function getMediaAssetForLesson(client: SupabaseClient, lessonId: string): Promise<MediaAsset | null> {
-  const { data } = await client
+  console.log('[VideoView] 🎬 Resolving media asset for lesson:', lessonId)
+  const { data, error } = await client
     .from('media_assets')
     .select('*')
     .eq('lesson_id', lessonId)
@@ -239,11 +240,28 @@ export async function getMediaAssetForLesson(client: SupabaseClient, lessonId: s
     .limit(1)
     .maybeSingle()
 
-  if (!data) return null
+  if (error) {
+    console.error('[VideoView] ❌ Database query error fetching media_assets:', error)
+  }
+
+  if (!data) {
+    console.log('[VideoView] ℹ️ No media asset found in database for lesson:', lessonId)
+    return null
+  }
   let asset = data as MediaAsset
+  console.log('[VideoView] 📦 Media asset retrieved from DB:', {
+    assetId: asset.id,
+    lessonId: asset.lesson_id,
+    status: asset.status,
+    muxPlaybackId: asset.mux_playback_id,
+    muxAssetId: asset.mux_asset_id,
+    durationSeconds: asset.duration_seconds,
+    errorMessage: asset.error_message,
+  })
 
   // Self-healing fallback: If asset is in 'uploading' or 'processing' state, sync directly with Mux API
   if ((asset.status === 'uploading' || asset.status === 'processing') && asset.mux_upload_id) {
+    console.log('[VideoView] 🔄 Asset is in status', asset.status, '— syncing with Mux API...')
     asset = await syncMediaAssetWithMux(client, asset)
   }
 
@@ -350,17 +368,35 @@ export async function getVideoQuota(client: SupabaseClient, userId: string): Pro
 
 /** Generates a short-lived (1 hour) signed Mux playback URL token for an asset. */
 export async function getSignedMuxPlaybackToken(playbackId: string | null): Promise<string | null> {
-  if (!playbackId) return null
+  console.log('[VideoView] 🔑 Requesting signed Mux playback token for playbackId:', playbackId)
+  if (!playbackId) {
+    console.log('[VideoView] ⚠️ Skipping signed token: playbackId is null or empty.')
+    return null
+  }
+
   const keyId = process.env.MUX_SIGNING_KEY_ID
   const privateKey = process.env.MUX_PRIVATE_KEY || process.env.MUX_SIGNING_KEY_SECRET
 
+  console.log('[VideoView] 🔐 Mux Signing Credentials Status:', {
+    hasKeyId: Boolean(keyId),
+    hasPrivateKey: Boolean(privateKey),
+    keyIdLength: keyId?.length ?? 0,
+    privateKeyLength: privateKey?.length ?? 0,
+  })
+
   if (!keyId || !privateKey) {
+    console.warn(
+      '[VideoView] ⚠️ MUX_SIGNING_KEY_ID or MUX_PRIVATE_KEY is missing in environment! Signed playback token will not be generated (stream will rely on public playback policy).',
+    )
     return null
   }
 
   try {
-    return generateMuxPlaybackToken(playbackId, keyId, privateKey, 3600)
-  } catch {
+    const token = generateMuxPlaybackToken(playbackId, keyId, privateKey, 3600)
+    console.log('[VideoView] ✅ Signed Mux playback token generated successfully (token length:', token.length, ')')
+    return token
+  } catch (err) {
+    console.error('[VideoView] ❌ Exception generating Mux playback token:', err)
     return null
   }
 }

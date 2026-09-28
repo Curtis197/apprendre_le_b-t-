@@ -89,6 +89,17 @@ export default async function LessonPage({ params }: Props) {
     ? await getSignedMuxPlaybackToken(mediaAsset.mux_playback_id)
     : null
 
+  if (lesson.kind === 'video') {
+    console.log('[VideoView] 🍿 Video Lesson Page Loaded:', {
+      lessonId: lesson.id,
+      title: lesson.title,
+      hasMediaAsset: Boolean(mediaAsset),
+      status: mediaAsset?.status ?? 'none',
+      muxPlaybackId: mediaAsset?.mux_playback_id ?? null,
+      hasSignedToken: Boolean(signedPlaybackToken),
+    })
+  }
+
   const quizQuestions = lesson.kind === 'quiz' ? await getQuizForLesson(supabase, lesson.id) : []
   const submission = user && lesson.kind === 'assignment' ? await getSubmissionForLesson(supabase, lesson.id, user.id) : null
 
