@@ -13,6 +13,7 @@ import {
   getLessonContent,
   getMediaAssetForLesson,
   getSignedMuxPlaybackToken,
+  getSubmissionForLesson,
   getQuizForLesson,
   isEnrolled,
 } from '@/lib/courses/queries'
@@ -23,6 +24,7 @@ import { CompleteButton } from '@/components/courses/CompleteButton'
 import { AudioPlayer } from '@/components/courses/AudioPlayer'
 import { VideoPlayer } from '@/components/courses/VideoPlayer'
 import { QuizPlayer } from '@/components/courses/QuizPlayer'
+import { AssignmentForm } from '@/components/courses/AssignmentForm'
 import { primaryLinkClass, secondaryLinkClass } from '@/components/courses/styles'
 
 export const dynamic = 'force-dynamic'
@@ -87,6 +89,7 @@ export default async function LessonPage({ params }: Props) {
     : null
 
   const quizQuestions = lesson.kind === 'quiz' ? await getQuizForLesson(supabase, lesson.id) : []
+  const submission = user && lesson.kind === 'assignment' ? await getSubmissionForLesson(supabase, lesson.id, user.id) : null
 
   const next = flat.find(l => l.id === nextLessonId(flat, lesson.id))
   const nextHref = next && (hasFullAccess || next.is_preview) ? `/courses/${slug}/learn/${next.id}` : null
@@ -170,7 +173,14 @@ export default async function LessonPage({ params }: Props) {
           </div>
         )}
 
-        {lesson.kind !== 'text' && lesson.kind !== 'audio' && lesson.kind !== 'quiz' && lesson.kind !== 'video' && (
+        {lesson.kind === 'assignment' && (
+          <div className="space-y-6">
+            {body.trim() && <LessonMarkdown source={body} />}
+            <AssignmentForm lessonId={lesson.id} initialSubmission={submission} readOnly={!user} />
+          </div>
+        )}
+
+        {lesson.kind !== 'text' && lesson.kind !== 'audio' && lesson.kind !== 'quiz' && lesson.kind !== 'video' && lesson.kind !== 'assignment' && (
           <p className="text-muted-foreground">Ce type de leçon sera bientôt disponible.</p>
         )}
 

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { PlusCircle, ShieldCheck } from 'lucide-react'
+import { PlusCircle, ShieldCheck, MessageSquare } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { primaryLinkClass, secondaryLinkClass } from '@/components/courses/styles'
 import { createClient } from '@/lib/supabase-server'
@@ -31,6 +31,10 @@ export default async function TeachPage() {
         <Link href="/teach/new" className={primaryLinkClass}>
           <PlusCircle className="w-4 h-4" />
           Nouveau cours
+        </Link>
+        <Link href="/teach/reviews" className={secondaryLinkClass}>
+          <MessageSquare className="w-4 h-4" />
+          Correction des devoirs
         </Link>
         {admin && (
           <Link href="/admin/reports" className={secondaryLinkClass}>

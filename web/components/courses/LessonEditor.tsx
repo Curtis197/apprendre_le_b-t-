@@ -117,6 +117,7 @@ export function LessonEditor({
               <option value="audio">Audio (enregistrement avec transcription ou notes)</option>
               <option value="video">Vidéo (cours vidéo hébergé sur Mux)</option>
               <option value="quiz">Quiz QCM (questions à choix multiples)</option>
+              <option value="assignment">Devoir à rendre (réponse écrite ou enregistrement)</option>
             </select>
           </div>
         </div>
