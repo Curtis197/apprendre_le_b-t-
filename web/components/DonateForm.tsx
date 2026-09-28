@@ -1,4 +1,4 @@
-﻿// web/components/DonateForm.tsx
+// web/components/DonateForm.tsx
 'use client'
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -85,16 +85,22 @@ export function DonateForm() {
         l&apos;hébergement et les coûts API pour préserver la langue bhété.
       </p>
 
+      <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-600 dark:text-amber-400 space-y-1">
+        <p className="font-semibold text-sm">Dons bientôt disponibles</p>
+        <p className="text-xs text-muted-foreground">La configuration de notre compte de paiement est en cours. Revenez très bientôt pour nous soutenir !</p>
+      </div>
+
       {/* Preset buttons */}
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div className="flex flex-wrap gap-3 mb-4 opacity-60">
         {PRESETS.map(({ label, cents }) => (
           <button
             key={cents}
+            disabled
             onClick={() => { setSelected(cents); setCustom('') }}
-            className={`px-5 py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
+            className={`px-5 py-2.5 rounded-lg text-sm font-semibold border cursor-not-allowed ${
               selected === cents && !custom
                 ? 'bg-primary text-white border-primary'
-                : 'bg-background border-border hover:border-primary hover:text-primary'
+                : 'bg-background border-border text-muted-foreground'
             }`}
           >
             {label}
@@ -103,11 +109,12 @@ export function DonateForm() {
       </div>
 
       {/* Custom amount */}
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2 mb-5 opacity-60">
         <span className="text-sm text-muted-foreground">Autre montant :</span>
         <div className="relative">
           <input
             type="text"
+            disabled
             inputMode="decimal"
             min="1"
             max="500"
@@ -115,7 +122,7 @@ export function DonateForm() {
             placeholder="Ex: 15"
             value={custom}
             onChange={e => { setCustom(e.target.value); setSelected(null) }}
-            className="w-28 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            className="w-28 border border-border rounded-lg px-3 py-2 text-sm cursor-not-allowed bg-muted"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">€</span>
         </div>
@@ -126,11 +133,10 @@ export function DonateForm() {
       )}
 
       <button
-        onClick={handleSubmit}
-        disabled={loading || (!selected && !custom)}
-        className="bg-primary text-white font-semibold px-6 py-3 rounded-lg text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled
+        className="bg-primary/50 text-white font-semibold px-6 py-3 rounded-lg text-sm cursor-not-allowed opacity-60 w-full sm:w-auto"
       >
-        {loading ? 'Redirection...' : 'Soutenir le projet →'}
+        Dons bientôt disponibles
       </button>
     </div>
   )
