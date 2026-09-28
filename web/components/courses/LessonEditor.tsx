@@ -7,8 +7,10 @@ import { createClient } from '@/lib/supabase-browser'
 import { saveLessonContent, updateLesson } from '@/lib/courses/mutations'
 import type { Lesson } from '@/lib/courses/types'
 import type { QuizAnswerKey, QuizQuestionDraft } from '@/lib/courses/quiz'
+import type { MediaAsset, VideoQuota } from '@/lib/courses/video'
 import { LessonMarkdown } from '@/components/LessonMarkdown'
 import { AudioUploader } from '@/components/courses/AudioUploader'
+import { VideoUploader } from '@/components/courses/VideoUploader'
 import { QuizBuilder } from '@/components/courses/QuizBuilder'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +26,8 @@ interface Props {
   initialAudioUrl: string | null
   initialQuizQuestions: QuizQuestionDraft[]
   initialQuizKeys: Map<string, QuizAnswerKey>
+  initialMediaAsset: MediaAsset | null
+  initialVideoQuota: VideoQuota
   readOnly: boolean
 }
 
@@ -36,6 +40,8 @@ export function LessonEditor({
   initialAudioUrl,
   initialQuizQuestions,
   initialQuizKeys,
+  initialMediaAsset,
+  initialVideoQuota,
   readOnly,
 }: Props) {
   const router = useRouter()
@@ -109,6 +115,7 @@ export function LessonEditor({
             >
               <option value="text">Texte (cours écrit avec mise en forme)</option>
               <option value="audio">Audio (enregistrement avec transcription ou notes)</option>
+              <option value="video">Vidéo (cours vidéo hébergé sur Mux)</option>
               <option value="quiz">Quiz QCM (questions à choix multiples)</option>
             </select>
           </div>
@@ -143,6 +150,20 @@ export function LessonEditor({
         </div>
       )}
 
+      {/* Video upload section */}
+      {kind === 'video' && (
+        <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+          <h3 className="text-sm font-semibold">Vidéo de la leçon</h3>
+          <VideoUploader
+            lessonId={lesson.id}
+            mediaAsset={initialMediaAsset}
+            videoQuota={initialVideoQuota}
+            disabled={readOnly}
+            onUpdated={() => router.refresh()}
+          />
+        </div>
+      )}
+
       {/* Quiz builder section */}
       {kind === 'quiz' && (
         <div className="space-y-4">
@@ -168,6 +189,8 @@ export function LessonEditor({
               ? 'Transcription / Notes de cours (Markdown)'
               : kind === 'quiz'
               ? 'Instructions du quiz (Markdown)'
+              : kind === 'video'
+              ? 'Notes & Ressources complémentaires (Markdown)'
               : 'Contenu du cours (Markdown)'}
           </label>
           <div className="flex gap-1 lg:hidden">
@@ -194,6 +217,8 @@ export function LessonEditor({
                   ? 'Ajoutez la transcription ou le vocabulaire lié à l’audio…'
                   : kind === 'quiz'
                   ? 'Consignes optionnelles pour les apprenants avant de commencer…'
+                  : kind === 'video'
+                  ? 'Ajoutez les remarques, résumés ou liens utiles accompagnant la vidéo…'
                   : 'Écrivez votre leçon ici…'
               }
             />

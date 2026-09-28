@@ -7,6 +7,8 @@ import {
   getLessonAudioPath,
   getLessonAudioUrl,
   getLessonContent,
+  getMediaAssetForLesson,
+  getVideoQuota,
   getQuizForLesson,
   getTeacherQuizKeys,
 } from '@/lib/courses/queries'
@@ -39,6 +41,10 @@ export default async function LessonEditorPage({ params }: Props) {
   // Prefetch audio assets
   const audioPath = await getLessonAudioPath(supabase, lesson.id)
   const signedAudioUrl = audioPath ? await getLessonAudioUrl(supabase, audioPath) : null
+
+  // Prefetch video assets & quota
+  const mediaAsset = await getMediaAssetForLesson(supabase, lesson.id)
+  const videoQuota = await getVideoQuota(supabase, user.id)
 
   // Prefetch quiz questions and answer keys
   const quizQuestions = await getQuizForLesson(supabase, lesson.id)
@@ -74,6 +80,8 @@ export default async function LessonEditorPage({ params }: Props) {
         initialAudioUrl={signedAudioUrl}
         initialQuizQuestions={drafts}
         initialQuizKeys={quizKeys}
+        initialMediaAsset={mediaAsset}
+        initialVideoQuota={videoQuota}
         readOnly={course.status === 'suspended'}
       />
     </div>
