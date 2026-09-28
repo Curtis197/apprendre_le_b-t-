@@ -5,6 +5,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DialectKey } from '../dialect'
 import { buildOutline, computeProgress, type Progress } from './outline'
+import type { QuizAnswerKey, QuizOption, QuizQuestion } from './quiz'
 import type { Course, CourseLevel, Lesson, OutlineSection, Section } from './types'
 
 export async function getPublishedCourses(
@@ -153,3 +154,72 @@ export async function getSuspendedCourses(client: SupabaseClient): Promise<Cours
     .order('updated_at', { ascending: false })
   return (data ?? []) as Course[]
 }
+
+// ── Phase 2: Audio & Quiz Queries ──────────────────────────────────────────
+
+/** Fetches questions and options for a lesson. Gated by RLS. */
+export async function getQuizForLesson(client: SupabaseClient, lessonId: string): Promise<QuizQuestion[]> {
+  const { data: questions } = await client
+    .from('quiz_questions')
+    .select('id, lesson_id, prompt, audio_path, position')
+    .eq('lesson_id', lessonId)
+    .order('position', { ascending: true })
+
+  if (!questions || questions.length === 0) return []
+
+  const qIds = questions.map(q => q.id)
+  const { data: options } = await client
+    .from('quiz_options')
+    .select('id, question_id, text, position')
+    .in('question_id', qIds)
+    .order('position', { ascending: true })
+
+  const optionsMap = new Map<string, QuizOption[]>()
+  for (const opt of (options ?? []) as QuizOption[]) {
+    const list = optionsMap.get(opt.question_id) ?? []
+    list.push(opt)
+    optionsMap.set(opt.question_id, list)
+  }
+
+  return questions.map(q => ({
+    ...q,
+    options: optionsMap.get(q.id) ?? [],
+  }))
+}
+
+/** Fetches quiz answer keys (allowed only for course owner / admin). */
+export async function getTeacherQuizKeys(client: SupabaseClient, questionIds: string[]): Promise<Map<string, QuizAnswerKey>> {
+  if (questionIds.length === 0) return new Map()
+  const { data } = await client
+    .from('quiz_answer_keys')
+    .select('question_id, correct_option_ids, explanation')
+    .in('question_id', questionIds)
+
+  const map = new Map<string, QuizAnswerKey>()
+  for (const key of (data ?? []) as QuizAnswerKey[]) {
+    map.set(key.question_id, key)
+  }
+  return map
+}
+
+/** Retrieves the audio_path of a lesson content if present. */
+export async function getLessonAudioPath(client: SupabaseClient, lessonId: string): Promise<string | null> {
+  const { data } = await client
+    .from('lesson_contents')
+    .select('audio_path')
+    .eq('lesson_id', lessonId)
+    .maybeSingle()
+  return data ? (data as { audio_path: string | null }).audio_path : null
+}
+
+/** Generates a short-lived signed URL (1 hour) for lesson audio playback. */
+export async function getLessonAudioUrl(client: SupabaseClient, audioPath: string | null): Promise<string | null> {
+  if (!audioPath) return null
+  const { data, error } = await client.storage
+    .from('lesson-audio')
+    .createSignedUrl(audioPath, 3600)
+
+  if (error || !data) return null
+  return data.signedUrl
+}
+

@@ -2,6 +2,8 @@
 // Authorization is enforced by RLS; these helpers add validation and friendly
 // French errors. Pass a client created with createClient() from supabase-browser.
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isValidAudioFile } from './audio'
+import type { QuizInput, QuizSubmissionResult } from './quiz'
 import { buildSlug } from './slug'
 import type { CourseInput, Result } from './types'
 
@@ -156,15 +158,16 @@ export async function addLesson(
 export async function updateLesson(
   client: SupabaseClient,
   lessonId: string,
-  patch: { title?: string; is_preview?: boolean },
+  patch: { title?: string; is_preview?: boolean; kind?: 'text' | 'audio' | 'video' | 'quiz' | 'assignment' },
 ): Promise<Result<null>> {
-  const update: { title?: string; is_preview?: boolean } = {}
+  const update: { title?: string; is_preview?: boolean; kind?: 'text' | 'audio' | 'video' | 'quiz' | 'assignment' } = {}
   if (patch.title !== undefined) {
     const clean = patch.title.trim()
     if (!clean) return fail('Le titre est obligatoire.')
     update.title = clean
   }
   if (patch.is_preview !== undefined) update.is_preview = patch.is_preview
+  if (patch.kind !== undefined) update.kind = patch.kind
   const { error } = await client.from('lessons').update(update).eq('id', lessonId)
   return done(error)
 }
@@ -267,3 +270,120 @@ export async function restoreCourse(client: SupabaseClient, courseId: string): P
   const { error } = await client.from('courses').update({ status: 'draft' }).eq('id', courseId)
   return done(error)
 }
+
+// ── Phase 2: Audio & Quiz Mutations ────────────────────────────────────────
+
+/** Uploads an audio clip to the lesson-audio bucket and updates lesson_contents. */
+export async function uploadLessonAudio(
+  client: SupabaseClient,
+  courseOwnerId: string,
+  lessonId: string,
+  file: File,
+): Promise<Result<{ audioPath: string }>> {
+  const check = isValidAudioFile(file)
+  if (!check.valid) return fail(check.error ?? 'Fichier audio invalide.')
+
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'mp3'
+  const path = `${courseOwnerId}/${lessonId}/audio_${Date.now()}.${ext}`
+
+  const { error: uploadError } = await client.storage
+    .from('lesson-audio')
+    .upload(path, file, { upsert: true })
+
+  if (uploadError) return fail(uploadError.message)
+
+  const { error: dbError } = await client
+    .from('lesson_contents')
+    .update({ audio_path: path })
+    .eq('lesson_id', lessonId)
+
+  if (dbError) return fail(dbError.message)
+  return ok({ audioPath: path })
+}
+
+/** Deletes an audio clip from storage and clears audio_path in lesson_contents. */
+export async function deleteLessonAudio(
+  client: SupabaseClient,
+  lessonId: string,
+  audioPath: string,
+): Promise<Result<null>> {
+  await client.storage.from('lesson-audio').remove([audioPath])
+  const { error } = await client
+    .from('lesson_contents')
+    .update({ audio_path: null })
+    .eq('lesson_id', lessonId)
+
+  return done(error)
+}
+
+/** Saves all quiz questions, options, and secret answer keys for a lesson. */
+export async function saveQuiz(
+  client: SupabaseClient,
+  lessonId: string,
+  input: QuizInput,
+): Promise<Result<null>> {
+  // 1. Delete existing questions (cascades to options and keys)
+  const { error: delError } = await client.from('quiz_questions').delete().eq('lesson_id', lessonId)
+  if (delError) return fail(delError.message)
+
+  // 2. Insert questions, options, and keys
+  for (let qIndex = 0; qIndex < input.questions.length; qIndex++) {
+    const qData = input.questions[qIndex]
+    const { data: qRow, error: qError } = await client
+      .from('quiz_questions')
+      .insert({
+        lesson_id: lessonId,
+        prompt: qData.prompt.trim(),
+        audio_path: qData.audio_path ?? null,
+        position: qIndex,
+      })
+      .select('id')
+      .single()
+
+    if (qError || !qRow) return fail(qError?.message ?? 'Erreur lors de la création de la question.')
+
+    const optionsToInsert = qData.options.map((opt, optIndex) => ({
+      question_id: qRow.id,
+      text: opt.text.trim(),
+      position: optIndex,
+    }))
+
+    const { data: optRows, error: optError } = await client
+      .from('quiz_options')
+      .insert(optionsToInsert)
+      .select('id, position')
+
+    if (optError || !optRows) return fail(optError?.message ?? 'Erreur lors de la création des options.')
+
+    // Map correct indices to inserted option UUIDs
+    const correctIds = qData.correctOptionIndices
+      .map(idx => optRows.find(r => r.position === idx)?.id)
+      .filter((id): id is string => Boolean(id))
+
+    const { error: keyError } = await client.from('quiz_answer_keys').insert({
+      question_id: qRow.id,
+      correct_option_ids: correctIds,
+      explanation: qData.explanation.trim(),
+    })
+
+    if (keyError) return fail(keyError.message)
+  }
+
+  return ok(null)
+}
+
+/** Submits learner answers for server-side evaluation. */
+export async function submitQuizAnswers(
+  client: SupabaseClient,
+  lessonId: string,
+  answers: Record<string, string[]>,
+): Promise<Result<QuizSubmissionResult>> {
+  const { data, error } = await client.rpc('submit_quiz', {
+    p_lesson_id: lessonId,
+    p_answers: answers,
+  })
+
+  if (error || !data) return fail(error?.message ?? 'Erreur lors de l’évaluation du quiz.')
+  return ok(data as QuizSubmissionResult)
+}
+
