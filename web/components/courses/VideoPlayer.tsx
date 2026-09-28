@@ -252,16 +252,35 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
   }
 
   const toggleFullscreen = () => {
-    if (containerRef.current) {
-      if (!document.fullscreenElement) {
-        console.log('[VideoPlayer] 🖥️ Entering fullscreen')
-        containerRef.current.requestFullscreen().catch(err => {
-          console.warn('[VideoPlayer] ⚠️ Fullscreen failed:', err)
+    const video = videoRef.current
+    const container = containerRef.current
+    if (!container) return
+
+    // iOS Safari does not support container.requestFullscreen, only video.webkitEnterFullscreen
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const iosVideo = video as any
+    if (iosVideo && typeof iosVideo.webkitEnterFullscreen === 'function' && !container.requestFullscreen) {
+      console.log('[VideoPlayer] 📱 Entering iOS Safari fullscreen via webkitEnterFullscreen()...')
+      iosVideo.webkitEnterFullscreen()
+      return
+    }
+
+    if (!document.fullscreenElement) {
+      console.log('[VideoPlayer] 🖥️ Entering fullscreen')
+      if (container.requestFullscreen) {
+        container.requestFullscreen().catch(err => {
+          console.warn('[VideoPlayer] ⚠️ Container fullscreen failed:', err)
+          if (iosVideo && typeof iosVideo.webkitEnterFullscreen === 'function') {
+            console.log('[VideoPlayer] 📱 Fallback to webkitEnterFullscreen()...')
+            iosVideo.webkitEnterFullscreen()
+          }
         })
-      } else {
-        console.log('[VideoPlayer] 🖥️ Exiting fullscreen')
-        document.exitFullscreen().catch(() => null)
+      } else if (iosVideo && typeof iosVideo.webkitEnterFullscreen === 'function') {
+        iosVideo.webkitEnterFullscreen()
       }
+    } else {
+      console.log('[VideoPlayer] 🖥️ Exiting fullscreen')
+      document.exitFullscreen().catch(() => null)
     }
   }
 
@@ -277,6 +296,8 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
       <video
         ref={videoRef}
         playsInline
+        // @ts-expect-error webkit-playsinline is required for legacy iOS Safari
+        webkit-playsinline="true"
         preload="metadata"
         onClick={togglePlay}
         className="w-full aspect-video object-contain cursor-pointer"
