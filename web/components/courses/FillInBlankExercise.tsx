@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { CheckCircle2, XCircle, HelpCircle, RefreshCw, Award, Sparkles } from 'lucide-react'
 import { parseFillInBlankText, evaluateFillInBlankAnswers, type BlankToken } from '@/lib/courses/fill-in-blank'
 import { Button } from '@/components/ui/button'
@@ -15,13 +15,18 @@ interface Props {
 
 export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: Props) {
   const [supabase] = useState(() => createClient())
-  const [parsed] = useState(() => parseFillInBlankText(bodyMd))
+  const parsed = useMemo(() => parseFillInBlankText(bodyMd), [bodyMd])
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({})
   const [activeBlankId, setActiveBlankId] = useState<string | null>(null)
   const [evaluated, setEvaluated] = useState<ReturnType<typeof evaluateFillInBlankAnswers> | null>(null)
   const [mode, setMode] = useState<'inline' | 'wordbank'>('inline')
   const [showHint, setShowHint] = useState<Record<string, boolean>>({})
   const [submitting, setSubmitting] = useState(false)
+
+  // Reset evaluation state when the exercise text is edited
+  useEffect(() => {
+    setEvaluated(null)
+  }, [bodyMd])
 
   useEffect(() => {
     console.log('[FillInBlank] 🎯 Exercise initialized for lesson:', {
