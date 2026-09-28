@@ -127,6 +127,11 @@ export default async function CoursePage({ params }: Props) {
         <EnrollButton
           courseId={course.id}
           slug={course.slug}
+          courseTitle={course.title}
+          access={course.access}
+          priceCents={course.price_cents}
+          currency={course.currency}
+          paidApproved={course.paid_approved}
           isAuthed={user !== null}
           isOwner={isOwner}
           enrolled={enrolled}

@@ -18,6 +18,7 @@ export interface Course {
   access: CourseAccess
   price_cents: number | null
   currency: string | null
+  paid_approved?: boolean
   created_at: string
   updated_at: string
 }
@@ -48,6 +49,9 @@ export interface CourseInput {
   summary: string
   dialect: DialectKey
   level: CourseLevel
+  access?: CourseAccess
+  price_cents?: number | null
+  currency?: string | null
 }
 
 export type Result<T> = { data: T; error: null } | { data: null; error: string }
