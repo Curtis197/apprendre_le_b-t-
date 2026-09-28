@@ -9,6 +9,8 @@ import type { CourseInput, Result } from './types'
 import type { MediaAsset } from './video'
 import type { Submission } from './assignment'
 import { sendSubmissionReviewedEmail } from './assignment-email'
+import type { CourseOrder, PaymentRail } from './payment'
+import { isAdmin } from './queries'
 
 const PG_UNIQUE_VIOLATION = '23505'
 
@@ -565,6 +567,59 @@ export async function reviewSubmission(
 
   return ok(null)
 }
+
+// ── Phase 5: Payment Mutations ───────────────────────────────────────────
+
+/** Creates a pending course order for a paid course. */
+export async function createPendingCourseOrder(
+  client: SupabaseClient,
+  courseId: string,
+  paymentRail: PaymentRail,
+): Promise<Result<CourseOrder>> {
+  const user = await getAuthUser(client)
+  if (!user) return fail('Connectez-vous pour acheter ce cours.')
+
+  const { data: course } = await client
+    .from('courses')
+    .select('id, access, price_cents, currency, paid_approved')
+    .eq('id', courseId)
+    .single()
+
+  if (!course) return fail('Cours introuvable.')
+  if (course.access !== 'paid' || !course.paid_approved) return fail('Ce cours n’est pas disponible à l’achat.')
+  if (!course.price_cents || course.price_cents <= 0) return fail('Le prix du cours est invalide.')
+
+  const { data: order, error } = await client
+    .from('course_orders')
+    .insert({
+      user_id: user.id,
+      course_id: course.id,
+      amount_cents: course.price_cents,
+      currency: course.currency || 'eur',
+      payment_rail: paymentRail,
+      status: 'pending',
+    })
+    .select('*')
+    .single()
+
+  if (error || !order) return fail(error?.message ?? 'Erreur lors de la création de la commande.')
+
+  return ok(order as CourseOrder)
+}
+
+/** Admin toggles paid course sale approval. */
+export async function approvePaidCourse(
+  client: SupabaseClient,
+  courseId: string,
+  approved: boolean,
+): Promise<Result<null>> {
+  const admin = await isAdmin(client)
+  if (!admin) return fail('Action réservée aux administrateurs.')
+
+  const { error } = await client.from('courses').update({ paid_approved: approved }).eq('id', courseId)
+  return done(error)
+}
+
 
 
 

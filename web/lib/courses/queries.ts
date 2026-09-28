@@ -10,6 +10,7 @@ import type { Course, CourseLevel, Lesson, OutlineSection, Section } from './typ
 import type { MediaAsset, VideoQuota } from './video'
 import { generateMuxPlaybackToken } from './video'
 import type { Submission, PendingReviewItem } from './assignment'
+import type { CourseOrder } from './payment'
 
 export async function getPublishedCourses(
   client: SupabaseClient,
@@ -335,6 +336,32 @@ export async function getPendingReviewsForTeacher(
     }
   })
 }
+
+// ── Phase 5: Payment Queries ──────────────────────────────────────────────
+
+/** Fetches paid courses requesting admin approval for sale. */
+export async function getPendingPaidCoursesForAdmin(client: SupabaseClient): Promise<Course[]> {
+  const { data } = await client
+    .from('courses')
+    .select('*')
+    .eq('access', 'paid')
+    .eq('paid_approved', false)
+    .order('created_at', { ascending: false })
+
+  return (data ?? []) as Course[]
+}
+
+/** Fetches a user's course orders. */
+export async function getUserOrders(client: SupabaseClient, userId: string): Promise<CourseOrder[]> {
+  const { data } = await client
+    .from('course_orders')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  return (data ?? []) as CourseOrder[]
+}
+
 
 
 
