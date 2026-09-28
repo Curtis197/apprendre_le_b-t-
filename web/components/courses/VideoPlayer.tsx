@@ -123,12 +123,9 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
     video.addEventListener('waiting', onWaiting)
     video.addEventListener('error', onError)
 
-    // ── HLS Engine Initialization (hls.js vs Native Safari) ──────────────────
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      console.log('[VideoPlayer] 🍎 Native Safari HLS engine detected. Setting video.src directly...')
-      video.src = streamUrl
-    } else if (Hls.isSupported()) {
-      console.log('[VideoPlayer] ⚡ Initializing Hls.js engine for Chrome/Firefox/Edge...')
+    // ── HLS Engine Initialization: prioritize Hls.js for MSE (Chrome, Firefox, Edge, macOS) ──
+    if (Hls.isSupported()) {
+      console.log('[VideoPlayer] ⚡ Initializing Hls.js engine for MSE streaming...')
       if (hlsRef.current) {
         hlsRef.current.destroy()
       }
@@ -179,6 +176,9 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
           }
         }
       })
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      console.log('[VideoPlayer] 🍎 Native HLS fallback (iOS Safari / devices without MSE)...')
+      video.src = streamUrl
     } else {
       console.error('[VideoPlayer] ❌ Browser does not support HLS streaming natively or via Hls.js!')
       setPlaybackError('Votre navigateur ne supporte pas le format de streaming vidéo HLS.')

@@ -92,6 +92,7 @@ export function generateMuxPlaybackToken(
   const payload = {
     sub: playbackId,
     aud: 'v',
+    kid: signingKeyId,
     exp,
   }
 
