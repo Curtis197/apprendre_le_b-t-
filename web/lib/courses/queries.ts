@@ -239,7 +239,104 @@ export async function getMediaAssetForLesson(client: SupabaseClient, lessonId: s
     .limit(1)
     .maybeSingle()
 
-  return (data ?? null) as MediaAsset | null
+  if (!data) return null
+  let asset = data as MediaAsset
+
+  // Self-healing fallback: If asset is in 'uploading' or 'processing' state, sync directly with Mux API
+  if ((asset.status === 'uploading' || asset.status === 'processing') && asset.mux_upload_id) {
+    asset = await syncMediaAssetWithMux(client, asset)
+  }
+
+  return asset
+}
+
+async function syncMediaAssetWithMux(client: SupabaseClient, asset: MediaAsset): Promise<MediaAsset> {
+  const muxTokenId = process.env.MUX_TOKEN_ID
+  const muxTokenSecret = process.env.MUX_TOKEN_SECRET || process.env.MUX_SECRET_ID
+  if (!muxTokenId || !muxTokenSecret || !asset.mux_upload_id) return asset
+
+  try {
+    const authHeader = `Basic ${Buffer.from(`${muxTokenId}:${muxTokenSecret}`).toString('base64')}`
+
+    // 1. If asset_id is not known yet, query upload status from Mux
+    let muxAssetId = asset.mux_asset_id
+    if (!muxAssetId) {
+      const uploadRes = await fetch(`https://api.mux.com/video/v1/uploads/${asset.mux_upload_id}`, {
+        headers: { Authorization: authHeader },
+        cache: 'no-store',
+      })
+      if (uploadRes.ok) {
+        const uploadJson = await uploadRes.json()
+        muxAssetId = uploadJson.data?.asset_id ?? null
+      }
+    }
+
+    if (!muxAssetId) return asset
+
+    // 2. Query Mux Asset details directly
+    const assetRes = await fetch(`https://api.mux.com/video/v1/assets/${muxAssetId}`, {
+      headers: { Authorization: authHeader },
+      cache: 'no-store',
+    })
+
+    if (!assetRes.ok) return asset
+    const assetJson = await assetRes.json()
+    const muxData = assetJson.data
+    if (!muxData) return asset
+
+    if (muxData.status === 'ready') {
+      const playbackIds = (muxData.playback_ids ?? []) as { id: string; policy: string }[]
+      const primaryPlayback = playbackIds.find(p => p.policy === 'signed') ?? playbackIds[0]
+      const duration = Math.round(Number(muxData.duration ?? 0))
+
+      if (primaryPlayback?.id) {
+        const { data: updated } = await client
+          .from('media_assets')
+          .update({
+            mux_asset_id: muxAssetId,
+            mux_playback_id: primaryPlayback.id,
+            duration_seconds: duration,
+            status: 'ready',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', asset.id)
+          .select('*')
+          .single()
+
+        if (updated) {
+          console.log('[syncMediaAssetWithMux] 🎉 Synced asset state to READY:', asset.id)
+          return updated as MediaAsset
+        }
+      }
+    } else if (muxData.status === 'errored') {
+      const { data: updated } = await client
+        .from('media_assets')
+        .update({
+          mux_asset_id: muxAssetId,
+          status: 'errored',
+          error_message: muxData.errors?.messages?.[0] ?? 'Erreur Mux',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', asset.id)
+        .select('*')
+        .single()
+
+      if (updated) return updated as MediaAsset
+    } else if (muxAssetId !== asset.mux_asset_id) {
+      await client
+        .from('media_assets')
+        .update({
+          mux_asset_id: muxAssetId,
+          status: 'processing',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', asset.id)
+    }
+  } catch (err) {
+    console.error('[syncMediaAssetWithMux] Error syncing with Mux API:', err)
+  }
+
+  return asset
 }
 
 /** Fetches video quota and used minutes for a teacher. */
