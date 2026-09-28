@@ -1,6 +1,7 @@
-﻿// web/app/resources/page.tsx
+// web/app/resources/page.tsx
 import Link from 'next/link'
-import { Music, BookOpen, Feather, Quote, Mic, HelpCircle, Layers, PlusCircle, PlayCircle, Video, GraduationCap } from 'lucide-react'
+import { redirect } from 'next/navigation'
+import { Music, BookOpen, Feather, Quote, Mic, HelpCircle, Layers, PlusCircle, PlayCircle, Video } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { createClient } from '@/lib/supabase-server'
 import { getCommunityTexts } from '@/lib/community'
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Ressources pour apprendre le bété',
-  description: 'Chants, contes, proverbes, vidéos et cours pour apprendre et préserver la langue bété (bhété) de Côte d’Ivoire.',
+  description: 'Chants, contes, proverbes et vidéos pour apprendre et préserver la langue bété (bhété) de Côte d’Ivoire.',
   alternates: { canonical: '/resources' },
 }
 
@@ -26,7 +27,6 @@ const TYPES = [
   { value: 'speech',  label: 'Discours',   icon: Mic },
   { value: 'riddle',  label: 'Devinettes', icon: HelpCircle },
   { value: 'video',   label: 'Vidéos',     icon: Video },
-  { value: 'course',  label: 'Cours',      icon: GraduationCap },
 ]
 
 const TYPE_COLORS: Record<string, string> = {
@@ -37,7 +37,6 @@ const TYPE_COLORS: Record<string, string> = {
   speech:  'bg-blue-100 text-blue-700',
   riddle:  'bg-orange-100 text-orange-700',
   video:   'bg-red-100 text-red-700',
-  course:  'bg-teal-100 text-teal-700',
   other:   'bg-muted text-muted-foreground',
 }
 
@@ -111,6 +110,9 @@ interface Props {
 
 export default async function ResourcesPage({ searchParams }: Props) {
   const { type } = await searchParams
+  // Courses now live in their own section.
+  if (type === 'course') redirect('/courses')
+
   const supabase = await createClient()
   const contentType = (type && type !== 'all' ? type : null) as ContentType | null
   const texts = await getCommunityTexts(supabase, contentType)
@@ -122,7 +124,7 @@ export default async function ResourcesPage({ searchParams }: Props) {
       <PageHeader
         badge="Patrimoine Culturel"
         title="Ressources Communautaires"
-        subtitle="Chansons, contes, poèmes, vidéos et cours partagés par la communauté bhété."
+        subtitle="Chansons, contes, poèmes et vidéos partagés par la communauté bhété."
       />
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">

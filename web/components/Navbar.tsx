@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 const NAV_LINKS = [
   { href: '/lexicon',    label: 'Lexique' },
   { href: '/grammar',   label: 'Grammaire' },
+  { href: '/courses',   label: 'Cours' },
   { href: '/forum',     label: 'Forum' },
   { href: '/resources', label: 'Ressources' },
   { href: '/contribute',label: 'Contribuer' },
@@ -27,6 +28,7 @@ export function Navbar() {
   const [authReady,   setAuthReady]   = useState(false)
   const supabaseRef = useRef<SupabaseClient | null>(null)
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMenuOpen(false) }, [pathname])
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
@@ -17,7 +17,6 @@ const TYPES: { value: ContentType; label: string }[] = [
   { value: 'speech',  label: 'Discours' },
   { value: 'riddle',  label: 'Devinette' },
   { value: 'video',   label: 'Vidéo' },
-  { value: 'course',  label: 'Cours' },
   { value: 'other',   label: 'Autre' },
 ]
 

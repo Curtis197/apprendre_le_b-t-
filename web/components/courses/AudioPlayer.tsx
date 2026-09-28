@@ -1,0 +1,159 @@
+'use client'
+import { useRef, useState, useEffect } from 'react'
+import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
+import { formatAudioDuration } from '@/lib/courses/audio'
+import { Button } from '@/components/ui/button'
+
+interface Props {
+  src: string
+  title?: string
+  className?: string
+}
+
+const SPEEDS = [0.8, 1.0, 1.2]
+
+export function AudioPlayer({ src, title, className = '' }: Props) {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [speedIndex, setSpeedIndex] = useState(1) // Default 1.0x
+  const [isMuted, setIsMuted] = useState(false)
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const updateTime = () => setCurrentTime(audio.currentTime)
+    const updateDuration = () => setDuration(audio.duration || 0)
+    const onEnded = () => setIsPlaying(false)
+
+    audio.addEventListener('timeupdate', updateTime)
+    audio.addEventListener('loadedmetadata', updateDuration)
+    audio.addEventListener('ended', onEnded)
+
+    return () => {
+      audio.removeEventListener('timeupdate', updateTime)
+      audio.removeEventListener('loadedmetadata', updateDuration)
+      audio.removeEventListener('ended', onEnded)
+    }
+  }, [src])
+
+  const togglePlay = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (isPlaying) {
+      audio.pause()
+      setIsPlaying(false)
+    } else {
+      audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false))
+    }
+  }
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = Number(e.target.value)
+    if (audioRef.current) {
+      audioRef.current.currentTime = time
+      setCurrentTime(time)
+    }
+  }
+
+  const toggleSpeed = () => {
+    const nextIndex = (speedIndex + 1) % SPEEDS.length
+    const nextSpeed = SPEEDS[nextIndex]
+    setSpeedIndex(nextIndex)
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextSpeed
+    }
+  }
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted
+      setIsMuted(!isMuted)
+    }
+  }
+
+  const rewind = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 5)
+    }
+  }
+
+  return (
+    <div className={`bg-card border border-border rounded-xl p-4 flex flex-col gap-3 ${className}`}>
+      <audio ref={audioRef} src={src} preload="metadata" />
+      
+      {title && (
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <Volume2 className="w-3.5 h-3.5 text-primary" />
+          <span className="truncate">{title}</span>
+        </div>
+      )}
+
+      {/* Progress slider */}
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-mono text-muted-foreground w-10 text-right">
+          {formatAudioDuration(currentTime)}
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={duration || 100}
+          value={currentTime}
+          onChange={handleSeek}
+          aria-label="Progression audio"
+          className="flex-1 accent-primary h-1.5 bg-muted rounded-lg cursor-pointer"
+        />
+        <span className="text-xs font-mono text-muted-foreground w-10">
+          {formatAudioDuration(duration)}
+        </span>
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={togglePlay}
+            className="w-10 h-10 p-0 rounded-full"
+            aria-label={isPlaying ? 'Mettre en pause' : 'Lire'}
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+          </Button>
+
+          <button
+            type="button"
+            onClick={rewind}
+            title="Reculer de 5 secondes"
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleSpeed}
+            className="px-2 py-1 rounded text-xs font-semibold border border-border hover:bg-muted transition-colors"
+            title="Changer la vitesse de lecture"
+          >
+            {SPEEDS[speedIndex]}x
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleMute}
+            aria-label={isMuted ? 'Activer le son' : 'Couper le son'}
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {isMuted ? <VolumeX className="w-4 h-4 text-destructive" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // Private / non-content routes — keep crawlers off auth, profile, and submission forms.
-      disallow: ['/auth', '/profile', '/forum/new', '/resources/new', '/api/'],
+      disallow: ['/auth', '/profile', '/forum/new', '/resources/new', '/teach', '/admin', '/api/'],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
