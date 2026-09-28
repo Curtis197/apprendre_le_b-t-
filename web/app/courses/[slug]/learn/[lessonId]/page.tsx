@@ -23,6 +23,7 @@ import { LessonOutline } from '@/components/courses/LessonOutline'
 import { CompleteButton } from '@/components/courses/CompleteButton'
 import { AudioPlayer } from '@/components/courses/AudioPlayer'
 import { VideoPlayer } from '@/components/courses/VideoPlayer'
+import { FillInBlankExercise } from '@/components/courses/FillInBlankExercise'
 import { QuizPlayer } from '@/components/courses/QuizPlayer'
 import { AssignmentForm } from '@/components/courses/AssignmentForm'
 import { primaryLinkClass, secondaryLinkClass } from '@/components/courses/styles'
@@ -180,8 +181,10 @@ export default async function LessonPage({ params }: Props) {
           </div>
         )}
 
-        {lesson.kind !== 'text' && lesson.kind !== 'audio' && lesson.kind !== 'quiz' && lesson.kind !== 'video' && lesson.kind !== 'assignment' && (
-          <p className="text-muted-foreground">Ce type de leçon sera bientôt disponible.</p>
+        {lesson.kind === 'fill_in_blank' && (
+          <div className="space-y-6">
+            <FillInBlankExercise lessonId={lesson.id} bodyMd={body} isAuthed={user !== null} />
+          </div>
         )}
 
         <div className="border-t border-border pt-6 flex flex-wrap items-start gap-4">

@@ -30,6 +30,7 @@ export const KIND_LABELS: Record<LessonKind, string> = {
   video: 'Vidéo',
   quiz: 'QCM',
   assignment: 'Exercice',
+  fill_in_blank: 'Texte à trous',
 }
 
 export function isDialect(value: unknown): value is DialectKey {

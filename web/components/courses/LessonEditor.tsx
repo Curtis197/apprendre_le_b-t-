@@ -12,6 +12,7 @@ import { LessonMarkdown } from '@/components/LessonMarkdown'
 import { AudioUploader } from '@/components/courses/AudioUploader'
 import { VideoUploader } from '@/components/courses/VideoUploader'
 import { QuizBuilder } from '@/components/courses/QuizBuilder'
+import { FillInBlankExercise } from '@/components/courses/FillInBlankExercise'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -118,6 +119,7 @@ export function LessonEditor({
               <option value="video">Vidéo (cours vidéo hébergé sur Mux)</option>
               <option value="quiz">Quiz QCM (questions à choix multiples)</option>
               <option value="assignment">Devoir à rendre (réponse écrite ou enregistrement)</option>
+              <option value="fill_in_blank">Texte à trous (exercice interactif à compléter)</option>
             </select>
           </div>
         </div>
@@ -192,6 +194,8 @@ export function LessonEditor({
               ? 'Instructions du quiz (Markdown)'
               : kind === 'video'
               ? 'Notes & Ressources complémentaires (Markdown)'
+              : kind === 'fill_in_blank'
+              ? 'Texte à trous (Markdown avec [[réponse]])'
               : 'Contenu du cours (Markdown)'}
           </label>
           <div className="flex gap-1 lg:hidden">
@@ -220,25 +224,27 @@ export function LessonEditor({
                   ? 'Consignes optionnelles pour les apprenants avant de commencer…'
                   : kind === 'video'
                   ? 'Ajoutez les remarques, résumés ou liens utiles accompagnant la vidéo…'
+                  : kind === 'fill_in_blank'
+                  ? 'Ex: En bhété, [[Awa]] signifie bonjour et [[N\'zue|Oua|Awa:Mot pour l\'eau]] signifie eau.'
                   : 'Écrivez votre leçon ici…'
               }
             />
             <details className="text-xs text-muted-foreground">
-              <summary className="cursor-pointer">Aide à la mise en forme</summary>
+              <summary className="cursor-pointer">Aide à la mise en forme & syntaxes Texte à trous</summary>
               <ul className="mt-2 space-y-1">
-                <li>{'# Titre, ## Sous-titre, ### Petit titre'}</li>
-                <li>{'**gras**, *italique*, `code`'}</li>
-                <li>{'[texte du lien](https://exemple.com)'}</li>
-                <li>{'- liste à puces, 1. liste numérotée'}</li>
-                <li>{'> citation'}</li>
-                <li>{'--- ligne de séparation'}</li>
+                <li><code className="text-primary font-semibold">[[mot]]</code> : Trou à compléter (saisie libre)</li>
+                <li><code className="text-primary font-semibold">[[bonne_réponse|choix1|choix2]]</code> : Menu déroulant à choix multiples</li>
+                <li><code className="text-primary font-semibold">[[mot:indice]]</code> : Trou avec bulle d&apos;aide d&apos;indice</li>
+                <li>{'# Titre, ## Sous-titre, **gras**, *italique*'}</li>
               </ul>
             </details>
           </div>
           <div className={cn('space-y-2', tab === 'write' && 'hidden lg:block')}>
             <p className="text-sm font-medium text-muted-foreground">Aperçu du rendu</p>
             <div className="bg-card border border-border rounded-xl p-5 min-h-[140px]">
-              {body.trim() ? (
+              {kind === 'fill_in_blank' ? (
+                <FillInBlankExercise lessonId={lesson.id} bodyMd={body} isAuthed={false} />
+              ) : body.trim() ? (
                 <LessonMarkdown source={body} />
               ) : (
                 <p className="text-sm text-muted-foreground">Rien à afficher pour l’instant.</p>
