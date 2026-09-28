@@ -7,6 +7,8 @@ import type { DialectKey } from '../dialect'
 import { buildOutline, computeProgress, type Progress } from './outline'
 import type { QuizAnswerKey, QuizOption, QuizQuestion } from './quiz'
 import type { Course, CourseLevel, Lesson, OutlineSection, Section } from './types'
+import type { MediaAsset, VideoQuota } from './video'
+import { generateMuxPlaybackToken } from './video'
 
 export async function getPublishedCourses(
   client: SupabaseClient,
@@ -222,4 +224,46 @@ export async function getLessonAudioUrl(client: SupabaseClient, audioPath: strin
   if (error || !data) return null
   return data.signedUrl
 }
+
+// ── Phase 3: Video Queries ──────────────────────────────────────────────────
+
+/** Fetches ready or processing media asset for a lesson. */
+export async function getMediaAssetForLesson(client: SupabaseClient, lessonId: string): Promise<MediaAsset | null> {
+  const { data } = await client
+    .from('media_assets')
+    .select('*')
+    .eq('lesson_id', lessonId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return (data ?? null) as MediaAsset | null
+}
+
+/** Fetches video quota and used minutes for a teacher. */
+export async function getVideoQuota(client: SupabaseClient, userId: string): Promise<VideoQuota> {
+  const { data } = await client.rpc('get_user_video_quota', { p_user_id: userId })
+  if (data && data.length > 0) {
+    return data[0] as VideoQuota
+  }
+  return { max_minutes: 30, used_seconds: 0, used_minutes: 0 }
+}
+
+/** Generates a short-lived (1 hour) signed Mux playback URL token for an asset. */
+export async function getSignedMuxPlaybackToken(playbackId: string | null): Promise<string | null> {
+  if (!playbackId) return null
+  const keyId = process.env.MUX_SIGNING_KEY_ID
+  const privateKey = process.env.MUX_PRIVATE_KEY
+
+  if (!keyId || !privateKey) {
+    return null
+  }
+
+  try {
+    return generateMuxPlaybackToken(playbackId, keyId, privateKey, 3600)
+  } catch {
+    return null
+  }
+}
+
 

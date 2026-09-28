@@ -6,6 +6,7 @@ import { isValidAudioFile } from './audio'
 import type { QuizInput, QuizSubmissionResult } from './quiz'
 import { buildSlug } from './slug'
 import type { CourseInput, Result } from './types'
+import type { MediaAsset } from './video'
 
 const PG_UNIQUE_VIOLATION = '23505'
 
@@ -386,4 +387,85 @@ export async function submitQuizAnswers(
   if (error || !data) return fail(error?.message ?? 'Erreur lors de l’évaluation du quiz.')
   return ok(data as QuizSubmissionResult)
 }
+
+// ── Phase 3: Video Mutations ───────────────────────────────────────────────
+
+/** Requests a Mux direct upload URL and inserts a media_assets row in status 'uploading'. */
+export async function createVideoUploadUrl(
+  client: SupabaseClient,
+  lessonId: string,
+): Promise<Result<{ uploadUrl: string; assetId: string }>> {
+  const user = await getAuthUser(client)
+  if (!user) return fail('Connectez-vous pour verser une vidéo.')
+
+  const muxTokenId = process.env.MUX_TOKEN_ID
+  const muxTokenSecret = process.env.MUX_TOKEN_SECRET
+
+  if (!muxTokenId || !muxTokenSecret) {
+    return fail('Le service Mux n’est pas configuré sur le serveur.')
+  }
+
+  const authHeader = `Basic ${Buffer.from(`${muxTokenId}:${muxTokenSecret}`).toString('base64')}`
+  const response = await fetch('https://api.mux.com/video/v1/uploads', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authHeader,
+    },
+    body: JSON.stringify({
+      new_asset_settings: {
+        playback_policy: ['signed'],
+      },
+      cors_origin: '*',
+    }),
+  })
+
+  if (!response.ok) {
+    return fail('Erreur lors de la création du lien de versement Mux.')
+  }
+
+  const json = await response.json()
+  const uploadData = json.data as { id: string; url: string }
+
+  // Delete previous uploading assets for this lesson
+  await client.from('media_assets').delete().eq('lesson_id', lessonId).eq('status', 'uploading')
+
+  const { data: assetRow, error: dbError } = await client
+    .from('media_assets')
+    .insert({
+      owner_id: user.id,
+      lesson_id: lessonId,
+      mux_upload_id: uploadData.id,
+      status: 'uploading',
+    })
+    .select('id')
+    .single()
+
+  if (dbError || !assetRow) return fail(dbError?.message ?? 'Erreur lors de l’enregistrement de la vidéo.')
+
+  return ok({ uploadUrl: uploadData.url, assetId: assetRow.id })
+}
+
+/** Deletes a media asset from database and Mux API. */
+export async function deleteMediaAsset(
+  client: SupabaseClient,
+  assetId: string,
+  muxAssetId: string | null,
+): Promise<Result<null>> {
+  if (muxAssetId) {
+    const muxTokenId = process.env.MUX_TOKEN_ID
+    const muxTokenSecret = process.env.MUX_TOKEN_SECRET
+    if (muxTokenId && muxTokenSecret) {
+      const authHeader = `Basic ${Buffer.from(`${muxTokenId}:${muxTokenSecret}`).toString('base64')}`
+      await fetch(`https://api.mux.com/video/v1/assets/${muxAssetId}`, {
+        method: 'DELETE',
+        headers: { Authorization: authHeader },
+      }).catch(() => null)
+    }
+  }
+
+  const { error } = await client.from('media_assets').delete().eq('id', assetId)
+  return done(error)
+}
+
 
