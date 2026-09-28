@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CheckCircle2, XCircle, HelpCircle, RefreshCw, Award, Sparkles } from 'lucide-react'
 import { parseFillInBlankText, evaluateFillInBlankAnswers, type BlankToken } from '@/lib/courses/fill-in-blank'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,16 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
   const [showHint, setShowHint] = useState<Record<string, boolean>>({})
   const [submitting, setSubmitting] = useState(false)
 
+  useEffect(() => {
+    console.log('[FillInBlank] 🎯 Exercise initialized for lesson:', {
+      lessonId,
+      totalBlanks: parsed.blanks.length,
+      blankIds: parsed.blanks.map(b => b.id),
+      wordBankWordsCount: parsed.allWordBankOptions.length,
+      isAuthed,
+    })
+  }, [lessonId, parsed, isAuthed])
+
   if (parsed.blanks.length === 0) {
     return (
       <div className="p-6 border border-dashed border-border rounded-xl text-center text-muted-foreground text-sm">
@@ -32,27 +42,62 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
   }
 
   function handleInputChange(blankId: string, value: string) {
+    const blank = parsed.blanks.find(b => b.id === blankId)
+    console.log('[FillInBlank] ✍️ Typing / input in blank:', {
+      blankId,
+      value,
+      characterCount: value.length,
+      isDropdown: Boolean(blank?.options && blank.options.length > 0),
+      hasHint: Boolean(blank?.hint),
+    })
+
     setUserAnswers(prev => ({ ...prev, [blankId]: value }))
-    if (evaluated) setEvaluated(null) // Reset evaluation on edit
+    if (evaluated) {
+      console.log('[FillInBlank] 🔄 User modified answer after check; resetting previous evaluation state.')
+      setEvaluated(null)
+    }
   }
 
   function handleWordBankSelect(word: string) {
-    if (!activeBlankId) {
+    let targetBlankId = activeBlankId
+
+    if (!targetBlankId) {
       // Find first empty blank
       const firstEmpty = parsed.blanks.find(b => !userAnswers[b.id])
-      if (firstEmpty) {
-        handleInputChange(firstEmpty.id, word)
-      }
-      return
+      targetBlankId = firstEmpty ? firstEmpty.id : parsed.blanks[0]?.id
     }
-    handleInputChange(activeBlankId, word)
+
+    if (targetBlankId) {
+      console.log('[FillInBlank] 🏷️ Selected word from Word Bank:', {
+        word,
+        targetBlankId,
+        wasPreviouslyActive: Boolean(activeBlankId),
+      })
+      handleInputChange(targetBlankId, word)
+    }
   }
 
   async function handleCheckAnswers() {
+    console.log('[FillInBlank] 🧪 Verifying answers...', {
+      lessonId,
+      userAnswers,
+      totalBlanks: parsed.blanks.length,
+      answeredCount: Object.values(userAnswers).filter(val => val && val.trim().length > 0).length,
+    })
+
     const evalResult = evaluateFillInBlankAnswers(parsed.blanks, userAnswers)
     setEvaluated(evalResult)
 
+    console.log('[FillInBlank] 📊 Evaluation Result:', {
+      scorePercent: evalResult.scorePercent,
+      correctCount: evalResult.correctCount,
+      totalCount: evalResult.totalCount,
+      passed: evalResult.scorePercent >= 80,
+      perBlankResults: evalResult.results,
+    })
+
     if (evalResult.scorePercent >= 80 && isAuthed) {
+      console.log('[FillInBlank] 🎉 Pass threshold reached (>= 80%)! Completing lesson:', lessonId)
       setSubmitting(true)
       await setLessonCompleted(supabase, lessonId, true)
       setSubmitting(false)
@@ -61,9 +106,25 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
   }
 
   function handleReset() {
+    console.log('[FillInBlank] 🔄 Exercise reset / answers cleared')
     setUserAnswers({})
     setEvaluated(null)
     setActiveBlankId(null)
+  }
+
+  function handleSwitchMode(newMode: 'inline' | 'wordbank') {
+    console.log('[FillInBlank] 🔄 Mode toggled to:', newMode)
+    setMode(newMode)
+  }
+
+  function handleToggleHint(blankId: string, hint: string) {
+    const nextState = !showHint[blankId]
+    console.log('[FillInBlank] 💡 Hint toggled for blank:', {
+      blankId,
+      hint,
+      isVisibleNow: nextState,
+    })
+    setShowHint(prev => ({ ...prev, [blankId]: nextState }))
   }
 
   return (
@@ -84,7 +145,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
         <div className="flex items-center bg-muted p-1 rounded-lg text-xs font-medium">
           <button
             type="button"
-            onClick={() => setMode('inline')}
+            onClick={() => handleSwitchMode('inline')}
             className={`px-3 py-1.5 rounded-md transition-colors ${
               mode === 'inline' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
@@ -93,7 +154,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
           </button>
           <button
             type="button"
-            onClick={() => setMode('wordbank')}
+            onClick={() => handleSwitchMode('wordbank')}
             className={`px-3 py-1.5 rounded-md transition-colors ${
               mode === 'wordbank' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
@@ -122,7 +183,10 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                   <select
                     value={value}
                     onChange={e => handleInputChange(blank.id, e.target.value)}
-                    onFocus={() => setActiveBlankId(blank.id)}
+                    onFocus={() => {
+                      console.log('[FillInBlank] 🎯 Focused select dropdown for blank:', blank.id)
+                      setActiveBlankId(blank.id)
+                    }}
                     disabled={isEvaluated && isCorrect}
                     className={`h-9 px-3 rounded-lg border text-sm font-medium transition-all ${
                       isEvaluated
@@ -146,7 +210,10 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                     type="text"
                     value={value}
                     onChange={e => handleInputChange(blank.id, e.target.value)}
-                    onFocus={() => setActiveBlankId(blank.id)}
+                    onFocus={() => {
+                      console.log('[FillInBlank] 🎯 Focused input field for blank:', blank.id)
+                      setActiveBlankId(blank.id)
+                    }}
                     placeholder="…"
                     disabled={isEvaluated && isCorrect}
                     className={`h-9 px-3 rounded-lg border text-sm font-medium w-28 md:w-36 transition-all outline-none ${
@@ -176,7 +243,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                 {blank.hint && (
                   <button
                     type="button"
-                    onClick={() => setShowHint(prev => ({ ...prev, [blank.id]: !prev[blank.id] }))}
+                    onClick={() => handleToggleHint(blank.id, blank.hint!)}
                     className="text-muted-foreground hover:text-primary transition-colors"
                     title="Afficher un indice"
                   >
