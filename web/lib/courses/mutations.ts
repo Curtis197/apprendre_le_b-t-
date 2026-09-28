@@ -10,7 +10,11 @@ import type { MediaAsset } from './video'
 import type { Submission } from './assignment'
 import { sendSubmissionReviewedEmail } from './assignment-email'
 import type { CourseOrder, PaymentRail } from './payment'
-import { isAdmin } from './queries'
+
+async function checkAdmin(client: SupabaseClient): Promise<boolean> {
+  const { data } = await client.rpc('is_admin')
+  return data === true
+}
 
 const PG_UNIQUE_VIOLATION = '23505'
 
@@ -613,7 +617,7 @@ export async function approvePaidCourse(
   courseId: string,
   approved: boolean,
 ): Promise<Result<null>> {
-  const admin = await isAdmin(client)
+  const admin = await checkAdmin(client)
   if (!admin) return fail('Action réservée aux administrateurs.')
 
   const { error } = await client.from('courses').update({ paid_approved: approved }).eq('id', courseId)
