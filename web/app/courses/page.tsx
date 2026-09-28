@@ -1,9 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { PlusCircle } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { CourseCard } from '@/components/courses/CourseCard'
-import { primaryLinkClass } from '@/components/courses/styles'
 import { createClient } from '@/lib/supabase-server'
 import { getPublishedCourses } from '@/lib/courses/queries'
 import { LEVELS, LEVEL_LABELS, isDialect, isLevel } from '@/lib/courses/labels'
@@ -81,27 +79,15 @@ export default async function CoursesPage({ searchParams }: Props) {
           <p className="text-muted-foreground">
             {dialect || level
               ? 'Aucun cours ne correspond à ces filtres pour le moment.'
-              : 'Aucun cours n’est encore publié. Soyez le premier à partager le vôtre !'}
+              : 'Aucun cours n’est encore publié.'}
           </p>
-          <Link href="/teach/new" className={primaryLinkClass}>
-            <PlusCircle className="w-4 h-4" />
-            Créer un cours
-          </Link>
         </div>
       ) : (
-        <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {courses.map(course => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </div>
-          <div className="mt-10 text-center">
-            <Link href="/teach/new" className={primaryLinkClass}>
-              <PlusCircle className="w-4 h-4" />
-              Créer un cours
-            </Link>
-          </div>
-        </>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {courses.map(course => (
+            <CourseCard key={course.id} course={course} />
+          ))}
+        </div>
       )}
     </div>
   )

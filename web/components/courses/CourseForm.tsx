@@ -130,8 +130,9 @@ export function CourseForm({ mode, course, disabled = false }: Props) {
             disabled={disabled}
           >
             <option value="free">Gratuit</option>
-            <option value="paid">Payant</option>
+            <option value="paid" disabled>Payant (Bientôt disponible)</option>
           </select>
+          <p className="text-xs text-muted-foreground">La création de cours payants est temporairement indisponible (configuration Stripe en cours).</p>
         </div>
 
         {access === 'paid' && (

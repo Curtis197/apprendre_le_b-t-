@@ -1,8 +1,9 @@
 // web/app/profile/page.tsx
 'use client'
+import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Loader2, Save, Trash2, User } from 'lucide-react'
+import { BookOpen, Camera, Loader2, PlusCircle, Save, Trash2, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -337,6 +338,38 @@ export default function ProfilePage() {
             </label>
           )}
         </section>
+
+        {/* Espace Enseignant — réservé aux professeurs */}
+        {type === 'teacher' && (
+          <section className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-heading font-bold text-base flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  Espace Enseignant
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Créez des cours et gérez vos parcours d’apprentissage.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/teach/new"
+                  className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Créer un cours
+                </Link>
+                <Link
+                  href="/teach"
+                  className="inline-flex items-center justify-center gap-2 border border-border bg-background text-foreground text-sm font-medium px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  Mes cours
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Contact & social — only when opted in */}
         {showDirectoryFields && isPublic && (
