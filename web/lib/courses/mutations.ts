@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { isValidAudioFile } from './audio'
 import type { QuizInput, QuizSubmissionResult } from './quiz'
 import { buildSlug } from './slug'
-import type { CourseInput, Result } from './types'
+import type { CourseInput, LessonKind, Result } from './types'
 import type { MediaAsset } from './video'
 import type { Submission } from './assignment'
 import { sendSubmissionReviewedEmail } from './assignment-email'
@@ -167,9 +167,9 @@ export async function addLesson(
 export async function updateLesson(
   client: SupabaseClient,
   lessonId: string,
-  patch: { title?: string; is_preview?: boolean; kind?: 'text' | 'audio' | 'video' | 'quiz' | 'assignment' },
+  patch: { title?: string; is_preview?: boolean; kind?: LessonKind },
 ): Promise<Result<null>> {
-  const update: { title?: string; is_preview?: boolean; kind?: 'text' | 'audio' | 'video' | 'quiz' | 'assignment' } = {}
+  const update: { title?: string; is_preview?: boolean; kind?: LessonKind } = {}
   if (patch.title !== undefined) {
     const clean = patch.title.trim()
     if (!clean) return fail('Le titre est obligatoire.')
