@@ -403,17 +403,30 @@ export async function createVideoUploadUrl(
   client: SupabaseClient,
   lessonId: string,
 ): Promise<Result<{ uploadUrl: string; assetId: string }>> {
+  console.log('[createVideoUploadUrl] 🎬 Received request for lesson:', lessonId)
   const user = await getAuthUser(client)
-  if (!user) return fail('Connectez-vous pour verser une vidéo.')
+  if (!user) {
+    console.error('[createVideoUploadUrl] ❌ Unauthenticated user attempt')
+    return fail('Connectez-vous pour verser une vidéo.')
+  }
 
   const muxTokenId = process.env.MUX_TOKEN_ID
   const muxTokenSecret = process.env.MUX_TOKEN_SECRET || process.env.MUX_SECRET_ID
 
+  console.log('[createVideoUploadUrl] 🔑 Checking Mux credentials availability:', {
+    hasMuxTokenId: Boolean(muxTokenId),
+    hasMuxTokenSecret: Boolean(muxTokenSecret),
+    tokenIdLength: muxTokenId?.length ?? 0,
+  })
+
   if (!muxTokenId || !muxTokenSecret) {
+    console.error('[createVideoUploadUrl] ❌ Missing Mux environment variables MUX_TOKEN_ID or MUX_TOKEN_SECRET')
     return fail('Le service Mux n’est pas configuré sur le serveur.')
   }
 
   const authHeader = `Basic ${Buffer.from(`${muxTokenId}:${muxTokenSecret}`).toString('base64')}`
+  console.log('[createVideoUploadUrl] 🌐 Sending POST request to Mux API (https://api.mux.com/video/v1/uploads)...')
+  
   const response = await fetch('https://api.mux.com/video/v1/uploads', {
     method: 'POST',
     headers: {
@@ -429,15 +442,23 @@ export async function createVideoUploadUrl(
   })
 
   if (!response.ok) {
+    const errorText = await response.text().catch(() => '')
+    console.error('[createVideoUploadUrl] ❌ Mux API returned HTTP error:', response.status, response.statusText, errorText)
     return fail('Erreur lors de la création du lien de versement Mux.')
   }
 
   const json = await response.json()
   const uploadData = json.data as { id: string; url: string }
+  console.log('[createVideoUploadUrl] ✅ Mux Upload Created Successfully:', {
+    uploadId: uploadData.id,
+    urlLength: uploadData.url.length,
+  })
 
   // Delete previous uploading assets for this lesson
+  console.log('[createVideoUploadUrl] 🧹 Cleaning up old uploading assets for lesson:', lessonId)
   await client.from('media_assets').delete().eq('lesson_id', lessonId).eq('status', 'uploading')
 
+  console.log('[createVideoUploadUrl] 💾 Inserting media_assets row into Supabase database...')
   const { data: assetRow, error: dbError } = await client
     .from('media_assets')
     .insert({
@@ -449,8 +470,12 @@ export async function createVideoUploadUrl(
     .select('id')
     .single()
 
-  if (dbError || !assetRow) return fail(dbError?.message ?? 'Erreur lors de l’enregistrement de la vidéo.')
+  if (dbError || !assetRow) {
+    console.error('[createVideoUploadUrl] ❌ Supabase DB insertion failed:', dbError)
+    return fail(dbError?.message ?? 'Erreur lors de l’enregistrement de la vidéo.')
+  }
 
+  console.log('[createVideoUploadUrl] 🎉 Media Asset Row Created in DB:', assetRow.id)
   return ok({ uploadUrl: uploadData.url, assetId: assetRow.id })
 }
 

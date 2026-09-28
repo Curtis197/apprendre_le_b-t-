@@ -26,17 +26,32 @@ export function VideoUploader({ lessonId, mediaAsset, videoQuota, disabled = fal
     const file = e.target.files?.[0]
     if (!file) return
 
+    console.log('[VideoUploader] 📁 File selected:', {
+      name: file.name,
+      sizeBytes: file.size,
+      sizeMB: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      type: file.type,
+      lessonId,
+    })
+
     setUploading(true)
     setError(null)
     setProgress(5)
 
     // 1. Request direct upload URL from server
+    console.log('[VideoUploader] 📡 Requesting Mux direct upload URL from server for lesson:', lessonId)
     const res = await createVideoUploadUrl(supabase, lessonId)
     if (res.error || !res.data) {
+      console.error('[VideoUploader] ❌ Server failed to return Mux upload URL:', res.error)
       setUploading(false)
       setError(res.error ?? 'Erreur lors de la création du lien de versement.')
       return
     }
+
+    console.log('[VideoUploader] ✅ Mux direct upload URL received:', {
+      assetId: res.data.assetId,
+      uploadUrl: res.data.uploadUrl.substring(0, 45) + '...',
+    })
 
     // 2. Upload video file directly to Mux via XMLHttpRequest for progress tracking
     const xhr = new XMLHttpRequest()
@@ -47,23 +62,28 @@ export function VideoUploader({ lessonId, mediaAsset, videoQuota, disabled = fal
       if (event.lengthComputable) {
         const percent = Math.round((event.loaded / event.total) * 90) + 5
         setProgress(percent)
+        console.log(`[VideoUploader] ⏳ Progress: ${percent}% (${event.loaded}/${event.total} bytes)`)
       }
     }
 
     xhr.onload = () => {
       setUploading(false)
       if (xhr.status >= 200 && xhr.status < 300) {
+        console.log('[VideoUploader] 🎉 Video upload to Mux succeeded! HTTP Status:', xhr.status)
         onUpdated()
       } else {
+        console.error('[VideoUploader] ❌ Mux direct upload failed with HTTP status:', xhr.status, xhr.responseText)
         setError(`Erreur lors du versement de la vidéo (statut HTTP ${xhr.status}).`)
       }
     }
 
-    xhr.onerror = () => {
+    xhr.onerror = err => {
+      console.error('[VideoUploader] ❌ Network error during Mux direct upload:', err)
       setUploading(false)
       setError('Erreur réseau lors du versement de la vidéo.')
     }
 
+    console.log('[VideoUploader] 🚀 Starting direct PUT upload to Mux API...')
     xhr.send(file)
   }
 
