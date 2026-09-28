@@ -11,6 +11,8 @@ import {
   getLessonAudioPath,
   getLessonAudioUrl,
   getLessonContent,
+  getMediaAssetForLesson,
+  getSignedMuxPlaybackToken,
   getQuizForLesson,
   isEnrolled,
 } from '@/lib/courses/queries'
@@ -19,6 +21,7 @@ import { LessonMarkdown } from '@/components/LessonMarkdown'
 import { LessonOutline } from '@/components/courses/LessonOutline'
 import { CompleteButton } from '@/components/courses/CompleteButton'
 import { AudioPlayer } from '@/components/courses/AudioPlayer'
+import { VideoPlayer } from '@/components/courses/VideoPlayer'
 import { QuizPlayer } from '@/components/courses/QuizPlayer'
 import { primaryLinkClass, secondaryLinkClass } from '@/components/courses/styles'
 
@@ -74,9 +77,15 @@ export default async function LessonPage({ params }: Props) {
   const hasFullAccess = enrolled || isOwner
   const completed = user ? await getCompletedLessonIds(supabase, user.id, flat.map(l => l.id)) : []
 
-  // Prefetch audio and quiz data if applicable
+  // Prefetch audio, video, and quiz data if applicable
   const audioPath = await getLessonAudioPath(supabase, lesson.id)
   const signedAudioUrl = audioPath ? await getLessonAudioUrl(supabase, audioPath) : null
+
+  const mediaAsset = lesson.kind === 'video' ? await getMediaAssetForLesson(supabase, lesson.id) : null
+  const signedPlaybackToken = mediaAsset?.mux_playback_id
+    ? await getSignedMuxPlaybackToken(mediaAsset.mux_playback_id)
+    : null
+
   const quizQuestions = lesson.kind === 'quiz' ? await getQuizForLesson(supabase, lesson.id) : []
 
   const next = flat.find(l => l.id === nextLessonId(flat, lesson.id))
@@ -126,6 +135,28 @@ export default async function LessonPage({ params }: Props) {
           </div>
         )}
 
+        {lesson.kind === 'video' && (
+          <div className="space-y-6">
+            {mediaAsset && mediaAsset.status === 'ready' && mediaAsset.mux_playback_id ? (
+              <VideoPlayer
+                playbackId={mediaAsset.mux_playback_id}
+                signedToken={signedPlaybackToken}
+                title={lesson.title}
+              />
+            ) : mediaAsset && mediaAsset.status === 'processing' ? (
+              <div className="p-8 border border-border rounded-xl text-center space-y-2 bg-card">
+                <p className="font-semibold text-primary">Vidéo en cours de traitement…</p>
+                <p className="text-xs text-muted-foreground">La vidéo sera disponible d’ici quelques minutes.</p>
+              </div>
+            ) : (
+              <div className="p-8 border border-dashed border-border rounded-xl text-center text-muted-foreground text-sm">
+                La vidéo de cette leçon n’a pas encore été versée.
+              </div>
+            )}
+            {body.trim() && <LessonMarkdown source={body} />}
+          </div>
+        )}
+
         {lesson.kind === 'quiz' && (
           <div className="space-y-6">
             {body.trim() && <LessonMarkdown source={body} />}
@@ -139,7 +170,7 @@ export default async function LessonPage({ params }: Props) {
           </div>
         )}
 
-        {lesson.kind !== 'text' && lesson.kind !== 'audio' && lesson.kind !== 'quiz' && (
+        {lesson.kind !== 'text' && lesson.kind !== 'audio' && lesson.kind !== 'quiz' && lesson.kind !== 'video' && (
           <p className="text-muted-foreground">Ce type de leçon sera bientôt disponible.</p>
         )}
 
