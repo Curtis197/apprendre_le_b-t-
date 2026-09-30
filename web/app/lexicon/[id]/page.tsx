@@ -7,6 +7,7 @@ import type { LexiconEntry as TLexiconEntry, LexiconExample } from '@/lib/types'
 import { JsonLd } from '@/components/JsonLd'
 import { SITE_URL } from '@/lib/site'
 import { cleanBeteForm } from '@/lib/lexicon'
+import { InterlinearGloss } from '@/components/InterlinearGloss'
 
 type Entry = TLexiconEntry & { lexicon_examples: LexiconExample[] }
 
@@ -113,19 +114,17 @@ export default async function LexiconEntryPage({
       <JsonLd data={jsonLd} />
       <LexiconEntry entry={entry} />
       {entry.lexicon_examples?.length > 0 && (
-        <section>
-          <h2 className="font-semibold mb-3">Exemples</h2>
-          <div className="space-y-2">
+        <section className="space-y-3">
+          <h2 className="font-semibold text-lg font-heading">Exemples</h2>
+          <div className="space-y-3">
             {entry.lexicon_examples.map((ex) => (
-              <div key={ex.id} className="border rounded p-3 text-sm space-y-1">
-                <p className="font-mono">{ex.bete_snippet}</p>
-                {ex.french_literal && (
-                  <p className="text-muted-foreground">
-                    <span className="font-medium">Mot à mot :</span> {ex.french_literal}
-                  </p>
-                )}
-                <p className="text-muted-foreground">{ex.french_snippet}</p>
-              </div>
+              <InterlinearGloss
+                key={ex.id}
+                original={ex.bete_snippet}
+                literal={ex.french_literal}
+                final={ex.french_snippet}
+                variant="compact"
+              />
             ))}
           </div>
         </section>

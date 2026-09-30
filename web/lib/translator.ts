@@ -1,4 +1,4 @@
-﻿import 'server-only'
+import 'server-only'
 // lib/translator.ts
 import Anthropic from '@anthropic-ai/sdk'
 import { SupabaseClient } from '@supabase/supabase-js'
@@ -43,16 +43,20 @@ interface GrammarRule {
 async function findExpression(
   client: SupabaseClient,
   phrase: string,
-): Promise<{ bete_western: string; bete_phonetic_form: string } | null> {
+): Promise<{ bete_western: string; bete_phonetic_form: string; french_literal: string | null } | null> {
   const { data } = await client
     .from('expressions')
-    .select('bete_phrase, bete_phonetic')
+    .select('bete_phrase, bete_phonetic, french_literal')
     .eq('french_phrase', phrase.toLowerCase())
     .eq('validated', true)
     .maybeSingle()
   if (!data) return null
   // expressions.bete_phrase = western Latin form, expressions.bete_phonetic = IPA form
-  return { bete_western: data.bete_phrase, bete_phonetic_form: data.bete_phonetic }
+  return {
+    bete_western: data.bete_phrase,
+    bete_phonetic_form: data.bete_phonetic,
+    french_literal: data.french_literal ?? null,
+  }
 }
 
 // ── Step 2: resolve each token ───────────────────────────────────────────────
@@ -192,6 +196,7 @@ ${ruleLines}
 Return ONLY this JSON (no explanation):
 {
   "sentence": "<one fluent Bhété sentence using western Latin forms>",
+  "literal": "<literal word-for-word back-translation in French reflecting the Bhété structure or metaphor, or null if direct>",
   "unknowns": ["<french word>", ...],
   "rules_applied": ["<short rule description>", ...]
 }`
@@ -201,7 +206,7 @@ Return ONLY this JSON (no explanation):
 
 async function assembleWithClaude(
   prompt: string,
-): Promise<{ sentence: string; unknowns: string[]; rules_applied: string[] }> {
+): Promise<{ sentence: string; literal: string | null; unknowns: string[]; rules_applied: string[] }> {
   const message = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 512,
@@ -212,9 +217,11 @@ async function assembleWithClaude(
   const json = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
   const parsed = JSON.parse(json)
   const sentence = String(parsed.sentence ?? '')
+  const literal = parsed.literal ? String(parsed.literal) : null
   if (!sentence) throw new Error('Claude returned empty sentence')
   return {
     sentence,
+    literal,
     unknowns:      Array.isArray(parsed.unknowns) ? parsed.unknowns : [],
     rules_applied: Array.isArray(parsed.rules_applied) ? parsed.rules_applied : [],
   }
@@ -269,6 +276,7 @@ export async function translate(
     console.log(`[translator] ${ms()}ms  expression hit → "${expr.bete_western}"`)
     return {
       input,
+      literal:           expr.french_literal,
       sentence:          expr.bete_western,
       sentence_phonetic: expr.bete_phonetic_form,
       unknowns:          [],
@@ -313,6 +321,7 @@ export async function translate(
   const noRules = rules.length === 0
 
   let sentence: string
+  let literal: string | null = null
   let unknowns: string[]
   let rules_applied: string[]
 
@@ -320,6 +329,7 @@ export async function translate(
     sentence = resolvedTokens
       .map(t => t.candidates[0]?.bete_western_form ?? t.french_form)
       .join(' ')
+    literal = resolvedTokens.map(t => t.candidates[0]?.bete_western_form ?? t.french_form).join(' ')
     unknowns = resolvedTokens.filter(t => t.candidates.length === 0).map(t => t.french_form)
     rules_applied = []
     log.push({ step: 'assembly', detail: 'fast-path (all unambiguous, no rules) — skipped Claude', ms: ms() })
@@ -329,8 +339,8 @@ export async function translate(
     log.push({ step: 'claude prompt', detail: `${prompt.length} chars — sending to claude-haiku`, ms: ms() })
     console.log(`[translator] ${ms()}ms  claude prompt: ${prompt.length} chars`)
     try {
-      ;({ sentence, unknowns, rules_applied } = await assembleWithClaude(prompt))
-      log.push({ step: 'claude response', detail: `"${sentence}"${unknowns.length ? ` — unknowns: ${unknowns.join(', ')}` : ''}`, ms: ms() })
+      ;({ sentence, literal, unknowns, rules_applied } = await assembleWithClaude(prompt))
+      log.push({ step: 'claude response', detail: `"${sentence}" (literal: "${literal}")${unknowns.length ? ` — unknowns: ${unknowns.join(', ')}` : ''}`, ms: ms() })
       console.log(`[translator] ${ms()}ms  claude → "${sentence}"`)
     } catch (err) {
       log.push({ step: 'claude error', detail: `${err} — falling back to concatenation`, ms: ms() })
@@ -338,6 +348,7 @@ export async function translate(
       sentence = resolvedTokens
         .map(t => t.candidates[0]?.bete_western_form ?? t.french_form)
         .join(' ')
+      literal = sentence
       unknowns = resolvedTokens.filter(t => t.candidates.length === 0).map(t => t.french_form)
       rules_applied = []
     }
@@ -356,5 +367,5 @@ export async function translate(
     lexicon_id:   t.candidates[0]?.lexicon_id,
   }))
 
-  return { input, sentence, sentence_phonetic, unknowns, rules_applied, tokens, cached: false, debug: log }
+  return { input, literal, sentence, sentence_phonetic, unknowns, rules_applied, tokens, cached: false, debug: log }
 }

@@ -139,6 +139,7 @@ export interface TranslationLogEntry {
 
 export interface TranslationResult {
   input:             string
+  literal?:          string | null  // word-to-word literal translation / interlinear gloss
   sentence:          string    // fluent Bhété — western Latin alphabet (bete_phonetic values)
   sentence_phonetic: string    // fluent Bhété — IPA/Bible phonetic form (bete_word values)
   unknowns:          string[]  // French words with no Bhété candidate

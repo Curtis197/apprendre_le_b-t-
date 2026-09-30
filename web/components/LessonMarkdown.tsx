@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { parseMarkdown, type Block, type Inline } from '@/lib/courses/markdown'
+import { InterlinearGloss } from './InterlinearGloss'
 
 const LINK_CLASS = 'text-primary underline underline-offset-2'
 
@@ -79,6 +80,17 @@ function renderBlock(block: Block, key: number): ReactNode {
       )
     case 'rule':
       return <hr key={key} className="border-border" />
+    case 'gloss':
+      return (
+        <InterlinearGloss
+          key={key}
+          original={block.original}
+          literal={block.literal}
+          final={block.translation}
+          title={block.title}
+          variant="card"
+        />
+      )
   }
 }
 

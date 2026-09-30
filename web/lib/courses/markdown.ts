@@ -15,6 +15,13 @@ export type Block =
   | { type: 'list'; ordered: boolean; items: Inline[][] }
   | { type: 'quote'; lines: Inline[][] }
   | { type: 'rule' }
+  | {
+      type: 'gloss'
+      original: string
+      literal?: string
+      translation?: string
+      title?: string
+    }
 
 /** Only http(s), mailto and site-relative URLs may become links. */
 export function safeHref(raw: string): { href: string; external: boolean } | null {
@@ -61,6 +68,7 @@ const RULE = /^(-{3,}|\*{3,})\s*$/
 const UNORDERED = /^\s*[-*]\s+(.*)$/
 const ORDERED = /^\s*\d+[.)]\s+(.*)$/
 const QUOTE = /^\s*>\s?(.*)$/
+const GLOSS_START = /^:::gloss(?:\s+(.*))?$/
 
 function startsBlock(line: string): boolean {
   return (
@@ -68,7 +76,8 @@ function startsBlock(line: string): boolean {
     RULE.test(line) ||
     UNORDERED.test(line) ||
     ORDERED.test(line) ||
-    QUOTE.test(line)
+    QUOTE.test(line) ||
+    GLOSS_START.test(line.trim())
   )
 }
 
@@ -92,6 +101,54 @@ export function parseMarkdown(source: string): Block[] {
     const line = lines[i]
     if (line.trim() === '') {
       i++
+      continue
+    }
+
+    const glossMatch = GLOSS_START.exec(line.trim())
+    if (glossMatch) {
+      i++
+      const rawTitle = glossMatch[1]?.trim() || undefined
+      let original = ''
+      let literal: string | undefined
+      let translation: string | undefined
+      let title = rawTitle
+      const contentLines: string[] = []
+
+      while (i < lines.length && lines[i].trim() !== ':::') {
+        contentLines.push(lines[i].trim())
+        i++
+      }
+      if (i < lines.length && lines[i].trim() === ':::') {
+        i++ // consume closing :::
+      }
+
+      const hasKeys = contentLines.some(l =>
+        /^(bete|original|literal|mot_a_mot|mot-a-mot|fr|sens|translation|title):\s*/i.test(l),
+      )
+      if (hasKeys) {
+        for (const cl of contentLines) {
+          const match = /^([a-z_-]+):\s*(.*)$/i.exec(cl)
+          if (!match) continue
+          const key = match[1].toLowerCase()
+          const val = match[2].trim()
+          if (key === 'bete' || key === 'original') original = val
+          else if (key === 'literal' || key === 'mot_a_mot' || key === 'mot-a-mot') literal = val
+          else if (key === 'fr' || key === 'sens' || key === 'translation') translation = val
+          else if (key === 'title') title = val
+        }
+      } else {
+        original = contentLines[0] || ''
+        literal = contentLines[1] || undefined
+        translation = contentLines[2] || undefined
+      }
+
+      blocks.push({
+        type: 'gloss',
+        original,
+        literal,
+        translation,
+        title,
+      })
       continue
     }
 

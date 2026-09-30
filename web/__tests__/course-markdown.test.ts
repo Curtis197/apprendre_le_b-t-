@@ -92,4 +92,39 @@ describe('parseMarkdown', () => {
   it('does not mistake a bold opener for a list item', () => {
     expect(parseMarkdown('**gras** au début')[0].type).toBe('paragraph')
   })
+
+  it('parses :::gloss container with key-value syntax', () => {
+    const md = `:::gloss
+title: Exemple d'expression
+bete: lagɔ bhïte
+literal: Dieu frappe
+fr: Il pleut
+:::`
+    const blocks = parseMarkdown(md)
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0]).toEqual({
+      type: 'gloss',
+      original: 'lagɔ bhïte',
+      literal: 'Dieu frappe',
+      translation: 'Il pleut',
+      title: "Exemple d'expression",
+    })
+  })
+
+  it('parses :::gloss container with positional 3-line syntax', () => {
+    const md = `:::gloss
+na ŋɔ́nɔ́
+mon enfant
+mon fils ou ma fille
+:::`
+    const blocks = parseMarkdown(md)
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0]).toEqual({
+      type: 'gloss',
+      original: 'na ŋɔ́nɔ́',
+      literal: 'mon enfant',
+      translation: 'mon fils ou ma fille',
+      title: undefined,
+    })
+  })
 })
