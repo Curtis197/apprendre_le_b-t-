@@ -65,10 +65,41 @@ export async function getCompletedLessonIds(
   if (lessonIds.length === 0) return []
   const { data } = await client
     .from('lesson_progress')
-    .select('lesson_id')
+    .select('lesson_id, progress_percent, completed_at')
     .eq('user_id', userId)
     .in('lesson_id', lessonIds)
-  return ((data ?? []) as { lesson_id: string }[]).map(row => row.lesson_id)
+  return ((data ?? []) as { lesson_id: string; progress_percent?: number; completed_at?: string | null }[])
+    .filter(row => (row.progress_percent ?? 0) >= 100 || Boolean(row.completed_at))
+    .map(row => row.lesson_id)
+}
+
+export async function getLessonProgressMap(
+  client: SupabaseClient,
+  userId: string,
+  lessonIds: string[],
+): Promise<Record<string, { progress_percent: number; score: number | null; completed: boolean }>> {
+  if (lessonIds.length === 0) return {}
+  const { data } = await client
+    .from('lesson_progress')
+    .select('lesson_id, progress_percent, score, completed_at')
+    .eq('user_id', userId)
+    .in('lesson_id', lessonIds)
+
+  const map: Record<string, { progress_percent: number; score: number | null; completed: boolean }> = {}
+  for (const row of (data ?? []) as {
+    lesson_id: string
+    progress_percent?: number
+    score?: number | null
+    completed_at?: string | null
+  }[]) {
+    const percent = row.progress_percent ?? (row.completed_at ? 100 : 0)
+    map[row.lesson_id] = {
+      progress_percent: percent,
+      score: row.score ?? null,
+      completed: percent >= 100 || Boolean(row.completed_at),
+    }
+  }
+  return map
 }
 
 export async function isEnrolled(client: SupabaseClient, userId: string, courseId: string): Promise<boolean> {
@@ -103,16 +134,24 @@ export async function getMyEnrollments(client: SupabaseClient, userId: string): 
   const [courses, lessons, done] = await Promise.all([
     client.from('courses').select('*').in('id', courseIds),
     client.from('lessons').select('id, course_id').in('course_id', courseIds),
-    client.from('lesson_progress').select('lesson_id').eq('user_id', userId),
+    client.from('lesson_progress').select('lesson_id, progress_percent, completed_at').eq('user_id', userId),
   ])
   const lessonRows = (lessons.data ?? []) as { id: string; course_id: string }[]
-  const doneIds = ((done.data ?? []) as { lesson_id: string }[]).map(row => row.lesson_id)
+  const progressRows = (done.data ?? []) as {
+    lesson_id: string
+    progress_percent?: number
+    completed_at?: string | null
+  }[]
+  const progressMap: Record<string, number> = {}
+  for (const p of progressRows) {
+    progressMap[p.lesson_id] = p.progress_percent ?? (p.completed_at ? 100 : 0)
+  }
 
   return ((courses.data ?? []) as Course[]).map(course => ({
     course,
     progress: computeProgress(
       lessonRows.filter(lesson => lesson.course_id === course.id).map(lesson => lesson.id),
-      doneIds,
+      progressMap,
     ),
   }))
 }

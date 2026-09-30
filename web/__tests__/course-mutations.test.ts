@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createCourse } from '../lib/courses/mutations'
+import { createCourse, saveLessonProgress, setLessonCompleted } from '../lib/courses/mutations'
 
 type Reply = {
   data: { id: string; slug: string } | null
@@ -90,5 +90,81 @@ describe('createCourse', () => {
     expect(tooShort.error).toBe('Le titre doit contenir entre 3 et 120 caractères.')
     expect(tooLong.error).toBe('Le titre doit contenir entre 3 et 120 caractères.')
     expect(inserted).toHaveLength(0)
+  })
+})
+
+describe('saveLessonProgress and setLessonCompleted', () => {
+  function fakeProgressClient(user: { id: string } | null = { id: 'user-1' }) {
+    const upserted: Record<string, unknown>[] = []
+    const deleted: Record<string, unknown>[] = []
+    const client = {
+      auth: { getUser: async () => ({ data: { user } }) },
+      from: (table: string) => {
+        if (table !== 'lesson_progress') throw new Error(`Unexpected table ${table}`)
+        return {
+          upsert: async (row: Record<string, unknown>) => {
+            upserted.push(row)
+            return { error: null }
+          },
+          delete: () => ({
+            eq: (col1: string, val1: unknown) => ({
+              eq: (col2: string, val2: unknown) => {
+                deleted.push({ [col1]: val1, [col2]: val2 })
+                return { error: null }
+              },
+            }),
+          }),
+        }
+      },
+    } as unknown as SupabaseClient
+    return { client, upserted, deleted }
+  }
+
+  it('saves partial progress and score', async () => {
+    const { client, upserted } = fakeProgressClient()
+    const res = await saveLessonProgress(client, 'l1', { progressPercent: 45, score: 80 })
+    expect(res.error).toBeNull()
+    expect(res.data).toEqual({ progress_percent: 45, score: 80, completed: false })
+    expect(upserted).toHaveLength(1)
+    expect(upserted[0]).toMatchObject({
+      user_id: 'user-1',
+      lesson_id: 'l1',
+      progress_percent: 45,
+      score: 80,
+      completed_at: null,
+    })
+  })
+
+  it('marks lesson completed when progressPercent reaches 100', async () => {
+    const { client, upserted } = fakeProgressClient()
+    const res = await saveLessonProgress(client, 'l1', { progressPercent: 100 })
+    expect(res.error).toBeNull()
+    expect(res.data?.completed).toBe(true)
+    expect(upserted[0].completed_at).not.toBeNull()
+  })
+
+  it('setLessonCompleted(true) saves 100% progress', async () => {
+    const { client, upserted } = fakeProgressClient()
+    const res = await setLessonCompleted(client, 'l1', true)
+    expect(res.error).toBeNull()
+    expect(upserted[0]).toMatchObject({
+      user_id: 'user-1',
+      lesson_id: 'l1',
+      progress_percent: 100,
+    })
+  })
+
+  it('setLessonCompleted(false) deletes the progress record', async () => {
+    const { client, deleted } = fakeProgressClient()
+    const res = await setLessonCompleted(client, 'l1', false)
+    expect(res.error).toBeNull()
+    expect(deleted).toHaveLength(1)
+    expect(deleted[0]).toEqual({ user_id: 'user-1', lesson_id: 'l1' })
+  })
+
+  it('refuses progress updates when signed out', async () => {
+    const { client } = fakeProgressClient(null)
+    const res = await saveLessonProgress(client, 'l1', { progressPercent: 50 })
+    expect(res.error).toContain('Connectez-vous')
   })
 })

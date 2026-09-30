@@ -55,3 +55,10 @@ export interface CourseInput {
 }
 
 export type Result<T> = { data: T; error: null } | { data: null; error: string }
+
+export interface LessonProgressItem {
+  lesson_id: string
+  progress_percent: number
+  score: number | null
+  completed_at: string | null
+}

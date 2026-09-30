@@ -11,6 +11,7 @@ import {
   getLessonAudioPath,
   getLessonAudioUrl,
   getLessonContent,
+  getLessonProgressMap,
   getMediaAssetForLesson,
   getSignedMuxPlaybackToken,
   getSubmissionForLesson,
@@ -78,7 +79,10 @@ export default async function LessonPage({ params }: Props) {
   const isOwner = user?.id === course.owner_id
   const enrolled = user ? await isEnrolled(supabase, user.id, course.id) : false
   const hasFullAccess = enrolled || isOwner
-  const completed = user ? await getCompletedLessonIds(supabase, user.id, flat.map(l => l.id)) : []
+  const lessonIds = flat.map(l => l.id)
+  const progressMap = user ? await getLessonProgressMap(supabase, user.id, lessonIds) : {}
+  const completed = user ? await getCompletedLessonIds(supabase, user.id, lessonIds) : []
+  const currentProgress = progressMap[lesson.id]
 
   // Prefetch audio, video, and quiz data if applicable
   const audioPath = await getLessonAudioPath(supabase, lesson.id)
@@ -121,6 +125,7 @@ export default async function LessonPage({ params }: Props) {
           outline={outline}
           currentLessonId={lesson.id}
           completedIds={completed}
+          progressMap={progressMap}
           hasFullAccess={hasFullAccess}
         />
       </aside>
@@ -131,7 +136,12 @@ export default async function LessonPage({ params }: Props) {
         {lesson.kind === 'text' && (
           <div className="space-y-6">
             {signedAudioUrl && (
-              <AudioPlayer src={signedAudioUrl} title="Version audio de la leçon" />
+              <AudioPlayer
+                src={signedAudioUrl}
+                title="Version audio de la leçon"
+                lessonId={lesson.id}
+                initialProgressPercent={currentProgress?.progress_percent ?? 0}
+              />
             )}
             <LessonMarkdown source={body} />
           </div>
@@ -140,7 +150,12 @@ export default async function LessonPage({ params }: Props) {
         {lesson.kind === 'audio' && (
           <div className="space-y-6">
             {signedAudioUrl ? (
-              <AudioPlayer src={signedAudioUrl} title={lesson.title} />
+              <AudioPlayer
+                src={signedAudioUrl}
+                title={lesson.title}
+                lessonId={lesson.id}
+                initialProgressPercent={currentProgress?.progress_percent ?? 0}
+              />
             ) : (
               <div className="p-6 border border-dashed border-border rounded-xl text-center text-muted-foreground text-sm">
                 L’enregistrement audio de cette leçon sera bientôt disponible.
@@ -157,6 +172,8 @@ export default async function LessonPage({ params }: Props) {
                 playbackId={mediaAsset.mux_playback_id}
                 signedToken={signedPlaybackToken}
                 title={lesson.title}
+                lessonId={lesson.id}
+                initialProgressPercent={currentProgress?.progress_percent ?? 0}
               />
             ) : mediaAsset && mediaAsset.status === 'processing' ? (
               <div className="p-8 border border-border rounded-xl text-center space-y-2 bg-card">
@@ -200,7 +217,12 @@ export default async function LessonPage({ params }: Props) {
 
         <div className="border-t border-border pt-6 flex flex-wrap items-start gap-4">
           {user ? (
-            <CompleteButton lessonId={lesson.id} completed={completed.includes(lesson.id)} />
+            <CompleteButton
+              lessonId={lesson.id}
+              completed={completed.includes(lesson.id)}
+              progressPercent={currentProgress?.progress_percent ?? 0}
+              score={currentProgress?.score ?? null}
+            />
           ) : (
             <Link
               href={`/auth?next=${encodeURIComponent(`/courses/${slug}/learn/${lessonId}`)}`}

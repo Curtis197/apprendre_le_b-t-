@@ -1,15 +1,20 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
 import Hls from 'hls.js'
-import { Play, Pause, Maximize, RotateCcw, Volume2, VolumeX, AlertTriangle } from 'lucide-react'
+import { Play, Pause, Maximize, RotateCcw, Volume2, VolumeX, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { formatVideoDuration } from '@/lib/courses/video'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase-browser'
+import { saveLessonProgress } from '@/lib/courses/mutations'
 
 interface Props {
   playbackId: string
   signedToken?: string | null
   title?: string
   className?: string
+  lessonId?: string
+  initialProgressPercent?: number
+  onProgress?: (percent: number, completed: boolean) => void
 }
 
 const SPEEDS = [0.8, 1.0, 1.25, 1.5]
@@ -21,7 +26,16 @@ const MEDIA_ERROR_MAP: Record<number, string> = {
   4: 'MEDIA_ERR_SRC_NOT_SUPPORTED — Le flux vidéo ou le jeton de lecture Mux n’a pas pu être chargé.',
 }
 
-export function VideoPlayer({ playbackId, signedToken, title, className = '' }: Props) {
+export function VideoPlayer({
+  playbackId,
+  signedToken,
+  title,
+  className = '',
+  lessonId,
+  initialProgressPercent = 0,
+  onProgress,
+}: Props) {
+  const [supabase] = useState(() => createClient())
   const containerRef = useRef<HTMLDivElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const hlsRef = useRef<Hls | null>(null)
@@ -32,6 +46,23 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
   const [speedIndex, setSpeedIndex] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
   const [playbackError, setPlaybackError] = useState<string | null>(null)
+  const [progressPercent, setProgressPercent] = useState(initialProgressPercent)
+
+  const maxPercentRef = useRef(initialProgressPercent)
+  const lastSyncedRef = useRef(initialProgressPercent)
+  const hasSeekedInitialRef = useRef(false)
+
+  const syncProgress = async (percent: number, completed: boolean) => {
+    if (!lessonId) return
+    if (Math.abs(percent - lastSyncedRef.current) < 5 && !completed) return
+    lastSyncedRef.current = percent
+    setProgressPercent(percent)
+    await saveLessonProgress(supabase, lessonId, {
+      progressPercent: percent,
+      completed,
+    })
+    onProgress?.(percent, completed)
+  }
 
   const streamUrl = signedToken
     ? `https://stream.mux.com/${playbackId}.m3u8?token=${signedToken}`
@@ -53,7 +84,20 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
 
     setPlaybackError(null)
 
-    const updateTime = () => setCurrentTime(video.currentTime)
+    const updateTime = () => {
+      const current = video.currentTime
+      setCurrentTime(current)
+      if (video.duration > 0) {
+        const pct = Math.min(100, Math.round((current / video.duration) * 100))
+        if (pct > maxPercentRef.current) {
+          maxPercentRef.current = pct
+          setProgressPercent(pct)
+        }
+        const isCompleted = maxPercentRef.current >= 90
+        syncProgress(isCompleted ? 100 : maxPercentRef.current, isCompleted)
+      }
+    }
+
     const updateDuration = () => {
       console.log('[VideoPlayer] 📊 Metadata loaded:', {
         duration: video.duration,
@@ -61,7 +105,18 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
         videoHeight: video.videoHeight,
         readyState: video.readyState,
       })
-      setDuration(video.duration || 0)
+      const dur = video.duration || 0
+      setDuration(dur)
+      if (
+        !hasSeekedInitialRef.current &&
+        initialProgressPercent > 0 &&
+        initialProgressPercent < 90 &&
+        dur > 0
+      ) {
+        hasSeekedInitialRef.current = true
+        video.currentTime = (initialProgressPercent / 100) * dur
+        setCurrentTime(video.currentTime)
+      }
     }
 
     const onPlay = () => {
@@ -73,11 +128,16 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
     const onPause = () => {
       console.log('[VideoPlayer] ⏸️ Playback paused at:', video.currentTime.toFixed(2), 's')
       setIsPlaying(false)
+      const isCompleted = maxPercentRef.current >= 90
+      syncProgress(isCompleted ? 100 : maxPercentRef.current, isCompleted)
     }
 
     const onEnded = () => {
       console.log('[VideoPlayer] ✅ Video playback completed')
       setIsPlaying(false)
+      maxPercentRef.current = 100
+      setProgressPercent(100)
+      syncProgress(100, true)
     }
 
     const onLoadStart = () => {
@@ -303,7 +363,25 @@ export function VideoPlayer({ playbackId, signedToken, title, className = '' }: 
 
       {/* Overlay controls */}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 flex flex-col gap-2 transition-opacity duration-200 opacity-90 group-hover:opacity-100">
-        {title && <p className="text-xs font-semibold text-white/90 truncate">{title}</p>}
+        <div className="flex items-center justify-between gap-2">
+          {title && <p className="text-xs font-semibold text-white/90 truncate">{title}</p>}
+          {progressPercent > 0 && (
+            <span
+              className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                progressPercent >= 100 ? 'bg-secondary/25 text-emerald-300' : 'bg-primary/25 text-primary-foreground'
+              }`}
+            >
+              {progressPercent >= 100 ? (
+                <>
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  Vu à 100%
+                </>
+              ) : (
+                `Vu à ${progressPercent}%`
+              )}
+            </span>
+          )}
+        </div>
 
         {/* Scrubber */}
         <div className="flex items-center gap-3">

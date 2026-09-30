@@ -218,6 +218,46 @@ export async function enroll(client: SupabaseClient, courseId: string): Promise<
   return ok(null)
 }
 
+export interface LessonProgressInput {
+  progressPercent?: number
+  score?: number | null
+  completed?: boolean
+}
+
+export async function saveLessonProgress(
+  client: SupabaseClient,
+  lessonId: string,
+  input: LessonProgressInput,
+): Promise<Result<{ progress_percent: number; score: number | null; completed: boolean }>> {
+  const user = await getAuthUser(client)
+  if (!user) return fail('Connectez-vous pour suivre votre progression.')
+
+  const percent = Math.min(100, Math.max(0, Math.round(input.progressPercent ?? (input.completed ? 100 : 0))))
+  const isCompleted = input.completed ?? (percent >= 100)
+  const completedAt = isCompleted ? new Date().toISOString() : null
+
+  const payload: {
+    user_id: string
+    lesson_id: string
+    progress_percent: number
+    completed_at: string | null
+    score?: number | null
+  } = {
+    user_id: user.id,
+    lesson_id: lessonId,
+    progress_percent: percent,
+    completed_at: completedAt,
+  }
+
+  if (input.score !== undefined) {
+    payload.score = input.score
+  }
+
+  const { error } = await client.from('lesson_progress').upsert(payload, { onConflict: 'user_id,lesson_id' })
+  if (error) return fail(error.message)
+  return ok({ progress_percent: percent, score: input.score ?? null, completed: isCompleted })
+}
+
 export async function setLessonCompleted(
   client: SupabaseClient,
   lessonId: string,
@@ -226,8 +266,8 @@ export async function setLessonCompleted(
   const user = await getAuthUser(client)
   if (!user) return fail('Connectez-vous pour suivre votre progression.')
   if (completed) {
-    const { error } = await client.from('lesson_progress').insert({ user_id: user.id, lesson_id: lessonId })
-    if (error && error.code !== PG_UNIQUE_VIOLATION) return fail(error.message)
+    const res = await saveLessonProgress(client, lessonId, { completed: true, progressPercent: 100 })
+    if (res.error) return fail(res.error)
     return ok(null)
   }
   const { error } = await client

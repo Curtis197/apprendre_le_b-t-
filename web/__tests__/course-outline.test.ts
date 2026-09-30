@@ -62,6 +62,40 @@ describe('computeProgress', () => {
   it('ignores completed ids that do not belong to the course', () => {
     expect(computeProgress(['a'], ['a', 'zzz'])).toEqual({ completed: 1, total: 1, percent: 100 })
   })
+
+  it('computes partial progress percentage with Record of numbers', () => {
+    expect(computeProgress(['a', 'b', 'c'], { a: 100, b: 50, c: 0 })).toEqual({
+      completed: 1,
+      total: 3,
+      percent: 50,
+    })
+  })
+
+  it('computes partial progress percentage with Record of progress objects', () => {
+    expect(
+      computeProgress(['a', 'b', 'c'], {
+        a: { progress_percent: 100, completed_at: '2026-09-30T10:00:00Z' },
+        b: { progress_percent: 40, completed_at: null },
+      }),
+    ).toEqual({
+      completed: 1,
+      total: 3,
+      percent: 47,
+    })
+  })
+
+  it('computes partial progress with Map of numbers', () => {
+    const map = new Map<string, number>([
+      ['a', 50],
+      ['b', 50],
+      ['c', 50],
+    ])
+    expect(computeProgress(['a', 'b', 'c'], map)).toEqual({
+      completed: 0,
+      total: 3,
+      percent: 50,
+    })
+  })
 })
 
 describe('nextLessonId', () => {
@@ -73,13 +107,18 @@ describe('nextLessonId', () => {
 })
 
 describe('resumeLessonId', () => {
-  it('returns the first unfinished lesson', () => {
+  it('returns the first unfinished lesson with legacy string array', () => {
     expect(resumeLessonId(flat, ['a'])).toBe('b')
+  })
+
+  it('returns the first lesson that has not reached 100% progress', () => {
+    expect(resumeLessonId(flat, { a: 100, b: 60, c: 0 })).toBe('b')
   })
 
   it('returns the first lesson when nothing is done or everything is done', () => {
     expect(resumeLessonId(flat, [])).toBe('a')
     expect(resumeLessonId(flat, ['a', 'b', 'c'])).toBe('a')
+    expect(resumeLessonId(flat, { a: 100, b: 100, c: 100 })).toBe('a')
   })
 
   it('returns null when there are no lessons', () => {

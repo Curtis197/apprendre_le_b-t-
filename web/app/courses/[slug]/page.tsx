@@ -8,6 +8,7 @@ import {
   getCompletedLessonIds,
   getCourseBySlug,
   getCourseOutline,
+  getLessonProgressMap,
   isEnrolled,
 } from '@/lib/courses/queries'
 import { computeProgress, flattenLessons, resumeLessonId } from '@/lib/courses/outline'
@@ -60,11 +61,13 @@ export default async function CoursePage({ params }: Props) {
 
   const outline = await getCourseOutline(supabase, course.id)
   const flat = flattenLessons(outline)
+  const lessonIds = flat.map(l => l.id)
   const isOwner = user?.id === course.owner_id
   const enrolled = user ? await isEnrolled(supabase, user.id, course.id) : false
-  const completed = user ? await getCompletedLessonIds(supabase, user.id, flat.map(l => l.id)) : []
-  const progress = computeProgress(flat.map(l => l.id), completed)
-  const resumeId = resumeLessonId(flat, completed)
+  const progressMap = user ? await getLessonProgressMap(supabase, user.id, lessonIds) : {}
+  const completed = user ? await getCompletedLessonIds(supabase, user.id, lessonIds) : []
+  const progress = computeProgress(lessonIds, progressMap)
+  const resumeId = resumeLessonId(flat, progressMap)
   const startHref = resumeId ? `/courses/${course.slug}/learn/${resumeId}` : null
 
   return (
@@ -149,6 +152,7 @@ export default async function CoursePage({ params }: Props) {
             slug={course.slug}
             outline={outline}
             completedIds={completed}
+            progressMap={progressMap}
             hasFullAccess={enrolled || isOwner}
           />
         )}

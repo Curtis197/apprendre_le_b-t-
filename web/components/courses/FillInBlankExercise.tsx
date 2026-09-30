@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle, HelpCircle, RefreshCw, Award, Sparkles } from 'l
 import { parseFillInBlankText, evaluateFillInBlankAnswers, type BlankToken } from '@/lib/courses/fill-in-blank'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase-browser'
-import { setLessonCompleted } from '@/lib/courses/mutations'
+import { saveLessonProgress } from '@/lib/courses/mutations'
 
 interface Props {
   lessonId: string
@@ -101,12 +101,21 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
       perBlankResults: evalResult.results,
     })
 
-    if (evalResult.scorePercent >= 80 && isAuthed) {
-      console.log('[FillInBlank] 🎉 Pass threshold reached (>= 80%)! Completing lesson:', lessonId)
+    if (isAuthed) {
+      const isPassed = evalResult.scorePercent >= 80
+      console.log('[FillInBlank] 💾 Saving lesson progress and score:', {
+        lessonId,
+        scorePercent: evalResult.scorePercent,
+        isPassed,
+      })
       setSubmitting(true)
-      await setLessonCompleted(supabase, lessonId, true)
+      await saveLessonProgress(supabase, lessonId, {
+        progressPercent: isPassed ? 100 : evalResult.scorePercent,
+        score: evalResult.scorePercent,
+        completed: isPassed,
+      })
       setSubmitting(false)
-      if (onComplete) onComplete()
+      if (isPassed && onComplete) onComplete()
     }
   }
 
