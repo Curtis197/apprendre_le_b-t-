@@ -554,7 +554,7 @@ git commit -m "feat(lexicon): translations table, description and update guard"
 - Consumes: `lexicon_translations` from Task 1.
 - Produces: `rpc('search_lexicon', { q, p_dialect, p_pos, p_limit, p_offset })` returning rows `{ id, bete_word, bete_phonetic, top_french, pos, dialect, validated, matched_french, rank, total_count }`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // web/__tests__/rls/search-lexicon.test.ts
@@ -663,12 +663,12 @@ describe('search_lexicon', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `cd web && npm run test:rls -- search-lexicon`
 Expected: FAIL (`Could not find the function public.search_lexicon`).
 
-- [ ] **Step 3: Write the migration**
+- [x] **Step 3: Write the migration**
 
 ```sql
 -- supabase/migrations/20261001000001_search_lexicon.sql
@@ -740,7 +740,7 @@ $$;
 grant execute on function search_lexicon(text, text, text, int, int) to anon, authenticated;
 ```
 
-- [ ] **Step 4: Apply and run**
+- [x] **Step 4: Apply and run**
 
 ```bash
 docker exec -i supabase_db_agdqbzbjcxrzfhkvempe psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/migrations/20261001000001_search_lexicon.sql
@@ -748,7 +748,7 @@ cd web && npm run test:rls -- search-lexicon
 ```
 Expected: PASS. If `unaccent` is not found, check `select * from pg_available_extensions where name='unaccent'`; the function's `search_path` includes `extensions` for the Supabase layout.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/20261001000001_search_lexicon.sql web/__tests__/rls/search-lexicon.test.ts
