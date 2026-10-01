@@ -4,10 +4,10 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { submitCommunityText } from '@/lib/community-mutations'
 import { extractYouTubeId } from '@/lib/utils'
-import { alignVerses, describeAlignment } from '@/lib/verses'
+import { alignVerses, describeAlignment, describeGap, findFirstGap } from '@/lib/verses'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { NumberedTextarea } from '@/components/NumberedTextarea'
 import type { ContentType } from '@/lib/types'
 
 const TYPES: { value: ContentType; label: string }[] = [
@@ -36,13 +36,14 @@ export function ResourceSubmitForm() {
   const [error, setError]               = useState<string | null>(null)
   const [submitted, setSubmitted]       = useState(false)
 
-  const alignmentHint = useMemo(
-    () =>
-      contentBete.trim()
-        ? describeAlignment(alignVerses(contentBete, contentLiteral, contentFrench))
-        : null,
-    [contentBete, contentLiteral, contentFrench],
-  )
+  const alignmentHint = useMemo(() => {
+    if (!contentBete.trim()) return null
+    const hint = describeAlignment(alignVerses(contentBete, contentLiteral, contentFrench))
+    if (!hint || hint.ok) return hint
+    // Say where the fields stop lining up, using the same numbers as the gutters.
+    const gap = findFirstGap(contentBete, contentLiteral, contentFrench)
+    return gap ? { ...hint, message: `${hint.message} ${describeGap(gap)}` } : hint
+  }, [contentBete, contentLiteral, contentFrench])
 
   const videoId = videoUrl.trim() ? extractYouTubeId(videoUrl.trim()) : null
   const videoInvalid = videoUrl.trim() !== '' && videoId === null
@@ -112,24 +113,27 @@ export function ResourceSubmitForm() {
       </div>
 
       <div className="space-y-1.5">
-        <Textarea
+        <NumberedTextarea
+          aria-label="Texte en bhété"
           placeholder="Texte en bhété *"
           value={contentBete}
-          onChange={e => setContentBete(e.target.value)}
+          onChange={setContentBete}
           rows={6}
           className="font-mono"
         />
         <p className="text-xs text-muted-foreground">
           Pour un texte long (chanson, poème, conte) : une ligne par vers, une ligne vide entre les couplets,
-          et le même nombre de lignes dans chaque champ ci-dessous. La traduction s&apos;affichera alors
+          et le même nombre de lignes dans chaque champ ci-dessous. Les numéros à gauche comptent les vers :
+          le vers 3 du bhété doit correspondre au vers 3 de la traduction. Elle s&apos;affichera alors
           vers par vers, en face du texte.
         </p>
       </div>
       <div className="space-y-1.5">
-        <Textarea
+        <NumberedTextarea
+          aria-label="Mot à mot"
           placeholder="Mot à mot (optionnel) — ex: « Dieu frappe »"
           value={contentLiteral}
-          onChange={e => setContentLiteral(e.target.value)}
+          onChange={setContentLiteral}
           rows={3}
           className="italic"
         />
@@ -138,10 +142,11 @@ export function ResourceSubmitForm() {
           Gardez la traduction en français ci-dessous pour le sens naturel.
         </p>
       </div>
-      <Textarea
+      <NumberedTextarea
+        aria-label="Traduction en français"
         placeholder="Traduction en français — sens naturel (optionnel)"
         value={contentFrench}
-        onChange={e => setContentFrench(e.target.value)}
+        onChange={setContentFrench}
         rows={4}
       />
       {alignmentHint && (
