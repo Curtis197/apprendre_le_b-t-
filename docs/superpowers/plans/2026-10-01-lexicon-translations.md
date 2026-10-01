@@ -1149,7 +1149,7 @@ git commit -m "feat(lexicon): translation helpers, mutations and search client"
 
 Read `web/node_modules/next/dist/docs/` for `generateMetadata`/`params` before editing the page (this repo's Next differs from memory); the existing page already uses `params: Promise<...>` and `cache`, keep that shape.
 
-- [ ] **Step 1: Write `LexiconTranslations.tsx`**
+- [x] **Step 1: Write `LexiconTranslations.tsx`**
 
 ```tsx
 'use client'
@@ -1296,7 +1296,7 @@ export function LexiconTranslations({ lexiconId, translations }: Props) {
 ```
 Before saving, confirm the sign-in route: `grep -rn "href=\"/" web/components/AuthNav.tsx` and use the real login path instead of `/login` if it differs.
 
-- [ ] **Step 2: Write `LexiconDescription.tsx`**
+- [x] **Step 2: Write `LexiconDescription.tsx`**
 
 ```tsx
 'use client'
@@ -1369,7 +1369,7 @@ export function LexiconDescription({ lexiconId, initial }: { lexiconId: string; 
 }
 ```
 
-- [ ] **Step 3: Slim down `LexiconEntry.tsx`** (header card only: no votes, no `compact`, no candidate percentages, no translation text since the translations section shows it; placeholder-aware)
+- [x] **Step 3: Slim down `LexiconEntry.tsx`** (header card only: no votes, no `compact`, no candidate percentages, no translation text since the translations section shows it; placeholder-aware)
 
 ```tsx
 import Link from 'next/link'
@@ -1432,7 +1432,7 @@ export function LexiconEntry({ entry }: { entry: TLexiconEntry }) {
 }
 ```
 
-- [ ] **Step 4: Rewrite the detail page**: in `web/app/lexicon/[id]/page.tsx`
+- [x] **Step 4: Rewrite the detail page**: in `web/app/lexicon/[id]/page.tsx`
 
   - Query: `.select('*, lexicon_examples(*), lexicon_translations(*)')`; `type Entry = TLexiconEntry & { lexicon_examples: LexiconExample[]; lexicon_translations: LexiconTranslation[] }`; derive `const translations = sortTranslations(entry.lexicon_translations ?? [])`.
   - `french` for titles = `translations[0]?.french ?? entry.top_french`; `allFrench = translationsSummary(translations)` (falls back to `french`).
@@ -1441,7 +1441,7 @@ export function LexiconEntry({ entry }: { entry: TLexiconEntry }) {
   - Body: `<LexiconEntry entry={entry} />`, then `<LexiconDescription lexiconId={entry.id} initial={pickDescription(entry)} />`, then `<LexiconTranslations lexiconId={entry.id} translations={translations} />`, then the existing examples section. Imports: `sortTranslations, translationsSummary, pickDescription` from `@/lib/lexicon`.
   - Note: a legacy `notes` value shows as the initial description; saving writes `description`, after which it overrides `notes`.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 ```bash
 cd web && npx tsc --noEmit && npm run lint -- app/lexicon components/LexiconEntry.tsx components/LexiconTranslations.tsx components/LexiconDescription.tsx
@@ -1449,7 +1449,7 @@ npm run dev   # then in the browser, with the local stack: open /lexicon/<id> of
 ```
 Manual checks (signed out, then signed in): signed out sees translations/description and **no** add/edit controls (Review Focus 4); signed in adds a translation with context → appears after refresh, can edit/delete only own, duplicate shows "Cette traduction existe déjà pour ce mot."; editing the description persists; an untranslated word shows the "Traduire →" notice; view source shows updated `<title>`/meta. No vote buttons anywhere on the page.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add web/components/LexiconTranslations.tsx web/components/LexiconDescription.tsx web/components/LexiconEntry.tsx "web/app/lexicon/[id]/page.tsx"

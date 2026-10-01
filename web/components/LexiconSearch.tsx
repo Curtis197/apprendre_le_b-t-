@@ -44,7 +44,7 @@ export function LexiconSearch() {
       {isPending && <p className="text-sm text-muted-foreground">Recherche…</p>}
       <div className="grid gap-3">
         {results.map(entry => (
-          <LexiconEntry key={entry.id} entry={entry} compact />
+          <LexiconEntry key={entry.id} entry={entry} />
         ))}
         {query.trim() && !isPending && results.length === 0 && (
           <div className="text-sm text-muted-foreground space-y-2">
