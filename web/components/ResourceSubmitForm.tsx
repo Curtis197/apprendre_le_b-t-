@@ -1,9 +1,10 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { submitCommunityText } from '@/lib/community-mutations'
 import { extractYouTubeId } from '@/lib/utils'
+import { alignVerses, describeAlignment } from '@/lib/verses'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -34,6 +35,14 @@ export function ResourceSubmitForm() {
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState<string | null>(null)
   const [submitted, setSubmitted]       = useState(false)
+
+  const alignmentHint = useMemo(
+    () =>
+      contentBete.trim()
+        ? describeAlignment(alignVerses(contentBete, contentLiteral, contentFrench))
+        : null,
+    [contentBete, contentLiteral, contentFrench],
+  )
 
   const videoId = videoUrl.trim() ? extractYouTubeId(videoUrl.trim()) : null
   const videoInvalid = videoUrl.trim() !== '' && videoId === null
@@ -102,13 +111,20 @@ export function ResourceSubmitForm() {
         )}
       </div>
 
-      <Textarea
-        placeholder="Texte en bhété *"
-        value={contentBete}
-        onChange={e => setContentBete(e.target.value)}
-        rows={6}
-        className="font-mono"
-      />
+      <div className="space-y-1.5">
+        <Textarea
+          placeholder="Texte en bhété *"
+          value={contentBete}
+          onChange={e => setContentBete(e.target.value)}
+          rows={6}
+          className="font-mono"
+        />
+        <p className="text-xs text-muted-foreground">
+          Pour un texte long (chanson, poème, conte) : une ligne par vers, une ligne vide entre les couplets,
+          et le même nombre de lignes dans chaque champ ci-dessous. La traduction s&apos;affichera alors
+          vers par vers, en face du texte.
+        </p>
+      </div>
       <div className="space-y-1.5">
         <Textarea
           placeholder="Mot à mot (optionnel) — ex: « Dieu frappe »"
@@ -128,6 +144,14 @@ export function ResourceSubmitForm() {
         onChange={e => setContentFrench(e.target.value)}
         rows={4}
       />
+      {alignmentHint && (
+        <p
+          role="status"
+          className={`text-xs ${alignmentHint.ok ? 'text-emerald-600' : 'text-amber-700'}`}
+        >
+          {alignmentHint.message}
+        </p>
+      )}
       <div className="grid md:grid-cols-2 gap-4">
         <Input placeholder="Auteur / source (optionnel)" value={authorName} onChange={e => setAuthorName(e.target.value)} />
         <Input placeholder="Région (ex: Gagnoa, Daloa…)" value={region} onChange={e => setRegion(e.target.value)} />
