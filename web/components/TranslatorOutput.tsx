@@ -13,6 +13,12 @@ interface Props {
 export function TranslatorOutput({ result }: Props) {
   const [copied, setCopied] = useState(false)
 
+  // Older cached results stored the Bhété sentence as its own "literal"; never show that as a gloss.
+  const literal =
+    result.literal && result.literal.trim().toLowerCase() !== result.sentence.trim().toLowerCase()
+      ? result.literal
+      : null
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(result.sentence)
@@ -51,9 +57,9 @@ export function TranslatorOutput({ result }: Props) {
           )}
         </div>
 
-        {result.literal && (
+        {literal && (
           <p className="text-xs md:text-sm italic text-foreground/90 bg-card rounded-lg px-3 py-2 border border-border/60">
-            <strong className="not-italic font-semibold text-primary">Sens littéral :</strong> « {result.literal} »
+            <strong className="not-italic font-semibold text-primary">Sens littéral :</strong> « {literal} »
           </p>
         )}
 
