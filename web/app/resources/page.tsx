@@ -85,10 +85,20 @@ function ResourceCard({ text }: { text: CommunityText }) {
           <p className="font-mono text-sm text-primary leading-relaxed whitespace-pre-wrap line-clamp-6">
             {text.content_bete}
           </p>
-          {text.content_french && (
-            <p className={`text-sm text-muted-foreground italic leading-relaxed line-clamp-6 ${!hasVideo ? 'mt-3 pt-3 border-t border-border/50' : ''}`}>
-              {text.content_french}
-            </p>
+          {(text.content_literal || text.content_french) && (
+            <div className={`space-y-2 ${!hasVideo ? 'mt-3 pt-3 border-t border-border/50' : ''}`}>
+              {text.content_literal && (
+                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-6 whitespace-pre-wrap">
+                  <span className="font-semibold text-primary/80">Mot à mot : </span>
+                  <span className="italic">{text.content_literal}</span>
+                </p>
+              )}
+              {text.content_french && (
+                <p className="text-sm text-muted-foreground italic leading-relaxed line-clamp-6">
+                  {text.content_french}
+                </p>
+              )}
+            </div>
           )}
         </div>
 

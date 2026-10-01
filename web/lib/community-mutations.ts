@@ -97,6 +97,7 @@ export async function submitCommunityText(
       title:          input.title.trim(),
       type:           input.type,
       content_bete:   input.content_bete.trim(),
+      content_literal: input.content_literal?.trim() || null,
       content_french: input.content_french?.trim() || null,
       video_url:      input.video_url?.trim() || null,
       author_name:    displayName,
