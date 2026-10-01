@@ -5,6 +5,7 @@ import type {
   ForumThread,
   ForumPost,
   CommunityText,
+  ResourceComment,
   ForumCategory,
   ContentType,
 } from './types'
@@ -62,7 +63,6 @@ export async function getCommunityTexts(
   let q = client
     .from('community_texts')
     .select('*')
-    .eq('validated', true)
     .order('upvotes', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -73,10 +73,7 @@ export async function getCommunityTexts(
   return (data ?? []) as CommunityText[]
 }
 
-/**
- * One validated community text. RLS lets anyone read every row, so the validated
- * filter lives here: a pending submission must not be reachable by URL.
- */
+/** One community text (resources are published by their contributor, with no review step). */
 export async function getCommunityText(
   client: SupabaseClient,
   id: string,
@@ -85,7 +82,19 @@ export async function getCommunityText(
     .from('community_texts')
     .select('*')
     .eq('id', id)
-    .eq('validated', true)
     .maybeSingle()
   return (data ?? null) as CommunityText | null
+}
+
+/** Comments on a resource, oldest first so a discussion reads top to bottom. */
+export async function getResourceComments(
+  client: SupabaseClient,
+  resourceId: string,
+): Promise<ResourceComment[]> {
+  const { data } = await client
+    .from('resource_comments')
+    .select('*')
+    .eq('resource_id', resourceId)
+    .order('created_at', { ascending: true })
+  return (data ?? []) as ResourceComment[]
 }

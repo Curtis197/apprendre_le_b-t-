@@ -8,7 +8,6 @@ import { getCommunityTexts } from '@/lib/community'
 import { extractYouTubeId } from '@/lib/utils'
 import { RESOURCE_TYPES as TYPES, RESOURCE_TYPE_COLORS as TYPE_COLORS } from '@/lib/resources'
 import type { ContentType, CommunityText } from '@/lib/types'
-import { PendingResources } from '@/components/PendingResources'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -140,7 +139,7 @@ export default async function ResourcesPage({ searchParams }: Props) {
         <div className="bg-muted rounded-xl p-12 text-center">
           <activeType.icon className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground mb-4">
-            Aucune ressource validée pour l&apos;instant. Soyez le premier à contribuer !
+            Aucune ressource pour l&apos;instant. Soyez le premier à contribuer !
           </p>
           <Link
             href="/resources/new"
@@ -157,16 +156,6 @@ export default async function ResourcesPage({ searchParams }: Props) {
           ))}
         </div>
       )}
-
-      {/* Pending submissions queue */}
-      <div className="mt-10">
-        <PendingResources />
-      </div>
-
-      <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-800">
-        <strong>Note :</strong> Les ressources soumises sont visibles ici après validation par l&apos;équipe.
-        Vous pouvez soumettre vos textes et vidéos via le bouton &quot;Soumettre&quot; ci-dessus.
-      </div>
     </div>
   )
 }

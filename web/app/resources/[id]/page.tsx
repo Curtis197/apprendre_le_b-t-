@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { ChevronLeft, Layers, PlayCircle } from 'lucide-react'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase-server'
-import { getCommunityText } from '@/lib/community'
+import { getCommunityText, getResourceComments } from '@/lib/community'
 import { extractYouTubeId } from '@/lib/utils'
 import { SITE_URL } from '@/lib/site'
 import {
@@ -15,6 +15,8 @@ import {
 } from '@/lib/resources'
 import { VerseTranslation } from '@/components/VerseTranslation'
 import { JsonLd } from '@/components/JsonLd'
+import { ResourceComments } from '@/components/ResourceComments'
+import { ResourceOwnerActions } from '@/components/ResourceOwnerActions'
 
 // Cached so generateMetadata and the page share a single DB query per request.
 const getText = cache(async (id: string) => {
@@ -49,6 +51,14 @@ export default async function ResourceDetailPage({
   const { id } = await params
   const text = await getText(id)
   if (!text) notFound()
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const [comments, isAdmin] = await Promise.all([
+    getResourceComments(supabase, id),
+    user ? supabase.rpc('is_admin').then(r => r.data === true) : Promise.resolve(false),
+  ])
+  const isOwner = user !== null && text.created_by === user.id
 
   const typeInfo = RESOURCE_TYPES.find(t => t.value === text.type)
   const Icon = typeInfo?.icon ?? Layers
@@ -115,6 +125,9 @@ export default async function ResourceDetailPage({
         </div>
         <h1 className="font-heading text-3xl font-bold">{text.title}</h1>
         <p className="text-sm text-muted-foreground">{meta.join(' · ')}</p>
+        {(isOwner || isAdmin) && (
+          <ResourceOwnerActions id={id} canEdit={isOwner} canDelete={isOwner || isAdmin} />
+        )}
       </header>
 
       {videoId && (
@@ -133,6 +146,13 @@ export default async function ResourceDetailPage({
         original={text.content_bete}
         literal={text.content_literal}
         french={text.content_french}
+      />
+
+      <ResourceComments
+        resourceId={id}
+        comments={comments}
+        currentUserId={user?.id ?? null}
+        isAdmin={isAdmin}
       />
 
       <p className="text-sm text-muted-foreground">

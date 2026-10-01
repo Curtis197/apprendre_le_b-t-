@@ -35,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       supabase.from('lexicon').select('id, bete_word, bete_phonetic').limit(50000),
       supabase.from('forum_threads').select('id, created_at').limit(50000),
       supabase.from('courses').select('slug, updated_at').eq('status', 'published').limit(50000),
-      supabase.from('community_texts').select('id, created_at').eq('validated', true).limit(50000),
+      supabase.from('community_texts').select('id, created_at, updated_at').limit(50000),
     ])
 
     // Only list entries that actually have a translation (skip "_pending_" stubs).
@@ -63,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const resourceEntries: MetadataRoute.Sitemap = (resources.data ?? []).map((row) => ({
       url: `${SITE_URL}/resources/${row.id}`,
-      lastModified: row.created_at ? new Date(row.created_at as string) : now,
+      lastModified: row.updated_at ? new Date(row.updated_at as string) : now,
       changeFrequency: 'monthly',
       priority: 0.5,
     }))

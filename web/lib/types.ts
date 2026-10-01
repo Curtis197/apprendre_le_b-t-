@@ -93,6 +93,17 @@ export interface CommunityText {
   validated: boolean
   upvotes: number
   created_at: string
+  updated_at: string
+}
+
+export interface ResourceComment {
+  id: string
+  resource_id: string
+  user_id: string | null
+  author_name: string
+  body: string
+  created_at: string
+  updated_at: string
 }
 
 export interface CreateThreadInput {
