@@ -5,4 +5,4 @@
 alter table community_texts drop constraint if exists community_texts_region_check;
 alter table community_texts
   add constraint community_texts_region_check
-  check (region is null or region in ('Guibéroua', 'Gagnoa', 'Daloa', 'Autre'));
+  check (region is null or region in ('Guiberoua', 'Gagnoa', 'Daloa', 'Autre'));
