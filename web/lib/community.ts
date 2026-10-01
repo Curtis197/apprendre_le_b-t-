@@ -73,6 +73,10 @@ export async function getCommunityTexts(
   return (data ?? []) as CommunityText[]
 }
 
+/**
+ * One validated community text. RLS lets anyone read every row, so the validated
+ * filter lives here: a pending submission must not be reachable by URL.
+ */
 export async function getCommunityText(
   client: SupabaseClient,
   id: string,
@@ -81,6 +85,7 @@ export async function getCommunityText(
     .from('community_texts')
     .select('*')
     .eq('id', id)
-    .single()
+    .eq('validated', true)
+    .maybeSingle()
   return (data ?? null) as CommunityText | null
 }
