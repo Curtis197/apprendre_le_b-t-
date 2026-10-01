@@ -94,7 +94,12 @@ describe('createCourse', () => {
 })
 
 describe('saveLessonProgress and setLessonCompleted', () => {
-  function fakeProgressClient(user: { id: string } | null = { id: 'user-1' }) {
+  type ExistingProgress = { progress_percent: number; score: number | null; completed_at: string | null }
+
+  function fakeProgressClient(
+    user: { id: string } | null = { id: 'user-1' },
+    existing: ExistingProgress | null = null,
+  ) {
     const upserted: Record<string, unknown>[] = []
     const deleted: Record<string, unknown>[] = []
     const client = {
@@ -102,6 +107,11 @@ describe('saveLessonProgress and setLessonCompleted', () => {
       from: (table: string) => {
         if (table !== 'lesson_progress') throw new Error(`Unexpected table ${table}`)
         return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({ maybeSingle: async () => ({ data: existing, error: null }) }),
+            }),
+          }),
           upsert: async (row: Record<string, unknown>) => {
             upserted.push(row)
             return { error: null }
@@ -160,6 +170,28 @@ describe('saveLessonProgress and setLessonCompleted', () => {
     expect(res.error).toBeNull()
     expect(deleted).toHaveLength(1)
     expect(deleted[0]).toEqual({ user_id: 'user-1', lesson_id: 'l1' })
+  })
+
+  it('does not undo completion or lower the best score on a worse retry', async () => {
+    const completedAt = '2026-09-30T10:00:00.000Z'
+    const { client, upserted } = fakeProgressClient(
+      { id: 'user-1' },
+      { progress_percent: 100, score: 90, completed_at: completedAt },
+    )
+    const res = await saveLessonProgress(client, 'l1', { progressPercent: 60, score: 60 })
+    expect(res.error).toBeNull()
+    expect(res.data).toEqual({ progress_percent: 100, score: 90, completed: true })
+    expect(upserted[0]).toMatchObject({ progress_percent: 100, score: 90, completed_at: completedAt })
+  })
+
+  it('never lowers partial progress', async () => {
+    const { client, upserted } = fakeProgressClient(
+      { id: 'user-1' },
+      { progress_percent: 70, score: null, completed_at: null },
+    )
+    await saveLessonProgress(client, 'l1', { progressPercent: 20 })
+    expect(upserted[0]).toMatchObject({ progress_percent: 70, completed_at: null })
+    expect(upserted[0]).not.toHaveProperty('score')
   })
 
   it('refuses progress updates when signed out', async () => {

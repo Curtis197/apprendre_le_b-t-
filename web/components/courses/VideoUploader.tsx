@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import { Upload, Trash2, Video, RefreshCw, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
-import { createVideoUploadUrl, deleteMediaAsset } from '@/lib/courses/mutations'
+import { deleteMediaAsset } from '@/lib/courses/mutations'
 import type { MediaAsset, VideoQuota } from '@/lib/courses/video'
 import { formatVideoDuration } from '@/lib/courses/video'
 import { Button } from '@/components/ui/button'

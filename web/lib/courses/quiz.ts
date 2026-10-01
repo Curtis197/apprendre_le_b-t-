@@ -37,7 +37,8 @@ export interface QuizInput {
 export interface QuizCorrectionItem {
   question_id: string
   is_correct: boolean
-  correct_option_ids: string[]
+  /** Only present once the learner has passed; hidden on failed attempts so retries can't harvest the key. */
+  correct_option_ids?: string[]
   explanation: string
 }
 

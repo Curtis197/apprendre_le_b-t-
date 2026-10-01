@@ -76,15 +76,14 @@ export function PaidCheckoutModal({ courseId, courseTitle, priceCents, currency,
 
           <button
             type="button"
-            onClick={() => setRail('mobile_money')}
-            className={`w-full p-4 rounded-xl border text-left flex items-center gap-3 transition-colors ${
-              rail === 'mobile_money' ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border hover:bg-muted'
-            }`}
+            disabled
+            aria-disabled="true"
+            className="w-full p-4 rounded-xl border border-border text-left flex items-center gap-3 opacity-60 cursor-not-allowed"
           >
             <Smartphone className="w-5 h-5 text-emerald-500 shrink-0" />
             <div>
               <p className="text-sm font-semibold">Mobile Money (Orange, MTN, Wave, Moov)</p>
-              <p className="text-xs text-muted-foreground">Paiement local Côte d’Ivoire & Afrique de l’Ouest</p>
+              <p className="text-xs text-muted-foreground">Bientôt disponible — paiement local Côte d’Ivoire & Afrique de l’Ouest</p>
             </div>
           </button>
         </div>

@@ -28,3 +28,13 @@ export function formatSubmissionStatusLabel(status: 'submitted' | 'reviewed'): s
   if (status === 'reviewed') return 'Évalué'
   return 'En attente de correction'
 }
+
+/** Teacher-controlled text goes into email HTML: escape it so it cannot inject markup or links. */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}

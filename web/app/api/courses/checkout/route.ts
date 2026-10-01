@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase-server'
+import { createServiceClient } from '@/lib/supabase-service'
 import { createPendingCourseOrder } from '@/lib/courses/mutations'
 import type { PaymentRail } from '@/lib/courses/payment'
 
@@ -23,6 +24,21 @@ export async function POST(request: Request) {
 
   if (!courseId || !paymentRail) {
     return NextResponse.json({ error: 'Paramètres manquants.' }, { status: 400 })
+  }
+
+  // Mobile money has no gateway integration yet: never create an order that can't be paid.
+  if (paymentRail !== 'stripe') {
+    return NextResponse.json({ error: 'Le paiement Mobile Money sera bientôt disponible.' }, { status: 501 })
+  }
+
+  const { data: alreadyEnrolled } = await supabase
+    .from('enrollments')
+    .select('course_id')
+    .eq('user_id', user.id)
+    .eq('course_id', courseId)
+    .maybeSingle()
+  if (alreadyEnrolled) {
+    return NextResponse.json({ error: 'Vous êtes déjà inscrit à ce cours.' }, { status: 409 })
   }
 
   const orderRes = await createPendingCourseOrder(supabase, courseId, paymentRail)
@@ -69,14 +85,13 @@ export async function POST(request: Request) {
     })
 
     // Update order gateway_ref with Stripe session ID
-    await supabase.from('course_orders').update({ gateway_ref: session.id }).eq('id', order.id)
+    // Users have no UPDATE policy on course_orders, so this uses the service role.
+    const { error: refError } = await createServiceClient()
+      .from('course_orders')
+      .update({ gateway_ref: session.id, updated_at: new Date().toISOString() })
+      .eq('id', order.id)
+    if (refError) console.error('[checkout] could not store gateway_ref:', refError)
 
     return NextResponse.json({ url: session.url })
   }
-
-  // Mobile Money rail return (redirects to Mobile Money payment page/confirmation)
-  const { data: course } = await supabase.from('courses').select('slug').eq('id', courseId).single()
-  return NextResponse.json({
-    url: `/courses/${course?.slug || ''}?payment=pending_mobile_money&orderId=${order.id}`,
-  })
 }

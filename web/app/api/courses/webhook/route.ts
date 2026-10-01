@@ -19,8 +19,15 @@ export async function POST(request: Request) {
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey)
 
+  if (!stripeKey || !webhookSecret) {
+    return NextResponse.json({ error: 'Stripe n’est pas configuré sur le serveur.' }, { status: 500 })
+  }
+  if (!sig) {
+    return NextResponse.json({ error: 'Signature Stripe manquante.' }, { status: 400 })
+  }
+
   // Handle Stripe Webhooks
-  if (stripeKey && webhookSecret && sig) {
+  {
     const stripe = new Stripe(stripeKey)
     let event: Stripe.Event
 
@@ -37,24 +44,31 @@ export async function POST(request: Request) {
       const courseId = session.metadata?.course_id
       const userId = session.metadata?.user_id || session.client_reference_id
 
-      if (courseId && userId) {
-        // 1. Update order status to completed
+      // Only fulfil paid sessions; an unpaid/async session must not unlock the course.
+      if (courseId && userId && session.payment_status === 'paid') {
+        // Enroll first: if anything fails we return 500 and Stripe retries the delivery.
+        // Both writes are idempotent, so a retry after a partial success is harmless.
+        const { error: enrollError } = await adminClient.from('enrollments').upsert(
+          { user_id: userId, course_id: courseId },
+          { onConflict: 'user_id,course_id' },
+        )
+        if (enrollError) {
+          console.error('[course webhook] enrollment failed:', enrollError)
+          return NextResponse.json({ error: 'Inscription impossible.' }, { status: 500 })
+        }
+
         if (orderId) {
-          await adminClient
+          const { error: orderError } = await adminClient
             .from('course_orders')
             .update({ status: 'completed', updated_at: new Date().toISOString() })
             .eq('id', orderId)
+            .eq('user_id', userId)
+            .eq('course_id', courseId)
+          if (orderError) {
+            console.error('[course webhook] order update failed:', orderError)
+            return NextResponse.json({ error: 'Mise à jour de la commande impossible.' }, { status: 500 })
+          }
         }
-
-        // 2. Insert enrollment (converges on exact same enrollments table from Phase 1)
-        await adminClient.from('enrollments').upsert(
-          {
-            user_id: userId,
-            course_id: courseId,
-            created_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,course_id' },
-        )
       }
     }
   }

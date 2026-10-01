@@ -9,6 +9,7 @@ import type { QuizAnswerKey, QuizOption, QuizQuestion } from './quiz'
 import type { Course, CourseLevel, Lesson, OutlineSection, Section } from './types'
 import type { MediaAsset, VideoQuota } from './video'
 import { generateMuxPlaybackToken } from './video'
+import { createServiceClient } from '../supabase-service'
 import type { Submission, PendingReviewItem } from './assignment'
 import type { CourseOrder } from './payment'
 
@@ -301,18 +302,20 @@ export async function getMediaAssetForLesson(client: SupabaseClient, lessonId: s
   // Self-healing fallback: If asset is in 'uploading' or 'processing' state, sync directly with Mux API
   if ((asset.status === 'uploading' || asset.status === 'processing') && asset.mux_upload_id) {
     console.log('[VideoView] 🔄 Asset is in status', asset.status, '— syncing with Mux API...')
-    asset = await syncMediaAssetWithMux(client, asset)
+    asset = await syncMediaAssetWithMux(asset)
   }
 
   return asset
 }
 
-async function syncMediaAssetWithMux(client: SupabaseClient, asset: MediaAsset): Promise<MediaAsset> {
+async function syncMediaAssetWithMux(asset: MediaAsset): Promise<MediaAsset> {
   const muxTokenId = process.env.MUX_TOKEN_ID
   const muxTokenSecret = process.env.MUX_TOKEN_SECRET || process.env.MUX_SECRET_ID
   if (!muxTokenId || !muxTokenSecret || !asset.mux_upload_id) return asset
 
   try {
+    // Asset state is server-managed: RLS gives clients no UPDATE on media_assets.
+    const service = createServiceClient()
     const authHeader = `Basic ${Buffer.from(`${muxTokenId}:${muxTokenSecret}`).toString('base64')}`
 
     // 1. If asset_id is not known yet, query upload status from Mux
@@ -347,7 +350,7 @@ async function syncMediaAssetWithMux(client: SupabaseClient, asset: MediaAsset):
       const duration = Math.round(Number(muxData.duration ?? 0))
 
       if (primaryPlayback?.id) {
-        const { data: updated } = await client
+        const { data: updated } = await service
           .from('media_assets')
           .update({
             mux_asset_id: muxAssetId,
@@ -366,7 +369,7 @@ async function syncMediaAssetWithMux(client: SupabaseClient, asset: MediaAsset):
         }
       }
     } else if (muxData.status === 'errored') {
-      const { data: updated } = await client
+      const { data: updated } = await service
         .from('media_assets')
         .update({
           mux_asset_id: muxAssetId,
@@ -380,7 +383,7 @@ async function syncMediaAssetWithMux(client: SupabaseClient, asset: MediaAsset):
 
       if (updated) return updated as MediaAsset
     } else if (muxAssetId !== asset.mux_asset_id) {
-      await client
+      await service
         .from('media_assets')
         .update({
           mux_asset_id: muxAssetId,
