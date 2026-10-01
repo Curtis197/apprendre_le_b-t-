@@ -2,6 +2,7 @@
 // All functions require an authenticated user (checked internally).
 // Pass a SupabaseClient created with createClient() from supabase-browser.
 import { SupabaseClient } from '@supabase/supabase-js'
+import { isResourceRegion } from './regions'
 import type {
   CreateThreadInput,
   CreatePostInput,
@@ -86,6 +87,11 @@ export async function submitCommunityText(
   const user = await getAuthUser(client)
   if (!user) return { data: null, error: 'Connectez-vous pour contribuer.' }
 
+  const region = input.region?.trim() || null
+  if (region !== null && !isResourceRegion(region)) {
+    return { data: null, error: 'Région invalide : choisissez une région dans la liste.' }
+  }
+
   const displayName = input.author_name?.trim()
     || user.user_metadata?.full_name
     || user.email?.split('@')[0]
@@ -101,7 +107,7 @@ export async function submitCommunityText(
       content_french: input.content_french?.trim() || null,
       video_url:      input.video_url?.trim() || null,
       author_name:    displayName,
-      region:         input.region?.trim() || null,
+      region,
       created_by:     user.id,
     })
     .select('id')

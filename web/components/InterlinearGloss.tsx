@@ -128,7 +128,7 @@ export function InterlinearGloss({
         <div className="rounded-lg bg-muted/40 border border-border/70 p-3.5 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-              2. Mot à mot (Structure de la pensée)
+              2. Mot à mot
             </span>
           </div>
 
@@ -162,7 +162,7 @@ export function InterlinearGloss({
       {final && (
         <div className="space-y-1 pt-1">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-secondary">
-            3. Traduction finale (Sens naturel)
+            3. Traduction finale
           </span>
           <p
             className={cn(

@@ -48,7 +48,7 @@ export function TranslatorOutput({ result }: Props) {
       <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-            2. Mot à mot (Structure de la pensée)
+            2. Mot à mot
           </span>
           {result.tokens.length > 0 && (
             <span className="text-xs text-muted-foreground">

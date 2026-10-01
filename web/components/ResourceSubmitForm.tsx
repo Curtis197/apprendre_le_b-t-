@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { submitCommunityText } from '@/lib/community-mutations'
 import { extractYouTubeId } from '@/lib/utils'
 import { alignVerses, describeAlignment, describeGap, findFirstGap } from '@/lib/verses'
+import { RESOURCE_REGIONS } from '@/lib/regions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberedTextarea } from '@/components/NumberedTextarea'
@@ -131,7 +132,7 @@ export function ResourceSubmitForm() {
       <div className="space-y-1.5">
         <NumberedTextarea
           aria-label="Mot à mot"
-          placeholder="Mot à mot (optionnel) — ex: « Dieu frappe »"
+          placeholder="Mot à mot (optionnel)"
           value={contentLiteral}
           onChange={setContentLiteral}
           rows={3}
@@ -139,12 +140,11 @@ export function ResourceSubmitForm() {
         />
         <p className="text-xs text-muted-foreground">
           La traduction littérale, mot par mot, qui montre la structure du bhété.
-          Gardez la traduction en français ci-dessous pour le sens naturel.
         </p>
       </div>
       <NumberedTextarea
         aria-label="Traduction en français"
-        placeholder="Traduction en français — sens naturel (optionnel)"
+        placeholder="Traduction en français (optionnel)"
         value={contentFrench}
         onChange={setContentFrench}
         rows={4}
@@ -159,7 +159,15 @@ export function ResourceSubmitForm() {
       )}
       <div className="grid md:grid-cols-2 gap-4">
         <Input placeholder="Auteur / source (optionnel)" value={authorName} onChange={e => setAuthorName(e.target.value)} />
-        <Input placeholder="Région (ex: Gagnoa, Daloa…)" value={region} onChange={e => setRegion(e.target.value)} />
+        <select
+          aria-label="Région"
+          value={region}
+          onChange={e => setRegion(e.target.value)}
+          className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+        >
+          <option value="">Région (optionnel)</option>
+          {RESOURCE_REGIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button
