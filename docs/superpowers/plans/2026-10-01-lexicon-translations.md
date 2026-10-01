@@ -770,7 +770,7 @@ git commit -m "feat(lexicon): accent-insensitive search over Bété forms and Fr
 - Produces (`lib/lexicon-mutations.ts`): `addTranslation(client, lexiconId, input)`, `updateTranslation(client, id, input)`, `deleteTranslation(client, id)`, `updateDescription(client, lexiconId, text)`, all `Promise<{data; error: string | null}>`; `isDuplicateTranslation(error)`, `DUPLICATE_TRANSLATION_MESSAGE`.
 - Produces (`lib/lexicon-search.ts`): `searchLexicon(client, { q, dialect?, pos?, limit?, offset? }): Promise<{ rows: LexiconSearchRow[]; total: number; error: string | null }>`; type `LexiconSearchRow`.
 
-- [ ] **Step 1: Write the failing unit tests**
+- [x] **Step 1: Write the failing unit tests**
 
 ```ts
 // web/__tests__/lexicon.test.ts
@@ -895,12 +895,12 @@ describe('searchLexicon', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `cd web && npx vitest run __tests__/lexicon.test.ts __tests__/lexicon-search.test.ts`
 Expected: FAIL (imports not found).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append to `web/lib/lexicon.ts` (keep `cleanBeteForm`):
 
@@ -1122,12 +1122,12 @@ export async function searchLexicon(
 }
 ```
 
-- [ ] **Step 4: Run tests and typecheck**
+- [x] **Step 4: Run tests and typecheck**
 
 Run: `cd web && npx vitest run __tests__/lexicon.test.ts __tests__/lexicon-search.test.ts && npx tsc --noEmit`
 Expected: tests PASS. `tsc` may now report errors where a `LexiconEntry` literal lacks `description`; fix by adding `description: null` (only test fixtures/mocks should be affected; list any you touched).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add web/lib/lexicon.ts web/lib/lexicon-mutations.ts web/lib/lexicon-search.ts web/__tests__/lexicon.test.ts web/__tests__/lexicon-search.test.ts
