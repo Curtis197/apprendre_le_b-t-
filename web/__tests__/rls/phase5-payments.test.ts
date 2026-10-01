@@ -22,9 +22,11 @@ describe('phase 5 paid courses & orders RLS', () => {
     // Set course as paid
     await admin.from('courses').update({ access: 'paid', price_cents: 2900, currency: 'eur' }).eq('id', seed.course.id)
 
-    // Create a pending order as learner
+    // Seed a pending order with the service role: users may only insert orders for an
+    // already-approved course at the exact price, and never with a gateway_ref (see
+    // course-review-hardening.test.ts for those rules).
     const order = must(
-      await learner.client.from('course_orders').insert({
+      await admin.from('course_orders').insert({
         user_id: learner.id,
         course_id: seed.course.id,
         amount_cents: 2900,

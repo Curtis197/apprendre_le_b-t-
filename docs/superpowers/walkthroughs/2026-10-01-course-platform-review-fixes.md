@@ -49,10 +49,11 @@ This corrects several claims made in the earlier walkthroughs; the corrections a
 
 ## 2. Verification
 
-- `npx tsc --noEmit`: see the run notes in the pull request.
-- `npx vitest run`: new unit tests for monotonic progress, `escapeHtml` and the gloss parser edge cases.
+- `npx tsc --noEmit`: 0 errors.
+- `npx vitest run`: 14 files, 110 tests pass (105 before; new tests for monotonic progress, `escapeHtml` and the gloss parser edge cases).
 - `npx eslint` on all course-platform and touched files: 0 errors, 0 warnings. Pre-existing errors elsewhere (`app/lexicon/page.tsx`, `app/auth/page.tsx`, `MobileSidebar`, `DonateForm`, `HeaderSearch`, `LexiconSearch`) are outside this change.
-- **RLS tests:** `web/__tests__/rls/course-review-hardening.test.ts` was written but **not run**, because Docker Desktop could not start on the development machine. Run `npm run test:rls` against the local stack before applying the migration to production.
+- `npm run test:rls` against the local Supabase stack with all four `20260930*` migrations applied: 8 files, **74 tests pass** (60 before; 14 new in `course-review-hardening.test.ts`).
+  - The phase 3 and phase 5 suites needed fixture changes, because their setup exercised the holes this change closes: a teacher inserting a `ready` asset and rewriting its duration, and a learner inserting an order with a `gateway_ref` on an unapproved course. Those rows are now seeded with the service role, and the owner-update test asserts the new behaviour (the owner cannot change duration or status).
 
 ---
 

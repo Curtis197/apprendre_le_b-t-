@@ -37,10 +37,10 @@ describe('phase 3 video assets & quotas RLS', () => {
     )
     videoLessonId = lesson.id
 
-    // Insert a media asset as teacher
+    // Asset state (ready, playback id, duration) is server-managed: seed it with the service role.
     const nonce = `${Date.now()}_${Math.floor(Math.random() * 10000)}`
     const asset = must(
-      await teacher.client.from('media_assets').insert({
+      await admin.from('media_assets').insert({
         owner_id: teacher.id,
         lesson_id: videoLessonId,
         mux_upload_id: `upload_test_${nonce}`,
@@ -75,13 +75,18 @@ describe('phase 3 video assets & quotas RLS', () => {
       expect(data).toEqual([])
     })
 
-    it('allows course owner to update media asset status', async () => {
-      const res = await teacher.client
+    it('does not let the course owner rewrite media asset duration or status', async () => {
+      await teacher.client
         .from('media_assets')
-        .update({ duration_seconds: 180 })
+        .update({ duration_seconds: 0, status: 'errored' })
         .eq('id', mediaAssetId)
 
-      expect(res.error).toBeNull()
+      const { data } = await admin
+        .from('media_assets')
+        .select('duration_seconds, status')
+        .eq('id', mediaAssetId)
+        .single()
+      expect(data).toMatchObject({ duration_seconds: 120, status: 'ready' })
     })
   })
 
@@ -90,7 +95,7 @@ describe('phase 3 video assets & quotas RLS', () => {
       const { data, error } = await teacher.client.rpc('get_user_video_quota', { p_user_id: teacher.id })
       expect(error).toBeNull()
       expect(data?.[0].max_minutes).toBe(30)
-      expect(data?.[0].used_seconds).toBe(180)
+      expect(data?.[0].used_seconds).toBe(120)
     })
 
     it('allows admin to increase a teacher video quota', async () => {
