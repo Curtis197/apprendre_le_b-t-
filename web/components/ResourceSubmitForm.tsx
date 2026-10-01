@@ -2,14 +2,14 @@
 import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
-import { submitCommunityText } from '@/lib/community-mutations'
+import { submitCommunityText, updateCommunityText } from '@/lib/community-mutations'
 import { extractYouTubeId } from '@/lib/utils'
 import { alignVerses, describeAlignment, describeGap, findFirstGap } from '@/lib/verses'
 import { RESOURCE_REGIONS } from '@/lib/regions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberedTextarea } from '@/components/NumberedTextarea'
-import type { ContentType } from '@/lib/types'
+import type { CommunityText, ContentType } from '@/lib/types'
 
 const TYPES: { value: ContentType; label: string }[] = [
   { value: 'song',    label: 'Chanson' },
@@ -22,20 +22,20 @@ const TYPES: { value: ContentType; label: string }[] = [
   { value: 'other',   label: 'Autre' },
 ]
 
-export function ResourceSubmitForm() {
+/** Publishes a new resource, or edits `resource` when given (its contributor only). */
+export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
   const router = useRouter()
   const supabaseRef = useRef(createClient())
-  const [title, setTitle]               = useState('')
-  const [type, setType]                 = useState<ContentType>('proverb')
-  const [contentBete, setContentBete]   = useState('')
-  const [contentLiteral, setContentLiteral] = useState('')
-  const [contentFrench, setContentFrench] = useState('')
-  const [videoUrl, setVideoUrl]         = useState('')
-  const [authorName, setAuthorName]     = useState('')
-  const [region, setRegion]             = useState('')
+  const [title, setTitle]               = useState(resource?.title ?? '')
+  const [type, setType]                 = useState<ContentType>(resource?.type ?? 'proverb')
+  const [contentBete, setContentBete]   = useState(resource?.content_bete ?? '')
+  const [contentLiteral, setContentLiteral] = useState(resource?.content_literal ?? '')
+  const [contentFrench, setContentFrench] = useState(resource?.content_french ?? '')
+  const [videoUrl, setVideoUrl]         = useState(resource?.video_url ?? '')
+  const [authorName, setAuthorName]     = useState(resource?.author_name ?? '')
+  const [region, setRegion]             = useState(resource?.region ?? '')
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState<string | null>(null)
-  const [submitted, setSubmitted]       = useState(false)
 
   const alignmentHint = useMemo(() => {
     if (!contentBete.trim()) return null
@@ -54,35 +54,22 @@ export function ResourceSubmitForm() {
     if (videoInvalid) { setError('URL YouTube invalide.'); return }
     setLoading(true)
     setError(null)
-    const { error: err } = await submitCommunityText(supabaseRef.current, {
+    const input = {
       title, type, content_bete: contentBete,
       content_literal: contentLiteral || undefined,
       content_french: contentFrench || undefined,
       video_url: videoUrl.trim() || undefined,
       author_name: authorName || undefined,
       region: region || undefined,
-    })
+    }
+    const { data, error: err } = resource
+      ? await updateCommunityText(supabaseRef.current, resource.id, input)
+      : await submitCommunityText(supabaseRef.current, input)
     setLoading(false)
-    if (err) { setError(err); return }
-    setSubmitted(true)
+    if (err || !data) { setError(err ?? 'Une erreur est survenue.'); return }
+    router.push(`/resources/${data.id}`)
+    router.refresh()
   }
-
-  if (submitted) return (
-    <div className="text-center space-y-3 py-8">
-      <p className="text-2xl">✓</p>
-      <p className="font-semibold">Ressource soumise avec succès !</p>
-      <p className="text-sm text-muted-foreground">Elle sera visible après validation par la communauté.</p>
-      <div className="flex gap-3 justify-center pt-2">
-        <Button
-          variant="outline"
-          onClick={() => { setSubmitted(false); setTitle(''); setContentBete(''); setContentLiteral(''); setContentFrench(''); setVideoUrl('') }}
-        >
-          Soumettre une autre
-        </Button>
-        <Button onClick={() => router.push('/resources')}>Voir les ressources</Button>
-      </div>
-    </div>
-  )
 
   return (
     <div className="space-y-4">
@@ -175,7 +162,7 @@ export function ResourceSubmitForm() {
         disabled={loading || !title.trim() || !contentBete.trim() || videoInvalid}
         className="w-full"
       >
-        {loading ? 'Envoi…' : 'Soumettre la ressource'}
+        {loading ? 'Envoi…' : resource ? 'Enregistrer' : 'Publier la ressource'}
       </Button>
     </div>
   )
