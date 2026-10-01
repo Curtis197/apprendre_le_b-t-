@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { alignVerses, countVerses, describeAlignment, splitSentences, splitStanzas } from '../lib/verses'
+import {
+  alignVerses,
+  countVerses,
+  describeAlignment,
+  describeGap,
+  findFirstGap,
+  numberLines,
+  splitSentences,
+  splitStanzas,
+} from '../lib/verses'
 
 describe('splitStanzas', () => {
   it('splits on blank lines, trims lines and drops empty ones', () => {
@@ -79,7 +88,7 @@ describe('alignVerses', () => {
 
   it('reports line counts when the fields do not line up', () => {
     const r = alignVerses('b1\nb2\nb3', 'l1\nl2', 'f1\n\nf2\n\nf3')
-    expect(r).toEqual({ kind: 'misaligned', counts: { original: 3, literal: 2, french: 3 } })
+    expect(r).toEqual({ kind: 'misaligned', unit: 'line', counts: { original: 3, literal: 2, french: 3 } })
   })
 
   it('aligns a paragraph sentence by sentence', () => {
@@ -102,7 +111,7 @@ describe('alignVerses', () => {
 
   it('does not align a paragraph whose sentence counts differ', () => {
     const r = alignVerses('Awa ɛ wa. Kouassi ɛ wa.', null, 'Awa et Kouassi sont arrivés.')
-    expect(r.kind).toBe('misaligned')
+    expect(r).toEqual({ kind: 'misaligned', unit: 'sentence', counts: { original: 2, literal: null, french: 1 } })
   })
 
   it('does not treat a single sentence as a paragraph to split', () => {
@@ -149,10 +158,75 @@ describe('describeAlignment', () => {
     expect(hint?.message).toContain('français : 3')
   })
 
+  it('counts sentences, not lines, when a one-paragraph text does not line up', () => {
+    const hint = describeAlignment(alignVerses('Awa ɛ wa. Kouassi ɛ wa.', null, 'Awa et Kouassi sont arrivés.'))
+    expect(hint?.ok).toBe(false)
+    expect(hint?.message).toContain('Nombre de phrases différent')
+    expect(hint?.message).toContain('bhété : 2')
+    expect(hint?.message).toContain('français : 1')
+    expect(hint?.message).not.toContain('lignes')
+  })
+
   it('explains the couplet-by-couplet fallback', () => {
     const hint = describeAlignment(alignVerses('b1\nb2\n\nb3', null, 'f1\n\nf2\nf3'))
     expect(hint?.ok).toBe(false)
     expect(hint?.message).toContain('2 couplets')
     expect(hint?.message).toContain('bhété : 3')
+  })
+})
+
+describe('numberLines', () => {
+  it('numbers non-empty lines and leaves blank lines (stanza breaks) unnumbered', () => {
+    expect(numberLines('a\nb\n\nc\n')).toEqual([1, 2, null, 3, null])
+  })
+
+  it('treats whitespace-only lines as blank and handles Windows line endings', () => {
+    expect(numberLines('a\r\n   \r\nb')).toEqual([1, null, 2])
+  })
+
+  it('gives an empty field a single unnumbered row', () => {
+    expect(numberLines('')).toEqual([null])
+  })
+
+  it('numbers match what alignVerses counts', () => {
+    const text = 'x\ny\n\nz'
+    const numbered = numberLines(text).filter(n => n !== null)
+    const aligned = alignVerses(text, null, 'p\nq\n\nr')
+    expect(aligned.kind).toBe('verses')
+    if (aligned.kind === 'verses') expect(countVerses(aligned)).toBe(numbered.length)
+  })
+})
+
+describe('findFirstGap', () => {
+  it('returns null when fields line up or only one field is filled', () => {
+    expect(findFirstGap('a\nb', null, 'x\ny')).toBeNull()
+    expect(findFirstGap('a\nb', null, null)).toBeNull()
+  })
+
+  it('points at the first verse one field lacks, numbered like the gutter', () => {
+    // bhété has 3 lines, français 2: verse 3 is missing in français
+    expect(findFirstGap('a\nb\nc', null, 'x\ny')).toEqual({
+      verse: 3,
+      stanza: 1,
+      present: ['bhété'],
+      missing: ['français'],
+    })
+  })
+
+  it('counts verses across stanzas and reports the stanza of the gap', () => {
+    // stanza 1 has 2 verses in both; stanza 2: bhété has 2, français has 1 → gap at verse 4
+    const gap = findFirstGap('a\nb\n\nc\nd', null, 'x\ny\n\nz')
+    expect(gap).toEqual({ verse: 4, stanza: 2, present: ['bhété'], missing: ['français'] })
+  })
+
+  it('reports a whole missing stanza', () => {
+    const gap = findFirstGap('a\n\nb', 'x\n\ny', 'p')
+    expect(gap).toMatchObject({ verse: 2, stanza: 2, present: ['bhété', 'mot à mot'], missing: ['français'] })
+  })
+
+  it('names every field involved in plain language', () => {
+    expect(describeGap({ verse: 4, stanza: 2, present: ['bhété'], missing: ['français', 'mot à mot'] })).toBe(
+      'Premier écart : vers 4 (couplet 2), présent en bhété, absent en français et mot à mot.',
+    )
   })
 })

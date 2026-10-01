@@ -27,7 +27,7 @@ export type VerseAlignment =
   /** Same number of stanzas but lines differ inside them: keep each stanza's texts together. */
   | { kind: 'stanzas'; stanzas: Verse[]; counts: LineCounts }
   /** Fields don't line up: fall back to the plain card. `counts` helps the contributor fix it. */
-  | { kind: 'misaligned'; counts: LineCounts }
+  | { kind: 'misaligned'; counts: LineCounts; unit: 'line' | 'sentence' }
 
 /** Stanzas separated by blank lines; each stanza is its trimmed, non-empty lines. */
 export function splitStanzas(text: string): string[][] {
@@ -82,7 +82,17 @@ export function alignVerses(
     const lSentences = l ? splitSentences(l.flat().join(' ')) : null
     const fSentences = f ? splitSentences(f.flat().join(' ')) : null
     const aligned = [lSentences, fSentences].every(s => s === null || s.length === oSentences.length)
-    if (!aligned) return { kind: 'misaligned', counts }
+    if (!aligned) {
+      return {
+        kind: 'misaligned',
+        unit: 'sentence',
+        counts: {
+          original: oSentences.length,
+          literal: lSentences ? lSentences.length : null,
+          french: fSentences ? fSentences.length : null,
+        },
+      }
+    }
 
     return {
       kind: 'verses',
@@ -120,7 +130,7 @@ export function alignVerses(
     }
   }
 
-  return { kind: 'misaligned', counts }
+  return { kind: 'misaligned', counts, unit: 'line' }
 }
 
 /** Total verses in a 'verses' alignment, for "✓ 8 vers alignés". */
@@ -154,8 +164,11 @@ export function describeAlignment(alignment: VerseAlignment): { ok: boolean; mes
       return {
         ok: false,
         message:
-          `Nombre de lignes différent (${formatCounts(alignment.counts)}). Pour un affichage vers par vers, ` +
-          'gardez le même nombre de lignes dans chaque champ ; une ligne vide sépare les couplets.',
+          alignment.unit === 'sentence'
+            ? `Nombre de phrases différent (${formatCounts(alignment.counts)}). Pour un affichage phrase par phrase, ` +
+              'gardez le même nombre de phrases dans chaque champ, ou mettez une phrase par ligne.'
+            : `Nombre de lignes différent (${formatCounts(alignment.counts)}). Pour un affichage vers par vers, ` +
+              'gardez le même nombre de lignes dans chaque champ ; une ligne vide sépare les couplets.',
       }
   }
 }
@@ -168,4 +181,68 @@ function formatCounts({ original, literal, french }: LineCounts): string {
   ]
     .filter(Boolean)
     .join(', ')
+}
+
+/**
+ * Verse numbers for a textarea, one entry per physical line: non-empty lines count 1, 2, 3…
+ * and blank lines (stanza breaks) get null. Mirrors how alignVerses counts, so "line 7" in
+ * the Bhété field is the same verse as "line 7" in the French field.
+ */
+export function numberLines(text: string): (number | null)[] {
+  let n = 0
+  return text
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map(line => (line.trim() ? ++n : null))
+}
+
+export interface VerseGap {
+  /** Verse number (as shown in the gutter) of the first line one field has and another lacks. */
+  verse: number
+  /** 1-based stanza that contains the gap. */
+  stanza: number
+  present: string[]
+  missing: string[]
+}
+
+/**
+ * First place where the fields stop lining up, so a contributor knows where to look.
+ * Compared stanza by stanza; `verse` is numbered like the gutter (blank lines not counted).
+ */
+export function findFirstGap(
+  original: string,
+  literal?: string | null,
+  french?: string | null,
+): VerseGap | null {
+  const fields: { name: string; stanzas: string[][] }[] = [{ name: 'bhété', stanzas: splitStanzas(original) }]
+  if (literal?.trim()) fields.push({ name: 'mot à mot', stanzas: splitStanzas(literal) })
+  if (french?.trim()) fields.push({ name: 'français', stanzas: splitStanzas(french) })
+  if (fields.length < 2) return null
+
+  const stanzaCount = Math.max(...fields.map(f => f.stanzas.length))
+  let before = 0 // verses in earlier stanzas (identical across fields up to here)
+
+  for (let i = 0; i < stanzaCount; i++) {
+    const lengths = fields.map(f => f.stanzas[i]?.length ?? 0)
+    const min = Math.min(...lengths)
+    const max = Math.max(...lengths)
+    if (min !== max) {
+      return {
+        verse: before + min + 1,
+        stanza: i + 1,
+        present: fields.filter((_, k) => lengths[k] > min).map(f => f.name),
+        missing: fields.filter((_, k) => lengths[k] === min).map(f => f.name),
+      }
+    }
+    before += max
+  }
+  return null
+}
+
+/** One sentence pointing at the first gap, e.g. "Premier écart : vers 4 (couplet 2), présent en bhété, absent en français." */
+export function describeGap(gap: VerseGap): string {
+  return (
+    `Premier écart : vers ${gap.verse} (couplet ${gap.stanza}), ` +
+    `présent en ${gap.present.join(' et ')}, absent en ${gap.missing.join(' et ')}.`
+  )
 }
