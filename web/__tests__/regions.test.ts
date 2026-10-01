@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { RESOURCE_REGIONS, isResourceRegion } from '../lib/regions'
+import { DIALECTS } from '../lib/dialect'
 import { submitCommunityText } from '../lib/community-mutations'
 
 describe('isResourceRegion', () => {
@@ -9,6 +10,16 @@ describe('isResourceRegion', () => {
     expect(isResourceRegion('Issia')).toBe(false)
     expect(isResourceRegion('gagnoa')).toBe(false) // exact match: the database check is case-sensitive too
     expect(isResourceRegion('')).toBe(false)
+  })
+})
+
+describe('RESOURCE_REGIONS and the dialects', () => {
+  it('lists the area of every dialect, spelled as lib/dialect.ts spells it', () => {
+    for (const { name } of Object.values(DIALECTS)) {
+      const area = /\(([^)]+)\)/.exec(name)?.[1]
+      expect(area, `no area in "${name}"`).toBeTruthy()
+      expect(isResourceRegion(area!), `"${area}" is missing from RESOURCE_REGIONS`).toBe(true)
+    }
   })
 })
 
