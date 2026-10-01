@@ -13,7 +13,7 @@ import {
   buildResourceDescription,
   resourceTypeSingular,
 } from '@/lib/resources'
-import { InterlinearGloss } from '@/components/InterlinearGloss'
+import { VerseTranslation } from '@/components/VerseTranslation'
 import { JsonLd } from '@/components/JsonLd'
 
 // Cached so generateMetadata and the page share a single DB query per request.
@@ -129,11 +129,10 @@ export default async function ResourceDetailPage({
         </div>
       )}
 
-      <InterlinearGloss
+      <VerseTranslation
         original={text.content_bete}
         literal={text.content_literal}
-        final={text.content_french}
-        variant="card"
+        french={text.content_french}
       />
 
       <p className="text-sm text-muted-foreground">
