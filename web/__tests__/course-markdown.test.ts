@@ -127,4 +127,20 @@ mon fils ou ma fille
       title: undefined,
     })
   })
+
+  it('does not swallow the rest of the lesson when :::gloss is never closed', () => {
+    const blocks = parseMarkdown(':::gloss\nna ŋɔ́nɔ́\n\n# Suite du cours')
+    expect(blocks.some(b => b.type === 'gloss')).toBe(false)
+    expect(blocks.some(b => b.type === 'heading')).toBe(true)
+  })
+
+  it('ignores blank lines inside a positional :::gloss block', () => {
+    const blocks = parseMarkdown(':::gloss\nna ŋɔ́nɔ́\n\nmon enfant\n\nmon fils\n:::')
+    expect(blocks[0]).toMatchObject({
+      type: 'gloss',
+      original: 'na ŋɔ́nɔ́',
+      literal: 'mon enfant',
+      translation: 'mon fils',
+    })
+  })
 })

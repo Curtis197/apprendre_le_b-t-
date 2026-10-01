@@ -26,6 +26,7 @@ export function ResourceSubmitForm() {
   const [title, setTitle]               = useState('')
   const [type, setType]                 = useState<ContentType>('proverb')
   const [contentBete, setContentBete]   = useState('')
+  const [contentLiteral, setContentLiteral] = useState('')
   const [contentFrench, setContentFrench] = useState('')
   const [videoUrl, setVideoUrl]         = useState('')
   const [authorName, setAuthorName]     = useState('')
@@ -44,6 +45,7 @@ export function ResourceSubmitForm() {
     setError(null)
     const { error: err } = await submitCommunityText(supabaseRef.current, {
       title, type, content_bete: contentBete,
+      content_literal: contentLiteral || undefined,
       content_french: contentFrench || undefined,
       video_url: videoUrl.trim() || undefined,
       author_name: authorName || undefined,
@@ -62,7 +64,7 @@ export function ResourceSubmitForm() {
       <div className="flex gap-3 justify-center pt-2">
         <Button
           variant="outline"
-          onClick={() => { setSubmitted(false); setTitle(''); setContentBete(''); setContentFrench(''); setVideoUrl('') }}
+          onClick={() => { setSubmitted(false); setTitle(''); setContentBete(''); setContentLiteral(''); setContentFrench(''); setVideoUrl('') }}
         >
           Soumettre une autre
         </Button>
@@ -107,8 +109,21 @@ export function ResourceSubmitForm() {
         rows={6}
         className="font-mono"
       />
+      <div className="space-y-1.5">
+        <Textarea
+          placeholder="Mot à mot (optionnel) — ex: « Dieu frappe »"
+          value={contentLiteral}
+          onChange={e => setContentLiteral(e.target.value)}
+          rows={3}
+          className="italic"
+        />
+        <p className="text-xs text-muted-foreground">
+          La traduction littérale, mot par mot, qui montre la structure du bhété.
+          Gardez la traduction en français ci-dessous pour le sens naturel.
+        </p>
+      </div>
       <Textarea
-        placeholder="Traduction en français (optionnel)"
+        placeholder="Traduction en français — sens naturel (optionnel)"
         value={contentFrench}
         onChange={e => setContentFrench(e.target.value)}
         rows={4}

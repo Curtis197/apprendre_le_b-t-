@@ -105,7 +105,9 @@ export function parseMarkdown(source: string): Block[] {
     }
 
     const glossMatch = GLOSS_START.exec(line.trim())
-    if (glossMatch) {
+    // An opener with no closing ::: is plain text: it must not swallow the rest of the lesson.
+    const glossIsClosed = glossMatch !== null && lines.slice(i + 1).some(l => l.trim() === ':::')
+    if (glossMatch && glossIsClosed) {
       i++
       const rawTitle = glossMatch[1]?.trim() || undefined
       let original = ''
@@ -115,12 +117,11 @@ export function parseMarkdown(source: string): Block[] {
       const contentLines: string[] = []
 
       while (i < lines.length && lines[i].trim() !== ':::') {
-        contentLines.push(lines[i].trim())
+        // Blank lines are ignored so they can't shift the positional original/literal/translation.
+        if (lines[i].trim() !== '') contentLines.push(lines[i].trim())
         i++
       }
-      if (i < lines.length && lines[i].trim() === ':::') {
-        i++ // consume closing :::
-      }
+      i++ // consume closing ::: (its presence was checked above)
 
       const hasKeys = contentLines.some(l =>
         /^(bete|original|literal|mot_a_mot|mot-a-mot|fr|sens|translation|title):\s*/i.test(l),
@@ -180,7 +181,9 @@ export function parseMarkdown(source: string): Block[] {
       continue
     }
 
-    const paragraph: Inline[][] = []
+    // The first line is always consumed: an unclosed :::gloss opener reaches here and must not stall the loop.
+    const paragraph: Inline[][] = [parseInline(line.trim())]
+    i++
     while (i < lines.length && lines[i].trim() !== '' && !startsBlock(lines[i])) {
       paragraph.push(parseInline(lines[i].trim()))
       i++

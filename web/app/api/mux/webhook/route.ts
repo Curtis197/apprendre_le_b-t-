@@ -10,15 +10,16 @@ export async function POST(request: Request) {
   const signatureHeader = request.headers.get('mux-signature')
   const webhookSecret = process.env.MUX_WEBHOOK_SECRET || process.env.MUX_WEBHOOK_SIGNING_SECRET
 
-  if (webhookSecret) {
-    const isValid = await verifyMuxWebhookSignature(rawBody, signatureHeader, webhookSecret)
-    if (!isValid) {
-      console.error('[Mux Webhook] ❌ Invalid Mux webhook signature')
-      return NextResponse.json({ error: 'Signature webhook Mux invalide.' }, { status: 401 })
-    }
-    console.log('[Mux Webhook] ✅ Signature verified successfully')
-  } else {
-    console.warn('[Mux Webhook] ⚠️ Webhook secret not configured - signature verification skipped')
+  // Fail closed: without a secret anyone could forge events and mark assets ready.
+  if (!webhookSecret) {
+    console.error('[Mux Webhook] ❌ MUX_WEBHOOK_SECRET is not configured — refusing request')
+    return NextResponse.json({ error: 'Webhook Mux non configuré.' }, { status: 500 })
+  }
+
+  const isValid = await verifyMuxWebhookSignature(rawBody, signatureHeader, webhookSecret)
+  if (!isValid) {
+    console.error('[Mux Webhook] ❌ Invalid Mux webhook signature')
+    return NextResponse.json({ error: 'Signature webhook Mux invalide.' }, { status: 401 })
   }
 
   let event: { type: string; data: Record<string, unknown> }
@@ -61,9 +62,11 @@ export async function POST(request: Request) {
             updated_at: new Date().toISOString(),
           })
           .eq('mux_upload_id', uploadId)
+          .eq('status', 'uploading')
 
         if (updateErr) {
           console.error('[Mux Webhook] ❌ Error updating media_assets status to "processing":', updateErr)
+          return NextResponse.json({ error: 'Mise à jour impossible.' }, { status: 500 })
         } else {
           console.log('[Mux Webhook] ✅ Updated media_assets status to "processing" for uploadId:', uploadId)
         }
@@ -93,9 +96,11 @@ export async function POST(request: Request) {
             updated_at: new Date().toISOString(),
           })
           .eq('mux_asset_id', assetId)
+          .in('status', ['uploading', 'processing'])
 
         if (updateErr) {
           console.error('[Mux Webhook] ❌ Error updating media_assets status to "ready":', updateErr)
+          return NextResponse.json({ error: 'Mise à jour impossible.' }, { status: 500 })
         } else {
           console.log('[Mux Webhook] 🎉 Updated media_assets status to "ready" for assetId:', assetId)
         }
@@ -111,7 +116,7 @@ export async function POST(request: Request) {
       console.error('[Mux Webhook] 🚨 Processing "video.asset.errored":', { assetId, errorMessage: message })
 
       if (assetId) {
-        await adminClient
+        const { error: updateErr } = await adminClient
           .from('media_assets')
           .update({
             status: 'errored',
@@ -119,6 +124,11 @@ export async function POST(request: Request) {
             updated_at: new Date().toISOString(),
           })
           .eq('mux_asset_id', assetId)
+          .in('status', ['uploading', 'processing'])
+        if (updateErr) {
+          console.error('[Mux Webhook] ❌ Error updating media_assets status to "errored":', updateErr)
+          return NextResponse.json({ error: 'Mise à jour impossible.' }, { status: 500 })
+        }
       }
       break
     }

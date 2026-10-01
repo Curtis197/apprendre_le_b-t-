@@ -6,9 +6,7 @@ import { isValidAudioFile } from './audio'
 import type { QuizInput, QuizSubmissionResult } from './quiz'
 import { buildSlug } from './slug'
 import type { CourseInput, LessonKind, Result } from './types'
-import type { MediaAsset } from './video'
 import type { Submission } from './assignment'
-import { sendSubmissionReviewedEmail } from './assignment-email'
 import type { CourseOrder, PaymentRail } from './payment'
 
 async function checkAdmin(client: SupabaseClient): Promise<boolean> {
@@ -232,9 +230,19 @@ export async function saveLessonProgress(
   const user = await getAuthUser(client)
   if (!user) return fail('Connectez-vous pour suivre votre progression.')
 
-  const percent = Math.min(100, Math.max(0, Math.round(input.progressPercent ?? (input.completed ? 100 : 0))))
-  const isCompleted = input.completed ?? (percent >= 100)
-  const completedAt = isCompleted ? new Date().toISOString() : null
+  // Progress only moves forward: replaying a finished lesson, or retrying an
+  // exercise with a worse result, must not undo completion or lower the best score.
+  const { data: existing } = await client
+    .from('lesson_progress')
+    .select('progress_percent, score, completed_at')
+    .eq('user_id', user.id)
+    .eq('lesson_id', lessonId)
+    .maybeSingle()
+
+  const requested = Math.min(100, Math.max(0, Math.round(input.progressPercent ?? (input.completed ? 100 : 0))))
+  const percent = Math.max(requested, Math.round(Number(existing?.progress_percent ?? 0)))
+  const isCompleted = Boolean(existing?.completed_at) || (input.completed ?? percent >= 100)
+  const completedAt = isCompleted ? (existing?.completed_at ?? new Date().toISOString()) : null
 
   const payload: {
     user_id: string
@@ -249,13 +257,18 @@ export async function saveLessonProgress(
     completed_at: completedAt,
   }
 
-  if (input.score !== undefined) {
-    payload.score = input.score
+  let score: number | null = existing?.score ?? null
+  if (input.score !== undefined && input.score !== null) {
+    score = Math.max(input.score, score ?? 0)
+    payload.score = score
+  } else if (input.score === null) {
+    payload.score = null
+    score = null
   }
 
   const { error } = await client.from('lesson_progress').upsert(payload, { onConflict: 'user_id,lesson_id' })
   if (error) return fail(error.message)
-  return ok({ progress_percent: percent, score: input.score ?? null, completed: isCompleted })
+  return ok({ progress_percent: percent, score, completed: isCompleted })
 }
 
 export async function setLessonCompleted(
@@ -438,87 +451,6 @@ export async function submitQuizAnswers(
 
 // ── Phase 3: Video Mutations ───────────────────────────────────────────────
 
-/** Requests a Mux direct upload URL and inserts a media_assets row in status 'uploading'. */
-export async function createVideoUploadUrl(
-  client: SupabaseClient,
-  lessonId: string,
-): Promise<Result<{ uploadUrl: string; assetId: string }>> {
-  console.log('[createVideoUploadUrl] 🎬 Received request for lesson:', lessonId)
-  const user = await getAuthUser(client)
-  if (!user) {
-    console.error('[createVideoUploadUrl] ❌ Unauthenticated user attempt')
-    return fail('Connectez-vous pour verser une vidéo.')
-  }
-
-  const muxTokenId = process.env.MUX_TOKEN_ID
-  const muxTokenSecret = process.env.MUX_TOKEN_SECRET || process.env.MUX_SECRET_ID
-
-  console.log('[createVideoUploadUrl] 🔑 Checking Mux credentials availability:', {
-    hasMuxTokenId: Boolean(muxTokenId),
-    hasMuxTokenSecret: Boolean(muxTokenSecret),
-    tokenIdLength: muxTokenId?.length ?? 0,
-  })
-
-  if (!muxTokenId || !muxTokenSecret) {
-    console.error('[createVideoUploadUrl] ❌ Missing Mux environment variables MUX_TOKEN_ID or MUX_TOKEN_SECRET')
-    return fail('Le service Mux n’est pas configuré sur le serveur.')
-  }
-
-  const authHeader = `Basic ${Buffer.from(`${muxTokenId}:${muxTokenSecret}`).toString('base64')}`
-  console.log('[createVideoUploadUrl] 🌐 Sending POST request to Mux API (https://api.mux.com/video/v1/uploads)...')
-  
-  const response = await fetch('https://api.mux.com/video/v1/uploads', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: authHeader,
-    },
-    body: JSON.stringify({
-      new_asset_settings: {
-        playback_policy: ['signed'],
-      },
-      cors_origin: '*',
-    }),
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '')
-    console.error('[createVideoUploadUrl] ❌ Mux API returned HTTP error:', response.status, response.statusText, errorText)
-    return fail('Erreur lors de la création du lien de versement Mux.')
-  }
-
-  const json = await response.json()
-  const uploadData = json.data as { id: string; url: string }
-  console.log('[createVideoUploadUrl] ✅ Mux Upload Created Successfully:', {
-    uploadId: uploadData.id,
-    urlLength: uploadData.url.length,
-  })
-
-  // Delete previous uploading assets for this lesson
-  console.log('[createVideoUploadUrl] 🧹 Cleaning up old uploading assets for lesson:', lessonId)
-  await client.from('media_assets').delete().eq('lesson_id', lessonId).eq('status', 'uploading')
-
-  console.log('[createVideoUploadUrl] 💾 Inserting media_assets row into Supabase database...')
-  const { data: assetRow, error: dbError } = await client
-    .from('media_assets')
-    .insert({
-      owner_id: user.id,
-      lesson_id: lessonId,
-      mux_upload_id: uploadData.id,
-      status: 'uploading',
-    })
-    .select('id')
-    .single()
-
-  if (dbError || !assetRow) {
-    console.error('[createVideoUploadUrl] ❌ Supabase DB insertion failed:', dbError)
-    return fail(dbError?.message ?? 'Erreur lors de l’enregistrement de la vidéo.')
-  }
-
-  console.log('[createVideoUploadUrl] 🎉 Media Asset Row Created in DB:', assetRow.id)
-  return ok({ uploadUrl: uploadData.url, assetId: assetRow.id })
-}
-
 /** Deletes a media asset from database and Mux API. */
 export async function deleteMediaAsset(
   client: SupabaseClient,
@@ -576,11 +508,8 @@ export async function submitAssignment(
   if (error || !data) return fail(error?.message ?? 'Erreur lors de la remise du devoir.')
 
   // Mark lesson as complete in lesson_progress so learner is never blocked by teacher review queue
-  await client.from('lesson_progress').upsert({
-    user_id: user.id,
-    lesson_id: lessonId,
-    completed_at: new Date().toISOString(),
-  })
+  const progress = await saveLessonProgress(client, lessonId, { completed: true, progressPercent: 100 })
+  if (progress.error) return fail(progress.error)
 
   return ok(data as Submission)
 }
@@ -597,14 +526,6 @@ export async function reviewSubmission(
 
   if (!feedback.trim()) return fail('Veuillez saisir un commentaire de correction.')
 
-  const { data: sub, error: fetchError } = await client
-    .from('submissions')
-    .select('*, lessons(title, courses(title))')
-    .eq('id', submissionId)
-    .single()
-
-  if (fetchError || !sub) return fail('Devoir introuvable.')
-
   const { error: updateError } = await client
     .from('submissions')
     .update({
@@ -618,21 +539,13 @@ export async function reviewSubmission(
 
   if (updateError) return fail(updateError.message)
 
-  // Send feedback notification email asynchronously
-  const lessonTitle = (sub.lessons as { title?: string })?.title ?? 'Devoir'
-  const courseTitle = ((sub.lessons as { courses?: { title?: string } })?.courses)?.title ?? 'Cours'
-
-  // Fetch learner auth email if possible
-  const { data: learnerUser } = await client.auth.admin.getUserById(sub.user_id).catch(() => ({ data: null }))
-  if (learnerUser?.user?.email) {
-    sendSubmissionReviewedEmail({
-      learnerEmail: learnerUser.user.email,
-      courseTitle,
-      lessonTitle,
-      feedback: feedback.trim(),
-      grade,
-    })
-  }
+  // The email needs the service-role key and the Resend key, so a server route
+  // sends it. Fire-and-forget: a failed notification must not fail the review.
+  void fetch('/api/courses/submissions/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ submissionId }),
+  }).catch(() => null)
 
   return ok(null)
 }

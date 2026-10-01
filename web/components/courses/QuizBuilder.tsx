@@ -16,7 +16,7 @@ interface Props {
   onSaved: () => void
 }
 
-export function QuizBuilder({ lessonId, initialQuestions, initialKeys: _initialKeys, readOnly = false, onSaved }: Props) {
+export function QuizBuilder({ lessonId, initialQuestions, readOnly = false, onSaved }: Props) {
   const [supabase] = useState(() => createClient())
   const [questions, setQuestions] = useState<QuizQuestionDraft[]>(() => {
     if (initialQuestions.length > 0) return initialQuestions

@@ -23,10 +23,12 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
   const [showHint, setShowHint] = useState<Record<string, boolean>>({})
   const [submitting, setSubmitting] = useState(false)
 
-  // Reset evaluation state when the exercise text is edited
-  useEffect(() => {
+  // Reset evaluation state when the exercise text is edited (derived-state pattern, no effect needed)
+  const [evaluatedBody, setEvaluatedBody] = useState(bodyMd)
+  if (evaluatedBody !== bodyMd) {
+    setEvaluatedBody(bodyMd)
     setEvaluated(null)
-  }, [bodyMd])
+  }
 
   useEffect(() => {
     console.log('[FillInBlank] 🎯 Exercise initialized for lesson:', {

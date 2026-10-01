@@ -329,7 +329,8 @@ export async function translate(
     sentence = resolvedTokens
       .map(t => t.candidates[0]?.bete_western_form ?? t.french_form)
       .join(' ')
-    literal = resolvedTokens.map(t => t.candidates[0]?.bete_western_form ?? t.french_form).join(' ')
+    // No French word-for-word gloss is available here; the aligned tokens already show it per word.
+    literal = null
     unknowns = resolvedTokens.filter(t => t.candidates.length === 0).map(t => t.french_form)
     rules_applied = []
     log.push({ step: 'assembly', detail: 'fast-path (all unambiguous, no rules) — skipped Claude', ms: ms() })
@@ -348,7 +349,7 @@ export async function translate(
       sentence = resolvedTokens
         .map(t => t.candidates[0]?.bete_western_form ?? t.french_form)
         .join(' ')
-      literal = sentence
+      literal = null
       unknowns = resolvedTokens.filter(t => t.candidates.length === 0).map(t => t.french_form)
       rules_applied = []
     }

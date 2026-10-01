@@ -236,6 +236,11 @@ export function LessonEditor({
                 <li><code className="text-primary font-semibold">[[bonne_réponse|choix1|choix2]]</code> : Menu déroulant à choix multiples</li>
                 <li><code className="text-primary font-semibold">[[mot:indice]]</code> : Trou avec bulle d&apos;aide d&apos;indice</li>
                 <li>{'# Titre, ## Sous-titre, **gras**, *italique*'}</li>
+                <li>
+                  <code className="text-primary font-semibold">{':::gloss … :::'}</code> : Glose interlinéaire en 3
+                  lignes (bété, mot à mot, sens), ou avec les clés <code>bete:</code>, <code>literal:</code>,{' '}
+                  <code>fr:</code>, <code>title:</code>. Le bloc doit se terminer par <code>:::</code>.
+                </li>
               </ul>
             </details>
           </div>

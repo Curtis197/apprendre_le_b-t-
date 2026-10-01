@@ -84,6 +84,7 @@ export interface CommunityText {
   title: string
   type: ContentType
   content_bete: string
+  content_literal: string | null  // word-for-word (mot à mot) reading
   content_french: string | null
   video_url: string | null
   author_name: string | null
@@ -111,6 +112,7 @@ export interface CreateCommunityTextInput {
   title: string
   type: ContentType
   content_bete: string
+  content_literal?: string
   content_french?: string
   video_url?: string
   author_name?: string

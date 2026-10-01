@@ -37,6 +37,9 @@ export function AudioPlayer({
   const maxPercentRef = useRef(initialProgressPercent)
   const lastSyncedRef = useRef(initialProgressPercent)
   const hasSeekedInitialRef = useRef(false)
+  // The playback effect must not re-subscribe on every render, so it reads the latest values through refs.
+  const initialPercentRef = useRef(initialProgressPercent)
+  const syncRef = useRef<(percent: number, completed: boolean) => Promise<void>>(async () => {})
 
   const syncProgress = async (percent: number, completed: boolean) => {
     if (!lessonId) return
@@ -49,6 +52,11 @@ export function AudioPlayer({
     })
     onProgress?.(percent, completed)
   }
+
+  useEffect(() => {
+    syncRef.current = syncProgress
+    initialPercentRef.current = initialProgressPercent
+  })
 
   useEffect(() => {
     const audio = audioRef.current
@@ -64,7 +72,7 @@ export function AudioPlayer({
           setProgressPercent(pct)
         }
         const isCompleted = maxPercentRef.current >= 90
-        syncProgress(isCompleted ? 100 : maxPercentRef.current, isCompleted)
+        syncRef.current(isCompleted ? 100 : maxPercentRef.current, isCompleted)
       }
     }
 
@@ -73,12 +81,12 @@ export function AudioPlayer({
       setDuration(dur)
       if (
         !hasSeekedInitialRef.current &&
-        initialProgressPercent > 0 &&
-        initialProgressPercent < 90 &&
+        initialPercentRef.current > 0 &&
+        initialPercentRef.current < 90 &&
         dur > 0
       ) {
         hasSeekedInitialRef.current = true
-        audio.currentTime = (initialProgressPercent / 100) * dur
+        audio.currentTime = (initialPercentRef.current / 100) * dur
         setCurrentTime(audio.currentTime)
       }
     }
@@ -87,13 +95,13 @@ export function AudioPlayer({
       setIsPlaying(false)
       maxPercentRef.current = 100
       setProgressPercent(100)
-      syncProgress(100, true)
+      syncRef.current(100, true)
     }
 
     const onPause = () => {
       setIsPlaying(false)
       const isCompleted = maxPercentRef.current >= 90
-      syncProgress(isCompleted ? 100 : maxPercentRef.current, isCompleted)
+      syncRef.current(isCompleted ? 100 : maxPercentRef.current, isCompleted)
     }
 
     audio.addEventListener('timeupdate', updateTime)

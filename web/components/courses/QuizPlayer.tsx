@@ -106,13 +106,14 @@ export function QuizPlayer({ lessonId, questions, onPassed }: Props) {
               <div className="space-y-2">
                 {q.options.map(opt => {
                   const isSelected = (selectedAnswers[q.id] ?? []).includes(opt.id)
-                  const isActualCorrect = correction?.correct_option_ids.includes(opt.id)
+                  const keyRevealed = Boolean(correction?.correct_option_ids)
+                  const isActualCorrect = correction?.correct_option_ids?.includes(opt.id)
 
                   let choiceStyle = 'border-border hover:bg-muted'
                   if (result) {
-                    if (isActualCorrect) {
+                    if (isActualCorrect || (!keyRevealed && isSelected && correction?.is_correct)) {
                       choiceStyle = 'border-secondary bg-secondary/15 text-secondary font-medium'
-                    } else if (isSelected && !isActualCorrect) {
+                    } else if (isSelected && (keyRevealed || correction?.is_correct === false)) {
                       choiceStyle = 'border-destructive bg-destructive/15 text-destructive'
                     } else {
                       choiceStyle = 'border-border opacity-50'
