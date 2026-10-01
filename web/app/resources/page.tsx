@@ -1,11 +1,12 @@
 // web/app/resources/page.tsx
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Music, BookOpen, Feather, Quote, Mic, HelpCircle, Layers, PlusCircle, PlayCircle, Video } from 'lucide-react'
+import { ArrowRight, Layers, PlusCircle, PlayCircle } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { createClient } from '@/lib/supabase-server'
 import { getCommunityTexts } from '@/lib/community'
 import { extractYouTubeId } from '@/lib/utils'
+import { RESOURCE_TYPES as TYPES, RESOURCE_TYPE_COLORS as TYPE_COLORS } from '@/lib/resources'
 import type { ContentType, CommunityText } from '@/lib/types'
 import { PendingResources } from '@/components/PendingResources'
 import type { Metadata } from 'next'
@@ -18,28 +19,6 @@ export const metadata: Metadata = {
   alternates: { canonical: '/resources' },
 }
 
-const TYPES = [
-  { value: null,      label: 'Tous',       icon: Layers },
-  { value: 'song',    label: 'Chansons',   icon: Music },
-  { value: 'story',   label: 'Contes',     icon: BookOpen },
-  { value: 'poem',    label: 'Poèmes',     icon: Feather },
-  { value: 'proverb', label: 'Proverbes',  icon: Quote },
-  { value: 'speech',  label: 'Discours',   icon: Mic },
-  { value: 'riddle',  label: 'Devinettes', icon: HelpCircle },
-  { value: 'video',   label: 'Vidéos',     icon: Video },
-]
-
-const TYPE_COLORS: Record<string, string> = {
-  song:    'bg-pink-100 text-pink-700',
-  story:   'bg-amber-100 text-amber-700',
-  poem:    'bg-violet-100 text-violet-700',
-  proverb: 'bg-emerald-100 text-emerald-700',
-  speech:  'bg-blue-100 text-blue-700',
-  riddle:  'bg-orange-100 text-orange-700',
-  video:   'bg-red-100 text-red-700',
-  other:   'bg-muted text-muted-foreground',
-}
-
 function ResourceCard({ text }: { text: CommunityText }) {
   const typeInfo = TYPES.find(t => t.value === text.type)
   const Icon = typeInfo?.icon ?? Layers
@@ -47,9 +26,10 @@ function ResourceCard({ text }: { text: CommunityText }) {
   const hasVideo = videoId !== null
 
   return (
-    <div className={`bg-card border border-border rounded-xl overflow-hidden flex flex-col ${hasVideo ? 'md:col-span-2 xl:col-span-2' : ''}`}>
+    <div className={`relative bg-card border border-border rounded-xl overflow-hidden flex flex-col transition-colors hover:border-primary/40 ${hasVideo ? 'md:col-span-2 xl:col-span-2' : ''}`}>
+      {/* z-10 keeps the player clickable above the card-wide title link below */}
       {hasVideo && (
-        <div className="relative w-full aspect-video bg-black">
+        <div className="relative z-10 w-full aspect-video bg-black">
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${videoId}`}
             title={text.title}
@@ -79,28 +59,14 @@ function ResourceCard({ text }: { text: CommunityText }) {
           )}
         </div>
 
-        <h2 className="font-heading font-semibold text-base mb-2">{text.title}</h2>
-
-        <div className={`flex-1 ${hasVideo ? 'grid md:grid-cols-2 gap-4' : ''}`}>
-          <p className="font-mono text-sm text-primary leading-relaxed whitespace-pre-wrap line-clamp-6">
-            {text.content_bete}
-          </p>
-          {(text.content_literal || text.content_french) && (
-            <div className={`space-y-2 ${!hasVideo ? 'mt-3 pt-3 border-t border-border/50' : ''}`}>
-              {text.content_literal && (
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-6 whitespace-pre-wrap">
-                  <span className="font-semibold text-primary/80">Mot à mot : </span>
-                  <span className="italic">{text.content_literal}</span>
-                </p>
-              )}
-              {text.content_french && (
-                <p className="text-sm text-muted-foreground italic leading-relaxed line-clamp-6">
-                  {text.content_french}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+        <h2 className="font-heading font-semibold text-base flex-1">
+          <Link
+            href={`/resources/${text.id}`}
+            className="hover:text-primary transition-colors after:absolute after:inset-0"
+          >
+            {text.title}
+          </Link>
+        </h2>
 
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
           {text.author_name && <span>{text.author_name}</span>}
@@ -108,6 +74,10 @@ function ResourceCard({ text }: { text: CommunityText }) {
           {text.region && <span>{text.region}</span>}
           {(text.author_name || text.region) && <span>·</span>}
           <span>{new Date(text.created_at).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}</span>
+          <span className="ml-auto inline-flex items-center gap-1 font-medium text-primary">
+            Lire
+            <ArrowRight className="w-3 h-3" />
+          </span>
         </div>
       </div>
     </div>

@@ -37,7 +37,8 @@ export function InterlinearGloss({
     tokens && tokens.length > 0
       ? tokens
       : (() => {
-          if (!literal) return []
+          // Songs and poems are line-based: word chips would be noise, show the lines as written.
+          if (!literal || /\n/.test(original) || /\n/.test(literal)) return []
           const origWords = original.trim().split(/\s+/)
           const litWords = literal.trim().split(/\s+/)
           if (origWords.length === litWords.length && origWords.length > 1) {
@@ -50,6 +51,7 @@ export function InterlinearGloss({
         })()
 
   const copyText = final || original
+  const isLong = /\n/.test(original) || original.length > 160
 
   const handleCopy = async () => {
     try {
@@ -106,7 +108,12 @@ export function InterlinearGloss({
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           1. Texte original
         </span>
-        <div className="text-lg md:text-xl font-bold font-heading text-foreground tracking-wide">
+        <div
+          className={cn(
+            'text-foreground whitespace-pre-wrap',
+            isLong ? 'text-base leading-relaxed' : 'text-lg md:text-xl font-bold font-heading tracking-wide',
+          )}
+        >
           {original}
         </div>
         {phonetic && phonetic !== original && (
@@ -144,7 +151,7 @@ export function InterlinearGloss({
           )}
 
           {literal && (
-            <p className="text-xs text-muted-foreground italic leading-relaxed">
+            <p className="text-xs md:text-sm text-muted-foreground italic leading-relaxed whitespace-pre-wrap">
               <strong className="not-italic text-foreground font-medium">Sens littéral :</strong> « {literal} »
             </p>
           )}
@@ -157,7 +164,12 @@ export function InterlinearGloss({
           <span className="text-[11px] font-semibold uppercase tracking-wider text-secondary">
             3. Traduction finale (Sens naturel)
           </span>
-          <p className="text-base md:text-lg font-semibold text-foreground leading-relaxed">
+          <p
+            className={cn(
+              'text-foreground leading-relaxed whitespace-pre-wrap',
+              isLong ? 'text-base' : 'text-base md:text-lg font-semibold',
+            )}
+          >
             {final}
           </p>
         </div>
