@@ -13,6 +13,7 @@ import {
   getLessonContent,
   getLessonProgressMap,
   getMediaAssetForLesson,
+  getPronunciationAudioUrl,
   getSignedMuxPlaybackToken,
   getSubmissionForLesson,
   getQuizForLesson,
@@ -27,6 +28,7 @@ import { VideoPlayer } from '@/components/courses/VideoPlayer'
 import { FillInBlankExercise } from '@/components/courses/FillInBlankExercise'
 import { QuizPlayer } from '@/components/courses/QuizPlayer'
 import { AssignmentForm } from '@/components/courses/AssignmentForm'
+import { PronunciationExercise } from '@/components/courses/PronunciationExercise'
 import { primaryLinkClass, secondaryLinkClass } from '@/components/courses/styles'
 
 export const dynamic = 'force-dynamic'
@@ -105,7 +107,10 @@ export default async function LessonPage({ params }: Props) {
   }
 
   const quizQuestions = lesson.kind === 'quiz' ? await getQuizForLesson(supabase, lesson.id) : []
-  const submission = user && lesson.kind === 'assignment' ? await getSubmissionForLesson(supabase, lesson.id, user.id) : null
+  const hasSubmission = lesson.kind === 'assignment' || lesson.kind === 'pronunciation'
+  const submission = user && hasSubmission ? await getSubmissionForLesson(supabase, lesson.id, user.id) : null
+  const recordingUrl =
+    lesson.kind === 'pronunciation' ? await getPronunciationAudioUrl(supabase, submission?.audio_path ?? null) : null
 
   const next = flat.find(l => l.id === nextLessonId(flat, lesson.id))
   const nextHref = next && (hasFullAccess || next.is_preview) ? `/courses/${slug}/learn/${next.id}` : null
@@ -215,8 +220,27 @@ export default async function LessonPage({ params }: Props) {
           </div>
         )}
 
+        {lesson.kind === 'pronunciation' && (
+          <div className="space-y-6">
+            {signedAudioUrl && <AudioPlayer src={signedAudioUrl} title="Écoutez le modèle" />}
+            {body.trim() && <LessonMarkdown source={body} />}
+            <PronunciationExercise
+              lessonId={lesson.id}
+              initialSubmission={submission}
+              initialAudioUrl={recordingUrl}
+              readOnly={!user}
+            />
+          </div>
+        )}
+
         <div className="border-t border-border pt-6 flex flex-wrap items-start gap-4">
-          {user ? (
+          {user && lesson.kind === 'pronunciation' ? (
+            <span className="text-sm text-muted-foreground self-center">
+              {completed.includes(lesson.id)
+                ? 'Leçon validée par votre enseignant ✓'
+                : 'Cette leçon sera terminée quand votre enseignant aura validé votre prononciation.'}
+            </span>
+          ) : user ? (
             <CompleteButton
               lessonId={lesson.id}
               completed={completed.includes(lesson.id)}
