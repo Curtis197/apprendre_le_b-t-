@@ -11,6 +11,7 @@ export interface LexiconEntry {
   probability: number
   pos: string[] | null
   notes: string | null
+  description: string | null
   validated: boolean
   upvotes: number
   source: 'seed' | 'contributed'
@@ -23,6 +24,18 @@ export interface LexiconExample {
   bete_snippet: string
   french_snippet: string
   french_literal: string | null   // word-for-word literal translation (optional)
+}
+
+export interface LexiconTranslation {
+  id: string
+  lexicon_id: string
+  french: string
+  context: string | null
+  position: number
+  author_name: string
+  created_by: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface GrammarRule {
@@ -93,6 +106,17 @@ export interface CommunityText {
   validated: boolean
   upvotes: number
   created_at: string
+  updated_at: string
+}
+
+export interface ResourceComment {
+  id: string
+  resource_id: string
+  user_id: string | null
+  author_name: string
+  body: string
+  created_at: string
+  updated_at: string
 }
 
 export interface CreateThreadInput {

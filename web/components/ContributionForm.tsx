@@ -10,10 +10,16 @@ import { useDialect } from '@/context/DialectContext'
 import { DIALECTS, DIALECT_KEYS, type DialectKey } from '@/lib/dialect'
 import {
   buildExampleRow,
+  buildWordClaimPayload,
   buildWordPayload,
   contributionErrorMessage,
   exampleState,
+  WORD_ALREADY_CLAIMED,
 } from '@/lib/contribution'
+import {
+  addTranslation,
+  DUPLICATE_TRANSLATION_MESSAGE,
+} from '@/lib/lexicon-mutations'
 
 type ContributionType = 'word' | 'expression' | 'grammar_rule'
 
@@ -39,7 +45,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
   const [wordBeteIPA, setWordBeteIPA] = useState('')
   const [wordFrench, setWordFrench] = useState(initialWord ?? '')
   const [wordPos, setWordPos] = useState('noun')
-  const [wordNotes, setWordNotes] = useState('')
+  const [wordDescription, setWordDescription] = useState('')
   const [wordExBete, setWordExBete] = useState('')
   const [wordExFrench, setWordExFrench] = useState('')
   // The word saved but its example sentence did not (two separate writes).
@@ -75,19 +81,39 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
     try {
       let error
       if (type === 'word') {
-        const payload = buildWordPayload({
+        const fields = {
           betePhonetic: wordBetePhonetic,
           beteIPA: wordBeteIPA,
           french: wordFrench,
           pos: wordPos,
-          notes: wordNotes,
+          description: wordDescription,
           dialect,
           userId: user.id,
-        })
+        }
         let lexiconId = initialId
         if (initialId) {
-          ({ error } = await supabaseRef.current.from('lexicon').update(payload).eq('id', initialId))
+          const claimPayload = buildWordClaimPayload(fields)
+          // Only a still-untranslated placeholder can be claimed. If someone got there first the
+          // update matches no row (the database would silently ignore the forms anyway), so say so
+          // instead of reporting a success that wrote nothing.
+          const claim = await supabaseRef.current
+            .from('lexicon')
+            .update(claimPayload)
+            .eq('id', initialId)
+            .eq('bete_phonetic', '')
+            .select('id')
+          error = claim.error
+          if (!error && (claim.data?.length ?? 0) === 0) {
+            error = { code: WORD_ALREADY_CLAIMED, message: 'placeholder already translated' }
+          }
+          if (!error) {
+            const transRes = await addTranslation(supabaseRef.current, initialId, { french: wordFrench })
+            if (transRes.error && transRes.error !== DUPLICATE_TRANSLATION_MESSAGE) {
+              error = new Error(transRes.error)
+            }
+          }
         } else {
+          const payload = buildWordPayload(fields)
           const res = await supabaseRef.current.from('lexicon').insert(payload).select('id').single()
           error = res.error
           lexiconId = res.data?.id
@@ -214,9 +240,9 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
             <option value="other">Autre</option>
           </select>
           <Textarea
-            placeholder="Notes ou contexte d'usage (optionnel)"
-            value={wordNotes}
-            onChange={e => setWordNotes(e.target.value)}
+            placeholder="Description du mot ou contexte d'usage (optionnel)"
+            value={wordDescription}
+            onChange={e => setWordDescription(e.target.value)}
             rows={2}
           />
           <div className="space-y-2">

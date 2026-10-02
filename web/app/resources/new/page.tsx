@@ -24,7 +24,6 @@ export default function NewResourcePage() {
         <h1 className="font-heading text-3xl font-bold mb-2">Soumettre une ressource</h1>
         <p className="text-muted-foreground text-sm">
           Partagez une chanson, un conte, un poème, un proverbe ou tout autre texte en bhété.
-          Votre contribution sera visible après validation par l&apos;équipe.
         </p>
       </div>
 

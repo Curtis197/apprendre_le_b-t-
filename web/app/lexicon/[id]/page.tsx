@@ -2,21 +2,33 @@ import { cache } from 'react'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase-server'
 import { LexiconEntry } from '@/components/LexiconEntry'
+import { LexiconTranslations } from '@/components/LexiconTranslations'
+import { LexiconDescription } from '@/components/LexiconDescription'
 import { notFound } from 'next/navigation'
-import type { LexiconEntry as TLexiconEntry, LexiconExample } from '@/lib/types'
+import type { LexiconEntry as TLexiconEntry, LexiconExample, LexiconTranslation } from '@/lib/types'
 import { JsonLd } from '@/components/JsonLd'
 import { SITE_URL } from '@/lib/site'
-import { cleanBeteForm } from '@/lib/lexicon'
+import { cleanBeteForm, pickDescription, sortTranslations, translationsSummary } from '@/lib/lexicon'
 import { InterlinearGloss } from '@/components/InterlinearGloss'
 
-type Entry = TLexiconEntry & { lexicon_examples: LexiconExample[] }
+type Entry = TLexiconEntry & {
+  lexicon_examples: LexiconExample[]
+  lexicon_translations: LexiconTranslation[]
+}
+
+function truncateDescription(text: string, max = 160): string {
+  if (text.length <= max) return text
+  const cut = text.slice(0, max)
+  const lastSpace = cut.lastIndexOf(' ')
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…'
+}
 
 // Cached so generateMetadata and the page share a single DB query per request.
 const getEntry = cache(async (id: string): Promise<Entry | null> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('lexicon')
-    .select('*, lexicon_examples(*)')
+    .select('*, lexicon_examples(*), lexicon_translations(*)')
     .eq('id', id)
     .maybeSingle()
   return (data as Entry) ?? null
@@ -31,7 +43,9 @@ export async function generateMetadata({
   const entry = await getEntry(id)
   if (!entry) return { title: 'Mot introuvable', robots: { index: false } }
 
-  const french = entry.top_french?.trim() || 'Mot'
+  const translations = sortTranslations(entry.lexicon_translations ?? [])
+  const french = translations[0]?.french ?? (entry.top_french?.trim() || 'Mot')
+  const allFrench = translationsSummary(translations) || french
   const western = cleanBeteForm(entry.bete_phonetic)   // everyday western-Latin form
   const ipa = cleanBeteForm(entry.bete_word)           // IPA / Bible phonetic form
   const bete = western || ipa
@@ -51,7 +65,11 @@ export async function generateMetadata({
     western && `« ${western} »`,
     ipa && ipa !== western && `forme phonétique « ${ipa} »`,
   ].filter(Boolean).join(', ')
-  const description = `Traduction bété (bhété) de « ${french} » : ${forms}. Prononciation et exemples du Nouveau Testament.`
+
+  const descText = pickDescription(entry)
+  const description = descText
+    ? truncateDescription(descText)
+    : `Traduction bété (bhété) de « ${allFrench} » : ${forms}. Prononciation et exemples du Nouveau Testament.`
 
   return {
     title,
@@ -71,11 +89,14 @@ export default async function LexiconEntryPage({
 
   if (!entry) notFound()
 
-  const french = entry.top_french?.trim()
+  const translations = sortTranslations(entry.lexicon_translations ?? [])
+  const french = translations[0]?.french ?? (entry.top_french?.trim() || 'Mot')
+  const allFrench = translationsSummary(translations) || french
   const western = cleanBeteForm(entry.bete_phonetic)
   const ipa = cleanBeteForm(entry.bete_word)
   const bete = western || ipa
   const label = bete || french || 'Mot'
+  const descText = pickDescription(entry)
 
   const jsonLd = [
     // Only describe a real dictionary term once the entry has a translation.
@@ -86,9 +107,10 @@ export default async function LexiconEntryPage({
           name: bete,
           ...(french && {
             description:
-              `« ${french} » en bété (bhété)` +
+              `« ${allFrench} » en bété (bhété)` +
               (western ? `, forme courante : ${western}` : '') +
-              (ipa ? `, forme phonétique : ${ipa}` : '') + '.',
+              (ipa ? `, forme phonétique : ${ipa}` : '') +
+              (descText ? ` — ${descText}` : '') + '.',
           }),
           url: `${SITE_URL}/lexicon/${id}`,
           inDefinedTermSet: {
@@ -113,6 +135,8 @@ export default async function LexiconEntryPage({
     <main className="max-w-2xl mx-auto py-10 px-4 space-y-6">
       <JsonLd data={jsonLd} />
       <LexiconEntry entry={entry} />
+      <LexiconDescription lexiconId={entry.id} initial={descText} />
+      <LexiconTranslations lexiconId={entry.id} translations={translations} />
       {entry.lexicon_examples?.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-semibold text-lg font-heading">Exemples</h2>

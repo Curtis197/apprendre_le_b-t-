@@ -15,8 +15,8 @@ type LexiconWord = {
   bete_word: string
   top_french: string
   pos: string[] | null
+  description: string | null
   notes: string | null
-  upvotes: number
 }
 
 const POS_LABELS: Record<string, string> = {
@@ -51,7 +51,7 @@ export function PendingContributions() {
         .order('created_at', { ascending: false }).limit(10),
       client.from('expressions').select('*').eq('validated', false)
         .order('created_at', { ascending: false }).limit(10),
-      client.from('lexicon').select('id,bete_phonetic,bete_word,top_french,pos,notes,upvotes')
+      client.from('lexicon').select('id,bete_phonetic,bete_word,top_french,pos,description,notes')
         .eq('validated', false).not('created_by', 'is', null).eq('dialect', dialect)
         .order('created_at', { ascending: false }).limit(10),
     ]).then(([rulesRes, exprsRes, wordsRes]) => {
@@ -84,7 +84,6 @@ export function PendingContributions() {
                     <CardTitle className="text-base">{word.top_french}</CardTitle>
                     <div className="flex items-center gap-2">
                       {word.pos?.[0] && <Badge variant="outline">{POS_LABELS[word.pos[0]] ?? word.pos[0]}</Badge>}
-                      <VoteButtons table="lexicon" id={word.id} upvotes={word.upvotes} />
                     </div>
                   </div>
                 </CardHeader>
@@ -93,7 +92,9 @@ export function PendingContributions() {
                   {word.bete_word !== word.bete_phonetic && (
                     <p className="font-mono text-muted-foreground">[{word.bete_word}]</p>
                   )}
-                  {word.notes && <p className="text-muted-foreground">{word.notes}</p>}
+                  {(word.description || word.notes) && (
+                    <p className="text-muted-foreground">{word.description || word.notes}</p>
+                  )}
                   <ContributionComments targetTable="lexicon" targetId={word.id} />
                 </CardContent>
               </Card>

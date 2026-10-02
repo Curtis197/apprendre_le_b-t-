@@ -1,17 +1,20 @@
-﻿'use client'
+'use client'
 import { useState, useEffect, useRef, useTransition } from 'react'
 import { Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase-browser'
-import type { LexiconEntry } from '@/lib/types'
+import { searchLexicon, type LexiconSearchRow } from '@/lib/lexicon-search'
+import { cleanBeteForm } from '@/lib/lexicon'
 
 export function HeaderSearch() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<LexiconEntry[]>([])
+  const [results, setResults] = useState<LexiconSearchRow[]>([])
   const [isPending, startTransition] = useTransition()
   const supabaseRef = useRef(createClient())
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Only the latest request may write results: a slow earlier one must not overwrite a newer one.
+  const requestRef = useRef(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -38,17 +41,16 @@ export function HeaderSearch() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!query.trim()) { setResults([]); return }
+    if (!query.trim()) {
+      requestRef.current++
+      debounceRef.current = setTimeout(() => setResults([]), 0)
+      return
+    }
     debounceRef.current = setTimeout(() => {
-      const q = query.trim().toLowerCase()
+      const requestId = ++requestRef.current
       startTransition(async () => {
-        const { data } = await supabaseRef.current
-          .from('lexicon')
-          .select('id,bete_word,bete_phonetic,top_french,pos,validated,upvotes,probability,french_candidates,notes')
-          .or(`top_french.ilike.%${q}%,bete_phonetic.ilike.%${q}%,bete_word.ilike.%${q}%`)
-          .order('upvotes', { ascending: false })
-          .limit(6)
-        setResults((data ?? []) as LexiconEntry[])
+        const { rows } = await searchLexicon(supabaseRef.current, { q: query, limit: 6 })
+        if (requestId === requestRef.current) setResults(rows)
       })
     }, 250)
   }, [query])
@@ -91,20 +93,31 @@ export function HeaderSearch() {
                 Aucun résultat pour « {query.trim()} »
               </p>
             )}
-            {results.map(entry => (
-              <Link
-                key={entry.id}
-                href={`/lexicon/${entry.id}`}
-                onClick={() => { setOpen(false); setQuery('') }}
-                className="flex items-center justify-between px-4 py-3 hover:bg-muted transition-colors border-b border-border/50 last:border-0"
-              >
-                <div>
-                  <p className="text-sm font-semibold">{entry.bete_word}</p>
-                  <p className="text-xs text-muted-foreground font-mono">[{entry.bete_phonetic}]</p>
-                </div>
-                <p className="text-xs text-muted-foreground max-w-[120px] text-right truncate">{entry.top_french}</p>
-              </Link>
-            ))}
+            {results.map(entry => {
+              const western = entry.bete_phonetic
+              const ipa = cleanBeteForm(entry.bete_word)
+              const showIpa = ipa && ipa !== western
+              const rightFrench = entry.matched_french ?? entry.top_french
+
+              return (
+                <Link
+                  key={entry.id}
+                  href={`/lexicon/${entry.id}`}
+                  onClick={() => { setOpen(false); setQuery('') }}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-muted transition-colors border-b border-border/50 last:border-0"
+                >
+                  <div className="min-w-0 pr-2">
+                    <p className="text-sm font-semibold truncate">{western}</p>
+                    {showIpa && (
+                      <p className="text-xs text-muted-foreground font-mono">[{ipa}]</p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground max-w-[120px] text-right truncate shrink-0">
+                    {rightFrench}
+                  </p>
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}
