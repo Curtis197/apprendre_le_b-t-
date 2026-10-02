@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     .select('user_id, status, grade, teacher_feedback, reviewed_at, lessons(title, courses(title, owner_id))')
     .eq('id', submissionId)
     .maybeSingle()
-  if (!sub || sub.status !== 'reviewed' || !sub.teacher_feedback) {
+  if (!sub || !['reviewed', 'validated', 'needs_retry'].includes(sub.status)) {
     return NextResponse.json({ error: 'Devoir introuvable.' }, { status: 404 })
   }
 
@@ -44,11 +44,19 @@ export async function POST(request: Request) {
   const email = learner?.user?.email
   if (!email) return NextResponse.json({ sent: false })
 
+  const feedback =
+    sub.teacher_feedback ||
+    (sub.status === 'validated'
+      ? 'Votre prononciation a été validée.'
+      : sub.status === 'needs_retry'
+      ? 'Veuillez réenregistrer votre prononciation.'
+      : 'Votre devoir a été évalué.')
+
   await sendSubmissionReviewedEmail({
     learnerEmail: email,
     courseTitle: lesson?.courses?.title ?? 'Cours',
     lessonTitle: lesson?.title ?? 'Devoir',
-    feedback: sub.teacher_feedback,
+    feedback,
     grade: sub.grade,
   })
   return NextResponse.json({ sent: true })

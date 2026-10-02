@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createCourse, saveLessonProgress, setLessonCompleted } from '../lib/courses/mutations'
+import { createCourse, reviewPronunciation, saveLessonProgress, setLessonCompleted, submitPronunciation } from '../lib/courses/mutations'
 
 type Reply = {
   data: { id: string; slug: string } | null
@@ -200,3 +200,39 @@ describe('saveLessonProgress and setLessonCompleted', () => {
     expect(res.error).toContain('Connectez-vous')
   })
 })
+
+describe('submitPronunciation', () => {
+  it('rejects recordings over the size cap before uploading', async () => {
+    const { client } = fakeClient([])
+    const big = new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], { type: 'audio/webm' })
+    const res = await submitPronunciation(client, 'lesson-1', big)
+    expect(res.error).toMatch(/trop volumineux/i)
+  })
+
+  it('rejects an empty recording', async () => {
+    const { client } = fakeClient([])
+    const res = await submitPronunciation(client, 'lesson-1', new Blob([], { type: 'audio/webm' }))
+    expect(res.error).toMatch(/vide/i)
+  })
+
+  it('requires a signed-in user', async () => {
+    const { client } = fakeClient([], null)
+    const res = await submitPronunciation(client, 'lesson-1', new Blob(['x'], { type: 'audio/webm' }))
+    expect(res.error).toMatch(/connectez-vous/i)
+  })
+})
+
+describe('reviewPronunciation', () => {
+  it('requires a comment so the learner knows what to work on', async () => {
+    const { client } = fakeClient([])
+    const res = await reviewPronunciation(client, 'sub-1', 'needs_retry', '   ')
+    expect(res.error).toMatch(/commentaire/i)
+  })
+
+  it('requires a signed-in user', async () => {
+    const { client } = fakeClient([], null)
+    const res = await reviewPronunciation(client, 'sub-1', 'validated', 'Bien')
+    expect(res.error).toMatch(/connectez-vous/i)
+  })
+})
+
