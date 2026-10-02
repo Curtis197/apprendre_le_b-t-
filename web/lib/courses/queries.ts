@@ -13,6 +13,7 @@ import { createServiceClient } from '../supabase-service'
 import type { Submission, PendingReviewItem } from './assignment'
 import type { CourseOrder } from './payment'
 import { PRONUNCIATION_BUCKET } from './pronunciation'
+import type { ProgressRow } from './stats'
 
 export async function getPublishedCourses(
   client: SupabaseClient,
@@ -504,7 +505,7 @@ export async function getPendingReviewsForTeacher(
 
   // 4. Fetch learner profiles
   const userIds = Array.from(new Set(submissions.map(s => s.user_id)))
-  const { data: profiles } = await client.from('profiles').select('id, full_name').in('id', userIds)
+  const { data: profiles } = await client.from('profiles').select('id, name').in('id', userIds)
   const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
 
   // 5. Batch-sign audio paths for pronunciation submissions
@@ -541,7 +542,7 @@ export async function getPendingReviewsForTeacher(
       learner: {
         id: sub.user_id,
         email: null,
-        full_name: profile?.full_name ?? 'Apprenant',
+        full_name: profile?.name ?? 'Apprenant',
       },
       audioUrl: sub.audio_path ? (signedUrlMap.get(sub.audio_path) ?? null) : null,
     }
@@ -571,6 +572,12 @@ export async function getUserOrders(client: SupabaseClient, userId: string): Pro
     .order('created_at', { ascending: false })
 
   return (data ?? []) as CourseOrder[]
+}
+
+/** Learner progress for a course the caller owns (or any course, for admins). Empty on error. */
+export async function getCourseProgressRows(client: SupabaseClient, courseId: string): Promise<ProgressRow[]> {
+  const { data } = await client.rpc('course_progress_rows', { p_course_id: courseId })
+  return (data ?? []) as ProgressRow[]
 }
 
 
