@@ -65,6 +65,31 @@ describe('splitHighlight', () => {
   it('does not treat tokens as patterns', () => {
     expect(joined(splitHighlight('a.b a+b', ['a+b', '.*']))).toBe('a.b a+b')
   })
+
+  describe('French lines', () => {
+    const marked = (text: string, tokens: string[]) =>
+      splitHighlight(text, tokens, 'fr').filter(p => p.match).map(p => p.text)
+
+    it('finds a word after an elision, as the SQL tokenizer splits it (l’été -> l, été)', () => {
+      expect(marked("Voici l'été", ['été'])).toEqual(['été'])
+      expect(marked('de l’eau', ['eau'])).toEqual(['eau'])
+      expect(marked('qu’il vienne', ['il'])).toEqual(['il'])
+    })
+
+    it('keeps every character, including the apostrophe', () => {
+      expect(joined(splitHighlight("Voici l'été.", ['été'], 'fr'))).toBe("Voici l'été.")
+    })
+
+    it('still highlights ordinary words, and only whole words', () => {
+      expect(marked('le château du roi', ['château'])).toEqual(['château'])
+      expect(marked('le châteaux', ['château'])).toEqual([])
+    })
+
+    it('leaves the Bété behaviour alone: an apostrophe stays inside the word', () => {
+      expect(splitHighlight("l'été", ['été']).some(p => p.match)).toBe(false)
+      expect(splitHighlight("Mɔ̀ʼwa", ['Mɔ̀ʼwa']).some(p => p.match)).toBe(true)
+    })
+  })
 })
 
 describe('labels and links', () => {

@@ -47,13 +47,22 @@ export async function findUsages(
   return { rows, total: rows[0]?.total_count ?? 0, error: null }
 }
 
-// Word separators, mirroring usage_tokenize (SQL) for the Bété side. Apostrophes stay inside a word.
+// Word separators, mirroring usage_tokenize (SQL). Bété keeps apostrophes inside a word; French also
+// splits on them (l'été -> l, été), so French lines must be split the same way to find the matched word.
 // No regex lookbehind: unsupported before Safari 16.4.
-const SEPARATORS = '[\\s.,;:!?«»"“”()\\[\\]…–—/]+'
+const BETE_SEPARATORS = '[\\s.,;:!?«»"“”()\\[\\]…–—/]+'
+const FRENCH_SEPARATORS = '[\\s.,;:!?«»"“”()\\[\\]…–—/\'’ʼ]+'
 const EDGE_JUNK = /^['’ʼ‑-]+|['’ʼ‑-]+$/g
 
-/** Splits a line into parts, flagging the words that are in `tokens` (compared as stored, whole words only). */
-export function splitHighlight(text: string, tokens: string[]): { text: string; match: boolean }[] {
+/**
+ * Splits a line into parts, flagging the words that are in `tokens` (compared as stored, whole words only).
+ * `side` is the language of the line: it decides whether an apostrophe separates words.
+ */
+export function splitHighlight(
+  text: string,
+  tokens: string[],
+  side: UsageSide = 'bete',
+): { text: string; match: boolean }[] {
   if (!text) return []
   const wanted = new Set(tokens.filter(Boolean))
   if (wanted.size === 0) return [{ text, match: false }]
@@ -67,7 +76,7 @@ export function splitHighlight(text: string, tokens: string[]): { text: string; 
   }
 
   // A capturing split alternates words and separators and keeps every character.
-  const separators = new RegExp(`(${SEPARATORS})`)
+  const separators = new RegExp(`(${side === 'fr' ? FRENCH_SEPARATORS : BETE_SEPARATORS})`)
   text.split(separators).forEach((piece, i) => {
     if (!piece) return
     if (i % 2 === 1) {                       // a separator run
