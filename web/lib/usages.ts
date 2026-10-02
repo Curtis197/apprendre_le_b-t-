@@ -30,17 +30,20 @@ export interface FindUsagesOptions {
   side?: UsageSide
   limit?: number
   offset?: number
+  /** A lexicon entry whose own examples are left out (its page already lists them) and not counted. */
+  excludeRef?: string
 }
 
 export async function findUsages(
   client: SupabaseClient,
-  { q, side = 'bete', limit = 5, offset = 0 }: FindUsagesOptions,
+  { q, side = 'bete', limit = 5, offset = 0, excludeRef }: FindUsagesOptions,
 ): Promise<{ rows: UsageRow[]; total: number; error: string | null }> {
   const text = q.trim()
   if (!text) return { rows: [], total: 0, error: null }
 
   const { data, error } = await client.rpc('find_usages', {
     q: text, p_side: side, p_limit: limit, p_offset: offset,
+    ...(excludeRef ? { p_exclude_ref: excludeRef } : {}),
   })
   if (error) return { rows: [], total: 0, error: 'La recherche a échoué. Veuillez réessayer.' }
   const rows = (data ?? []) as UsageRow[]

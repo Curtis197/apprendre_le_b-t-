@@ -11,9 +11,11 @@ interface Props {
   q: string
   side: UsageSide
   pageSize?: number
+  /** Passed on to every "Charger plus" request, so later pages follow the same rule as the first. */
+  excludeRef?: string
 }
 
-export function UsageList({ initialRows, total, q, side, pageSize = 20 }: Props) {
+export function UsageList({ initialRows, total, q, side, pageSize = 20, excludeRef }: Props) {
   const supabaseRef = useRef(createClient())
   const [rows, setRows] = useState(initialRows)
   const [count, setCount] = useState(total)
@@ -23,7 +25,7 @@ export function UsageList({ initialRows, total, q, side, pageSize = 20 }: Props)
   async function loadMore() {
     setLoading(true)
     setError(null)
-    const res = await findUsages(supabaseRef.current, { q, side, limit: pageSize, offset: rows.length })
+    const res = await findUsages(supabaseRef.current, { q, side, limit: pageSize, offset: rows.length, excludeRef })
     setLoading(false)
     if (res.error) { setError(res.error); return }
     setRows(prev => [...prev, ...res.rows])

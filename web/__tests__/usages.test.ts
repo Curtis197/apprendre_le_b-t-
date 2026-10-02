@@ -23,6 +23,16 @@ describe('findUsages', () => {
     expect(rpc).toHaveBeenLastCalledWith('find_usages', { q: 'manger', p_side: 'fr', p_limit: 20, p_offset: 40 })
   })
 
+  it('sends the excluded lexicon entry only when one is given', async () => {
+    const { client, rpc } = fake({ data: [], error: null })
+    await findUsages(client, { q: 'kaba', excludeRef: 'w1' })
+    expect(rpc).toHaveBeenLastCalledWith('find_usages', {
+      q: 'kaba', p_side: 'bete', p_limit: 5, p_offset: 0, p_exclude_ref: 'w1',
+    })
+    await findUsages(client, { q: 'kaba', excludeRef: undefined })
+    expect(rpc).toHaveBeenLastCalledWith('find_usages', { q: 'kaba', p_side: 'bete', p_limit: 5, p_offset: 0 })
+  })
+
   it('returns the rows and the total from the first row', async () => {
     const { client } = fake({ data: [{ line_id: 'a', total_count: 9 }, { line_id: 'b', total_count: 9 }], error: null })
     const res = await findUsages(client, { q: 'kaba' })

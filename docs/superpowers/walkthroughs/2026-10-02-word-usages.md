@@ -66,11 +66,15 @@ This feature lets users see where a word (Bété or French) is used across the c
   - Replaces `rebuild_usage_lines` (grants unchanged) so a resource's mot à mot and French translation are judged separately: each is attached when it has the Bété text's shape, whatever the other one does. Only the resource branch changed.
   - Re-indexes the existing resources (idempotent).
 
+- **`20261003000004_find_usages_exclude_own_examples.sql`** (added after the review)
+  - `find_usages` gains an optional sixth argument, `p_exclude_ref uuid default null`. When it is the id of a lexicon entry, that entry's own examples are left out of the results **and of `total_count`**; resources, other entries' examples and the other sources are never hidden.
+  - The old 5-argument function is dropped first (adding a parameter with `create or replace` would leave both versions and the API could not choose between them). Calls that pass 5 arguments keep working through the default. Grants are re-applied to `anon` and `authenticated`. Re-run safe.
+
 ### Client helpers (`web/lib/usages.ts`)
 
 - Types: `UsageSide = 'bete' | 'fr'`, `UsageSourceType`, `UsageRow`.
 - `normalizeSide(value)`: `'fr'` stays `'fr'`, anything else becomes `'bete'`.
-- `findUsages(client, { q, side, limit, offset })`: typed wrapper around the RPC; returns `{ rows, total, error }`. The threshold is left at its default.
+- `findUsages(client, { q, side, limit, offset, excludeRef })`: typed wrapper around the RPC; returns `{ rows, total, error }`. The threshold is left at its default. `excludeRef` is sent as `p_exclude_ref` only when given.
 - `splitHighlight(text, tokens, side = 'bete')`: pure parser returning `{ text, match }` parts, whole words only, no regex lookbehind (Safari 16.1). `side` decides whether an apostrophe separates words: not for Bété (it stays inside the word), yes for French (`l'été` → `l`, `été`), matching `usage_tokenize`.
 - `usageSourceLabel(row)`: a resource shows its title (or "Ressource"); an example shows "Exemple"; an expression shows "Expression idiomatique", "Expression figée" or "Proverbe" by type (else "Expression"); a grammar rule shows "Règle de grammaire".
 - `usageHref(row)`: `/resources/{ref_id}` for a resource, `/lexicon/{ref_id}` for an example, `null` for expressions and grammar rules.
@@ -80,8 +84,8 @@ This feature lets users see where a word (Bété or French) is used across the c
 - **`UsageCard.tsx`**: shows the Bété line, the mot à mot in italics and the French line. Matched words are wrapped in `<mark className="rounded bg-primary/15 px-0.5 text-foreground">`; the Bété line is highlighted for a Bété search and the French line for a French search. A variant match shows a badge `variante : <words>`. The source label links to the source when there is a page.
 - **`UsageList.tsx`** (client): "Charger plus" pagination, with "Chargement…" while loading and an error message. It renders nothing when there are no rows; the pages show the empty state. No skeletons.
 - **`/usages`**: GET form with the word (`q`, cut at 100 characters) and a language select (`side`: Bhété / Français). 20 results per page. **There is no dialect filter.** Not indexed by search engines. On the French side a note explains that only resources whose text and translation have the same number of lines are found.
-- **`/lexicon/[id]`**: a "Usages" section with the first 5 usages of the entry's headword (the western form, else the IPA form), and a "Voir tous les usages (N) →" link when there are more.
-- **`/lexicon/[id]/usages`**: all usages of that headword, 20 per page, not indexed. It searches **one** form (western, else IPA); the other form is reached through the lexicon bridge in the SQL.
+- **`/lexicon/[id]`**: a "Usages" section with the first 5 usages of the entry's headword (the western form, else the IPA form), and a "Voir tous les usages (N) →" link when there are more. The entry's own examples are left out, since the "Exemples" section above already lists them.
+- **`/lexicon/[id]/usages`**: all usages of that headword, 20 per page, not indexed. It searches **one** form (western, else IPA); the other form is reached through the lexicon bridge in the SQL. It leaves out the entry's own examples too (and `UsageList` passes the same rule to every "Charger plus" request), so its list matches the count on the entry page.
 - **`/lexicon`**: when a dictionary search has no results, a link "Voir des usages de « … » dans les textes →".
 
 ---
@@ -92,13 +96,14 @@ This feature lets users see where a word (Bété or French) is used across the c
 
 **Re-checked on 2026-10-02:**
 
-1. **Unit tests (`npm test`):** 22 files, 202 tests pass. `web/__tests__/usages.test.ts` has 16 (4 added for French highlighting).
-2. **RLS test files:** `usage-lines.test.ts` has 18 tests (the old "pairs nothing when the fields do not line up" case, which asserted the lossy behaviour, became four cases); `find-usages.test.ts` has 20 (12 cases plus an 8-case parameterised one). Both files pass against the local database after the fix: 38 tests.
+1. **Unit tests (`npm test`):** 22 files, 203 tests pass. `web/__tests__/usages.test.ts` has 17 (4 added for French highlighting, 1 for `excludeRef`).
+2. **RLS test files:** `usage-lines.test.ts` has 18 tests (the old "pairs nothing when the fields do not line up" case, which asserted the lossy behaviour, became four cases); `find-usages.test.ts` has 25 (17 cases plus an 8-case parameterised one; 5 cover leaving out an entry's own examples). The full RLS suite passes against the local database: 13 files, 158 tests.
 3. **TypeScript and lint:** `npx tsc --noEmit` reports 0 errors; `npx eslint` is clean on `lib/usages.ts`, the card component and the two test files.
 4. **Behaviour confirmed before the fix, in a rolled-back local experiment:**
    - A 3-line resource with a 2-line mot à mot and a 3-line French text produced lines with **no French at all**, and French search did not find it. The same text without a mot à mot kept the French on every line.
    - The French tokenizer stores `Voici l'été de l'eau` as `Voici, l, été, de, l, eau`, while `splitHighlight("Voici l'été", ['été'])` highlighted nothing.
-5. **The fixes were checked red-then-green:** the three new RLS cases that exercise the bug failed before the migration was applied and pass after it; the French highlighting cases are covered by unit tests.
+5. **The fixes were checked red-then-green:** the three new RLS cases that exercise the mot-à-mot bug failed before the migration was applied and pass after it; the four exclusion cases that use `p_exclude_ref` failed against the old function and pass after `20261003000004`; the French highlighting cases are covered by unit tests.
+6. **The duplicate was confirmed before the fix**, in a rolled-back local experiment: a lexicon entry's own example appeared both in its "Exemples" list and in the usages returned for its headword.
 
 ---
 
@@ -111,10 +116,10 @@ Applied to the production project (`agdqbzbjcxrzfhkvempe`) through the Supabase 
 | `20261002085129_word_usages` | `20261003000000_word_usages.sql` |
 | `20261002085145_find_usages` | `20261003000001_find_usages.sql` |
 
-`20261003000002_usage_translations_aligned_independently.sql` was added after this deployment (see "Fixed after the review") and is applied separately.
+`20261003000002_usage_translations_aligned_independently.sql` and `20261003000004_find_usages_exclude_own_examples.sql` were added after this deployment (see "Fixed after the review") and are applied separately.
 
-Checked on production on 2026-10-02:
-- `find_usages` has the signature `(q text, p_side text, p_limit integer, p_offset integer, p_threshold real)` and is executable by `anon` and `authenticated`.
+Checked on production on 2026-10-02, before `20261003000004`:
+- `find_usages` has the signature `(q text, p_side text, p_limit integer, p_offset integer, p_threshold real)` and is executable by `anon` and `authenticated`. (`20261003000004` adds a sixth argument.)
 - `rebuild_usage_lines` is security definer and **not** executable by `anon` or `authenticated`.
 - `usage_lines` and `usage_tokens` each have only a public `SELECT` policy.
 - The index is small: 2 lines (both from resources) and 19 tokens. No example, expression or grammar line is indexed yet.
@@ -130,15 +135,15 @@ select * from find_usages('test', 'bete', 5, 0, 0.4);
 
 ## 5. Known Limitations
 
-1. **A lexicon entry's own examples can appear twice**: under "Exemples" and under "Usages", because the headword's usages include the entry's own indexed examples.
-2. **Cost per lexicon page view.** `find_usages` runs on every view of `/lexicon/[id]`, uncached, on pages that are public and listed in the sitemap. Negligible with the current index; worth a cache at scale.
-3. **Unvalidated expressions and grammar rules would be indexed.** The sync ignores their `validated` flag, whereas the translator and the grammar page filter on it. Nothing is indexed from those tables yet.
-4. **No dialect filtering.** The dialect is stored on each line but no parameter or UI uses it.
+1. **Cost per lexicon page view.** `find_usages` runs on every view of `/lexicon/[id]`, uncached, on pages that are public and listed in the sitemap. Measured on a synthetic corpus of 50,000 lines (550,000 tokens): about 60–130 ms warm, and one cold run reached 733 ms for the most common word; the cost grows with the number of matching lines (the total count scans them all). The index is tiny today (2 lines), and the 3 s anonymous timeout leaves a wide margin. Worth a cache or a lazy-loaded section at much larger scale.
+2. **Unvalidated expressions and grammar rules would be indexed.** The sync ignores their `validated` flag, whereas the translator and the grammar page filter on it. This adds no new exposure: `expressions`, `grammar_rules` and `lexicon_examples` are already publicly readable. Nothing is indexed from those tables yet.
+3. **No dialect filtering.** The dialect is stored on each line but no parameter or UI uses it.
 
 ### Fixed after the review (2026-10-02)
 
 - **A mismatched mot à mot no longer drops the French** (and the other way round): each translation is attached on its own (`20261003000002`). A French search now finds a resource whose mot à mot is misaligned.
 - **French words after an apostrophe are now highlighted** (`l'été`, `d'eau`, `qu'il`): `splitHighlight` splits French on apostrophes like the SQL tokenizer.
+- **A lexicon entry's own examples no longer appear twice**: `find_usages` takes `p_exclude_ref`, and both lexicon pages pass the entry's id (`20261003000004`). The excluded lines are not counted either, so the "Voir tous les usages (N)" link matches the list.
 
 ---
 
