@@ -121,6 +121,7 @@ export function LessonEditor({
               <option value="quiz">Quiz QCM (questions à choix multiples)</option>
               <option value="assignment">Devoir à rendre (réponse écrite ou enregistrement)</option>
               <option value="fill_in_blank">Texte à trous (exercice interactif à compléter)</option>
+              <option value="pronunciation">Prononciation (l’apprenant s’enregistre, vous validez)</option>
             </select>
           </div>
         </div>
@@ -140,9 +141,11 @@ export function LessonEditor({
       </div>
 
       {/* Audio upload section */}
-      {kind === 'audio' && (
+      {(kind === 'audio' || kind === 'pronunciation') && (
         <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-          <h3 className="text-sm font-semibold">Enregistrement audio de la leçon</h3>
+          <h3 className="text-sm font-semibold">
+            {kind === 'pronunciation' ? 'Audio modèle (la prononciation à imiter)' : 'Enregistrement audio de la leçon'}
+          </h3>
           <AudioUploader
             courseOwnerId={courseOwnerId}
             lessonId={lesson.id}
@@ -197,6 +200,8 @@ export function LessonEditor({
               ? 'Notes & Ressources complémentaires (Markdown)'
               : kind === 'fill_in_blank'
               ? 'Texte à trous (Markdown avec [[réponse]])'
+              : kind === 'pronunciation'
+              ? 'Consigne et phrase à prononcer (Markdown)'
               : 'Contenu du cours (Markdown)'}
           </label>
           <div className="flex gap-1 lg:hidden">
@@ -227,6 +232,8 @@ export function LessonEditor({
                   ? 'Ajoutez les remarques, résumés ou liens utiles accompagnant la vidéo…'
                   : kind === 'fill_in_blank'
                   ? 'Ex: En bhété, [[Awa]] signifie bonjour et [[N\'zue|Oua|Awa:Mot pour l\'eau]] signifie eau.'
+                  : kind === 'pronunciation'
+                  ? 'Ex: Répétez la phrase : **Awa ɛ wa.** Écoutez le modèle puis enregistrez-vous.'
                   : 'Écrivez votre leçon ici…'
               }
             />
