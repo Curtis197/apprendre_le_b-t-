@@ -43,7 +43,9 @@ create index if not exists usage_tokens_trgm_idx  on usage_tokens using gin (tok
 
 alter table usage_lines  enable row level security;
 alter table usage_tokens enable row level security;
+drop policy if exists usage_lines_select on usage_lines;
 create policy usage_lines_select  on usage_lines  for select using (true);
+drop policy if exists usage_tokens_select on usage_tokens;
 create policy usage_tokens_select on usage_tokens for select using (true);
 -- No insert/update/delete policies: only the security-definer sync functions below write.
 
