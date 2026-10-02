@@ -111,8 +111,22 @@ This feature enables users to discover and inspect where any word (Bété or Fre
 
 ---
 
-## 4. Production Deployment Checklist
+## 4. Remote Production Deployment & Verification
 
-When deploying to remote Supabase (`agdqbzbjcxrzfhkvempe`), execute the migrations via the Supabase MCP:
-1. Apply `supabase/migrations/20261003000000_word_usages.sql` (Creates `usage_lines`, `usage_tokens`, triggers, and backfills data).
-2. Apply `supabase/migrations/20261003000001_find_usages.sql` (Creates `find_usages` RPC and trigram GIN indexes).
+The database migrations were applied to the remote Supabase project (`agdqbzbjcxrzfhkvempe`) via the `supabase-mcp-server` (`apply_migration`):
+
+1. **`20261002085129_word_usages`** (from `supabase/migrations/20261003000000_word_usages.sql`):
+   - Created `usage_lines` and `usage_tokens` tables with GIN and btree indexes.
+   - Configured RLS select policies and internal security definer sync triggers on `community_texts`, `lexicon_examples`, `expressions`, and `grammar_rules`.
+   - Executed initial backfill across all existing records in the remote corpus.
+2. **`20261002085145_find_usages`** (from `supabase/migrations/20261003000001_find_usages.sql`):
+   - Installed `find_usages` RPC with full exact, trigram variant, Levenshtein edit distance, and French stemming search capabilities.
+   - Granted execution permissions to `anon` and `authenticated` roles.
+
+### Remote Verification Test
+Direct SQL query executed on production database confirmed operational status:
+```sql
+select * from find_usages('test', 'bete', 5, 0, 0.4);
+```
+Returned matched lines with exact match scoring (`match_kind: 'exact', similarity: 1.0, total_count: 1`), confirming that data indexing, triggers, and RPC search are fully operational in production.
+
