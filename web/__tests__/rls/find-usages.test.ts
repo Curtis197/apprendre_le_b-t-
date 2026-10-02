@@ -148,3 +148,82 @@ describe('find_usages', () => {
     })
   })
 })
+
+describe('find_usages: leaving out a lexicon entry’s own examples', () => {
+  const word = `zzown${uid()}`
+  let ownEntry: string
+  let otherEntry: string
+  let resourceId: string
+  const lexiconIds: string[] = []
+
+  async function entry(tag: string) {
+    const id = must(
+      await admin
+        .from('lexicon')
+        .insert({ bete_word: `ipa-${tag}-${uid()}`, bete_phonetic: `lat-${tag}-${uid()}`, french_candidates: [], top_french: 'x', probability: 1 })
+        .select('id')
+        .single(),
+      'entry',
+    ).id as string
+    lexiconIds.push(id)
+    return id
+  }
+
+  async function example(lexicon_id: string, bete_snippet: string) {
+    return must(
+      await admin.from('lexicon_examples').insert({ lexicon_id, bete_snippet, french_snippet: 'x' }).select('id').single(),
+      'example',
+    ).id as string
+  }
+
+  beforeAll(async () => {
+    ownEntry = await entry('own')
+    otherEntry = await entry('other')
+    await example(ownEntry, `${word} ko sa`)
+    await example(otherEntry, `${word} mu ni`)
+    resourceId = must(
+      await admin.from('community_texts').insert({ title: 'T', type: 'song', content_bete: `${word} zo ra` }).select('id').single(),
+      'resource',
+    ).id as string
+  })
+
+  afterAll(async () => {
+    await admin.from('community_texts').delete().eq('id', resourceId)
+    await admin.from('lexicon').delete().in('id', lexiconIds) // its examples go with it
+  })
+
+  const search = async (extra: Record<string, unknown> = {}) =>
+    must(await anonClient().rpc('find_usages', { q: word, p_limit: 50, ...extra }), 'search') as
+      (Usage & { line_id: string; source_type: string; ref_id: string | null })[]
+
+  it('returns every usage when no entry is excluded (the call still works with 5 arguments)', async () => {
+    const rows = await search()
+    expect(rows.map(r => r.source_type).sort()).toEqual(['example', 'example', 'resource'])
+    expect(rows[0].total_count).toBe(3)
+  })
+
+  it('leaves out the excluded entry’s own examples and no one else’s', async () => {
+    const rows = await search({ p_exclude_ref: ownEntry })
+    expect(rows.map(r => r.source_type).sort()).toEqual(['example', 'resource'])
+    expect(rows.find(r => r.source_type === 'example')?.ref_id).toBe(otherEntry)
+    expect(rows.some(r => r.ref_id === ownEntry)).toBe(false)
+  })
+
+  it('does not count the excluded lines either, so the total matches the list', async () => {
+    const rows = await search({ p_exclude_ref: ownEntry })
+    expect(rows).toHaveLength(2)
+    expect(rows[0].total_count).toBe(2)
+  })
+
+  it('never hides a resource, even if its id is given', async () => {
+    const rows = await search({ p_exclude_ref: resourceId })
+    expect(rows).toHaveLength(3)
+  })
+
+  it('pages consistently while excluding', async () => {
+    const p1 = await search({ p_exclude_ref: ownEntry, p_limit: 1, p_offset: 0 })
+    const p2 = await search({ p_exclude_ref: ownEntry, p_limit: 1, p_offset: 1 })
+    expect([p1[0].line_id, p2[0].line_id].sort()).toEqual((await search({ p_exclude_ref: ownEntry })).map(r => r.line_id).sort())
+    expect(p1[0].total_count).toBe(2)
+  })
+})

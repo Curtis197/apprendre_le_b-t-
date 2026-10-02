@@ -19,7 +19,9 @@ export default async function WordUsagesPage({ params }: { params: Promise<{ id:
 
   const word = cleanBeteForm(entry.bete_phonetic) || cleanBeteForm(entry.bete_word)
   if (!word) notFound()
-  const { rows, total, error } = await findUsages(supabase, { q: word, limit: PAGE_SIZE })
+  // The entry's own examples are already on its page: leave them out, so this list matches the
+  // "Voir tous les usages (N)" count on the entry page.
+  const { rows, total, error } = await findUsages(supabase, { q: word, limit: PAGE_SIZE, excludeRef: id })
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-10 space-y-6">
@@ -29,7 +31,7 @@ export default async function WordUsagesPage({ params }: { params: Promise<{ id:
       <h1 className="font-heading text-2xl font-bold">Usages de « {word} »</h1>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {!error && rows.length === 0 && <p className="text-sm text-muted-foreground">Aucun usage trouvé pour ce mot.</p>}
-      <UsageList initialRows={rows} total={total} q={word} side="bete" pageSize={PAGE_SIZE} />
+      <UsageList initialRows={rows} total={total} q={word} side="bete" pageSize={PAGE_SIZE} excludeRef={id} />
     </main>
   )
 }

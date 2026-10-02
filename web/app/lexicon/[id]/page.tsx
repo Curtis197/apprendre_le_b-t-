@@ -100,7 +100,8 @@ export default async function LexiconEntryPage({
   const bete = western || ipa
   const label = bete || french || 'Mot'
   const descText = pickDescription(entry)
-  const usages = bete ? await findUsages(await createClient(), { q: bete, limit: 5 }) : null
+  // The entry's own examples are listed in "Exemples" above: leave them out of "Usages".
+  const usages = bete ? await findUsages(await createClient(), { q: bete, limit: 5, excludeRef: id }) : null
 
   const jsonLd = [
     // Only describe a real dictionary term once the entry has a translation.
