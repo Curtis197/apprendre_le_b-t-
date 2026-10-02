@@ -14,6 +14,7 @@ import {
   buildWordPayload,
   contributionErrorMessage,
   exampleState,
+  WORD_ALREADY_CLAIMED,
 } from '@/lib/contribution'
 import {
   addTranslation,
@@ -92,7 +93,19 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
         let lexiconId = initialId
         if (initialId) {
           const claimPayload = buildWordClaimPayload(fields)
-          ;({ error } = await supabaseRef.current.from('lexicon').update(claimPayload).eq('id', initialId))
+          // Only a still-untranslated placeholder can be claimed. If someone got there first the
+          // update matches no row (the database would silently ignore the forms anyway), so say so
+          // instead of reporting a success that wrote nothing.
+          const claim = await supabaseRef.current
+            .from('lexicon')
+            .update(claimPayload)
+            .eq('id', initialId)
+            .eq('bete_phonetic', '')
+            .select('id')
+          error = claim.error
+          if (!error && (claim.data?.length ?? 0) === 0) {
+            error = { code: WORD_ALREADY_CLAIMED, message: 'placeholder already translated' }
+          }
           if (!error) {
             const transRes = await addTranslation(supabaseRef.current, initialId, { french: wordFrench })
             if (transRes.error && transRes.error !== DUPLICATE_TRANSLATION_MESSAGE) {

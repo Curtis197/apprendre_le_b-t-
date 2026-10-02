@@ -5,6 +5,7 @@ import {
   buildWordPayload,
   contributionErrorMessage,
   exampleState,
+  WORD_ALREADY_CLAIMED,
 } from '../lib/contribution'
 
 describe('exampleState', () => {
@@ -105,6 +106,10 @@ describe('buildExampleRow', () => {
 describe('contributionErrorMessage', () => {
   it('explains a duplicate word in the same dialect (unique violation)', () => {
     expect(contributionErrorMessage({ code: '23505' })).toBe('Ce mot existe déjà dans ce dialecte.')
+  })
+
+  it('explains that a placeholder was translated by someone else in the meantime', () => {
+    expect(contributionErrorMessage({ code: WORD_ALREADY_CLAIMED })).toContain("vient d'être traduit")
   })
 
   it('falls back to a generic message otherwise', () => {

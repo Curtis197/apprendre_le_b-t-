@@ -13,6 +13,8 @@ export function HeaderSearch() {
   const [isPending, startTransition] = useTransition()
   const supabaseRef = useRef(createClient())
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Only the latest request may write results: a slow earlier one must not overwrite a newer one.
+  const requestRef = useRef(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -40,13 +42,15 @@ export function HeaderSearch() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (!query.trim()) {
+      requestRef.current++
       debounceRef.current = setTimeout(() => setResults([]), 0)
       return
     }
     debounceRef.current = setTimeout(() => {
+      const requestId = ++requestRef.current
       startTransition(async () => {
         const { rows } = await searchLexicon(supabaseRef.current, { q: query, limit: 6 })
-        setResults(rows)
+        if (requestId === requestRef.current) setResults(rows)
       })
     }, 250)
   }, [query])

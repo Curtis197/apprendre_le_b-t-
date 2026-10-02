@@ -73,8 +73,18 @@ export function buildExampleRow(lexiconId: string, f: ExampleFields) {
 
 const GENERIC_ERROR = "Erreur lors de l'envoi. Veuillez réessayer."
 
-/** User-facing message for a failed submit. 23505 = unique (bete_word, dialect) violation. */
+/** Set on the error thrown when the placeholder being filled in was translated by someone else first. */
+export const WORD_ALREADY_CLAIMED = 'WORD_ALREADY_CLAIMED'
+
+/**
+ * User-facing message for a failed submit. 23505 = unique (bete_word, dialect) violation;
+ * WORD_ALREADY_CLAIMED = another contributor translated this placeholder in the meantime.
+ */
 export function contributionErrorMessage(error: unknown): string {
   const code = (error as { code?: string } | null)?.code
-  return code === '23505' ? 'Ce mot existe déjà dans ce dialecte.' : GENERIC_ERROR
+  if (code === '23505') return 'Ce mot existe déjà dans ce dialecte.'
+  if (code === WORD_ALREADY_CLAIMED) {
+    return "Ce mot vient d'être traduit par quelqu'un d'autre. Ouvrez sa fiche pour ajouter votre traduction."
+  }
+  return GENERIC_ERROR
 }
