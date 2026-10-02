@@ -7,6 +7,10 @@
 -- substring match. Behaviour is unchanged: same matches, same ranking.
 create extension if not exists pg_trgm with schema extensions;
 
+-- pg_trgm lives in `extensions` on a fresh Supabase database but in `public` on production, so the
+-- operator class is resolved through the search path instead of being schema-qualified.
+set local search_path = public, extensions;
+
 create or replace function search_norm(t text)
 returns text language sql immutable parallel safe strict as $$
   select lower(extensions.unaccent('extensions.unaccent'::regdictionary, t))
@@ -19,11 +23,11 @@ returns text language sql immutable parallel safe as $$
 $$;
 
 create index if not exists lexicon_search_phonetic_idx
-  on lexicon using gin (search_norm(bete_phonetic) extensions.gin_trgm_ops);
+  on lexicon using gin (search_norm(bete_phonetic) gin_trgm_ops);
 create index if not exists lexicon_search_word_idx
-  on lexicon using gin (search_norm(bete_word) extensions.gin_trgm_ops);
+  on lexicon using gin (search_norm(bete_word) gin_trgm_ops);
 create index if not exists lexicon_translations_search_french_idx
-  on lexicon_translations using gin (search_norm(french) extensions.gin_trgm_ops);
+  on lexicon_translations using gin (search_norm(french) gin_trgm_ops);
 
 create or replace function search_lexicon(
   q         text,
