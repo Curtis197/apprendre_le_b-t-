@@ -10,6 +10,9 @@ import { JsonLd } from '@/components/JsonLd'
 import { SITE_URL } from '@/lib/site'
 import { cleanBeteForm, pickDescription, sortTranslations, translationsSummary } from '@/lib/lexicon'
 import { InterlinearGloss } from '@/components/InterlinearGloss'
+import { findUsages } from '@/lib/usages'
+import { UsageCard } from '@/components/UsageCard'
+import Link from 'next/link'
 
 type Entry = TLexiconEntry & {
   lexicon_examples: LexiconExample[]
@@ -97,6 +100,7 @@ export default async function LexiconEntryPage({
   const bete = western || ipa
   const label = bete || french || 'Mot'
   const descText = pickDescription(entry)
+  const usages = bete ? await findUsages(await createClient(), { q: bete, limit: 5 }) : null
 
   const jsonLd = [
     // Only describe a real dictionary term once the entry has a translation.
@@ -151,6 +155,19 @@ export default async function LexiconEntryPage({
               />
             ))}
           </div>
+        </section>
+      )}
+      {usages && usages.rows.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-semibold text-lg font-heading">Usages</h2>
+          <div className="space-y-3">
+            {usages.rows.map(row => <UsageCard key={row.line_id} row={row} side="bete" />)}
+          </div>
+          {usages.total > usages.rows.length && (
+            <Link href={`/lexicon/${id}/usages`} className="text-sm text-primary hover:underline font-medium">
+              Voir tous les usages ({usages.total}) →
+            </Link>
+          )}
         </section>
       )}
     </main>
