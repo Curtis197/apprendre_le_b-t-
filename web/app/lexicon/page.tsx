@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, LayoutGrid, List } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { FilterPills } from '@/components/FilterPills'
-import { WordCard } from '@/components/WordCard'
+import { WordCard, type WordCardEntry } from '@/components/WordCard'
 import { createClient } from '@/lib/supabase-browser'
-import type { LexiconEntry } from '@/lib/types'
 import { DialectSelector } from '@/components/DialectSelector'
 import { useDialect } from '@/context/DialectContext'
+import { Input } from '@/components/ui/input'
+import { otherMeaningsLabel, translationCount } from '@/lib/lexicon'
+import { searchLexicon } from '@/lib/lexicon-search'
 import Link from 'next/link'
 
 const FILTERS: { label: string; tag: string | null }[] = [
@@ -38,7 +40,22 @@ function primaryLabel(pos: string[] | null): string {
   return TAG_LABELS[pos[0]] ?? pos[0]
 }
 
-function ListRow({ entry }: { entry: LexiconEntry }) {
+type LexiconListEntry = WordCardEntry & {
+  matchedFrench?: string | null
+  extraMeanings?: number
+}
+
+function ListRow({
+  entry,
+  extraMeanings,
+  matchedFrench,
+}: {
+  entry: WordCardEntry
+  extraMeanings?: number
+  matchedFrench?: string | null
+}) {
+  const meaningsText = extraMeanings !== undefined ? otherMeaningsLabel(extraMeanings + 1) : null
+
   return (
     <Link
       href={`/lexicon/${entry.id}`}
@@ -53,9 +70,21 @@ function ListRow({ entry }: { entry: LexiconEntry }) {
         </span>
         <span className="text-xs font-mono text-muted-foreground">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
       </div>
-      <span className="text-sm text-muted-foreground italic truncate max-w-[200px] shrink-0">
-        {entry.top_french}
-      </span>
+      <div className="flex items-center gap-2 shrink-0 max-w-[260px]">
+        <span className="text-sm text-muted-foreground italic truncate">
+          {entry.top_french}
+        </span>
+        {meaningsText && (
+          <span className="text-xs text-muted-foreground not-italic shrink-0">
+            {meaningsText}
+          </span>
+        )}
+        {matchedFrench && matchedFrench !== entry.top_french && (
+          <span className="text-xs text-muted-foreground not-italic truncate">
+            (« {matchedFrench} »)
+          </span>
+        )}
+      </div>
       {entry.validated ? (
         <span className="text-xs text-secondary font-semibold shrink-0">✓</span>
       ) : (
@@ -68,7 +97,9 @@ function ListRow({ entry }: { entry: LexiconEntry }) {
 export default function LexiconPage() {
   const [category, setCategory] = useState('Tous')
   const [letter, setLetter] = useState('Tous')
-  const [entries, setEntries] = useState<LexiconEntry[]>([])
+  const [query, setQuery] = useState('')
+  const [debounced, setDebounced] = useState('')
+  const [entries, setEntries] = useState<LexiconListEntry[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -76,43 +107,100 @@ export default function LexiconPage() {
   const supabaseRef = useRef(createClient())
   const { dialect } = useDialect()
 
-  useEffect(() => { setPage(0) }, [category, letter, dialect])
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebounced(query)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  // Reset page to 0 when filter params change during render
+  const [prevParams, setPrevParams] = useState({ category, letter, dialect, debounced })
+  if (
+    prevParams.category !== category ||
+    prevParams.letter !== letter ||
+    prevParams.dialect !== dialect ||
+    prevParams.debounced !== debounced
+  ) {
+    setPrevParams({ category, letter, dialect, debounced })
+    setPage(0)
+  }
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true)
+    })
     const from = page * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
     const filter = FILTERS.find(f => f.label === category)
+    const searchText = debounced.trim()
 
-    let q = supabaseRef.current
-      .from('lexicon')
-      .select('*', { count: 'exact' })
-      .not('pos', 'cs', '{"fragment"}')
-      .eq('dialect', dialect)
-      // Untranslated placeholders (empty bete_phonetic) are not dictionary entries yet.
-      .neq('bete_phonetic', '')
-      .order('upvotes', { ascending: false })
-      .range(from, to)
+    if (searchText) {
+      searchLexicon(supabaseRef.current, {
+        q: searchText,
+        dialect,
+        pos: filter?.tag,
+        limit: PAGE_SIZE,
+        offset: from,
+      }).then(({ rows, total: searchTotal, error }) => {
+        if (cancelled) return
+        if (!error) {
+          setEntries(
+            rows.map(r => ({
+              id: r.id,
+              bete_phonetic: r.bete_phonetic,
+              bete_word: r.bete_word,
+              top_french: r.top_french,
+              pos: r.pos,
+              validated: r.validated,
+              matchedFrench: r.matched_french,
+            }))
+          )
+          setTotal(searchTotal)
+        }
+        setLoading(false)
+      })
+    } else {
+      let q = supabaseRef.current
+        .from('lexicon')
+        .select('*, lexicon_translations(count)', { count: 'exact' })
+        .not('pos', 'cs', '{"fragment"}')
+        .eq('dialect', dialect)
+        // Untranslated placeholders (empty bete_phonetic) are not dictionary entries yet.
+        .neq('bete_phonetic', '')
+        .order('bete_phonetic', { ascending: true })
+        .range(from, to)
 
-    if (filter?.tag) {
-      q = q.contains('pos', [filter.tag])
-    }
-    
-    if (letter !== 'Tous') {
-      q = q.or(`bete_phonetic.ilike.${letter}%,top_french.ilike.${letter}%`)
-    }
-
-    q.then(({ data, count, error }) => {
-      if (cancelled) return
-      if (!error) {
-        setEntries((data ?? []) as LexiconEntry[])
-        setTotal(count ?? 0)
+      if (filter?.tag) {
+        q = q.contains('pos', [filter.tag])
       }
-      setLoading(false)
-    })
+
+      if (letter !== 'Tous') {
+        q = q.or(`bete_phonetic.ilike.${letter}%,top_french.ilike.${letter}%`)
+      }
+
+      q.then(({ data, count, error }) => {
+        if (cancelled) return
+        if (!error) {
+          type LexiconDbRow = WordCardEntry & { lexicon_translations?: { count: number }[] | null }
+          const list = (data ?? []).map((row: LexiconDbRow) => ({
+            id: row.id,
+            bete_phonetic: row.bete_phonetic,
+            bete_word: row.bete_word,
+            top_french: row.top_french,
+            pos: row.pos,
+            validated: row.validated,
+            extraMeanings: Math.max(0, translationCount(row.lexicon_translations) - 1),
+          }))
+          setEntries(list)
+          setTotal(count ?? 0)
+        }
+        setLoading(false)
+      })
+    }
     return () => { cancelled = true }
-  }, [category, letter, page, dialect])
+  }, [category, letter, page, dialect, debounced])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -128,10 +216,22 @@ export default function LexiconPage() {
         <DialectSelector />
       </div>
 
+      <div className="mb-6">
+        <Input
+          type="search"
+          placeholder="Rechercher en bhété ou en français…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          className="max-w-md text-base"
+        />
+      </div>
+
       <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 mb-6">
         <div className="flex flex-col gap-3 max-w-full overflow-hidden">
           <FilterPills options={FILTER_LABELS} value={category} onChange={setCategory} />
-          <FilterPills options={['Tous', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')]} value={letter} onChange={setLetter} />
+          {!debounced.trim() && (
+            <FilterPills options={['Tous', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')]} value={letter} onChange={setLetter} />
+          )}
         </div>
         <div className="flex items-center gap-3 shrink-0 xl:pt-1">
           <span className="text-sm text-muted-foreground">
@@ -171,19 +271,43 @@ export default function LexiconPage() {
           </div>
         )
       ) : entries.length === 0 ? (
-        <p className="text-muted-foreground text-sm py-10 text-center">
-          Aucun mot trouvé pour cette catégorie.
-        </p>
+        debounced.trim() ? (
+          <div className="py-10 text-center space-y-3">
+            <p className="text-muted-foreground text-sm">
+              Aucun mot trouvé pour « {debounced.trim()} ».
+            </p>
+            <Link
+              href={`/contribute?word=${encodeURIComponent(debounced.trim())}&type=word`}
+              className="inline-flex items-center gap-1 text-primary hover:underline font-medium text-sm"
+            >
+              Ajouter « {debounced.trim()} » au lexique →
+            </Link>
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-sm py-10 text-center">
+            Aucun mot trouvé pour cette catégorie.
+          </p>
+        )
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {entries.map(entry => (
-            <WordCard key={entry.id} entry={entry} />
+            <WordCard
+              key={entry.id}
+              entry={entry}
+              extraMeanings={entry.extraMeanings}
+              matchedFrench={entry.matchedFrench}
+            />
           ))}
         </div>
       ) : (
         <div className="space-y-2">
           {entries.map(entry => (
-            <ListRow key={entry.id} entry={entry} />
+            <ListRow
+              key={entry.id}
+              entry={entry}
+              extraMeanings={entry.extraMeanings}
+              matchedFrench={entry.matchedFrench}
+            />
           ))}
         </div>
       )}

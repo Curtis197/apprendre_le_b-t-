@@ -1468,9 +1468,9 @@ git commit -m "feat(lexicon): detail page with translations, description and no 
 - Consumes: `searchLexicon`, `LexiconSearchRow`, `otherMeaningsLabel`, `translationCount`.
 - Produces: `WordCard` props `{ entry: WordCardEntry; extraMeanings?: number; matchedFrench?: string | null; className? }` where `WordCardEntry = Pick<LexiconEntry, 'id'|'bete_phonetic'|'bete_word'|'top_french'|'pos'|'validated'>` (exported from `WordCard.tsx`).
 
-- [ ] **Step 1: `WordCard.tsx`**: export `WordCardEntry`; change props as above; under `top_french` render `otherMeaningsLabel(extraMeanings + 1)` (as a small muted text) when not null, and `matchedFrench && matchedFrench !== entry.top_french` as `<p className="text-xs text-muted-foreground">correspond à « {matchedFrench} »</p>`. Keep the rest of the card unchanged. Remove no existing styling.
+- [x] **Step 1: `WordCard.tsx`**: export `WordCardEntry`; change props as above; under `top_french` render `otherMeaningsLabel(extraMeanings + 1)` (as a small muted text) when not null, and `matchedFrench && matchedFrench !== entry.top_french` as `<p className="text-xs text-muted-foreground">correspond à « {matchedFrench} »</p>`. Keep the rest of the card unchanged. Remove no existing styling.
 
-- [ ] **Step 2: `app/lexicon/page.tsx`**
+- [x] **Step 2: `app/lexicon/page.tsx`**
   - Add `const [query, setQuery] = useState('')` and a debounced copy `const [debounced, setDebounced] = useState('')` (250 ms `setTimeout` effect on `query`); reset `page` to 0 when `debounced` changes (add to the existing reset effect deps).
   - Add an `<Input placeholder="Rechercher en bhété ou en français…" />` under the dialect selector (import from `@/components/ui/input`); `type="search"`.
   - In the data effect: when `debounced.trim()` is non-empty, call `searchLexicon(supabaseRef.current, { q: debounced, dialect, pos: filter?.tag, limit: PAGE_SIZE, offset: from })` and set `entries` from the rows (map to `WordCardEntry`) with `matchedFrench`, and `total` from the result; the letter pills are ignored while searching (hide them: render the letter `FilterPills` only when `!debounced.trim()`). When the query is empty keep the current query but change `.order('upvotes', { ascending: false })` to `.order('bete_phonetic', { ascending: true })` and `.select('*, lexicon_translations(count)', { count: 'exact' })`.
@@ -1478,18 +1478,18 @@ git commit -m "feat(lexicon): detail page with translations, description and no 
   - Pass `extraMeanings`/`matchedFrench` into `WordCard` and `ListRow`; `ListRow` shows the same "+N autres sens" muted next to the French, and drops nothing else. Empty state when searching: `Aucun mot trouvé pour « {debounced} ».` plus a link `Ajouter « … » au lexique →` to `/contribute?word=${encodeURIComponent(debounced.trim())}&type=word` (carried over from the deleted `LexiconSearch`).
   - Keep the existing `cancelled` guard pattern in the effect.
 
-- [ ] **Step 3: `HeaderSearch.tsx`**: replace the inline `.from('lexicon')…ilike` query with `searchLexicon(supabaseRef.current, { q: query, limit: 6 })` and `setResults(rows)` (state type `LexiconSearchRow[]`). In each result row show `entry.bete_phonetic` bold, `[{entry.bete_word}]` in the muted mono line only when it differs and is not a `_pending_` form (use `cleanBeteForm`), and on the right `entry.matched_french ?? entry.top_french`.
+- [x] **Step 3: `HeaderSearch.tsx`**: replace the inline `.from('lexicon')…ilike` query with `searchLexicon(supabaseRef.current, { q: query, limit: 6 })` and `setResults(rows)` (state type `LexiconSearchRow[]`). In each result row show `entry.bete_phonetic` bold, `[{entry.bete_word}]` in the muted mono line only when it differs and is not a `_pending_` form (use `cleanBeteForm`), and on the right `entry.matched_french ?? entry.top_french`.
 
-- [ ] **Step 4: Delete `LexiconSearch.tsx`** (`git rm web/components/LexiconSearch.tsx`) after the grep check.
+- [x] **Step 4: Delete `LexiconSearch.tsx`** (`git rm web/components/LexiconSearch.tsx`) after the grep check.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 ```bash
 cd web && npx tsc --noEmit && npm run lint -- app/lexicon components/WordCard.tsx components/HeaderSearch.tsx && npm test
 ```
 Manual (dev server): `/lexicon` lists alphabetically; typing a Bété word (Latin and IPA form) and a French word (try one accented, typed without the accent) shows matching cards with "correspond à « … »" for non-primary French matches; category pills still filter while searching; typing `%` shows the empty state, no error; the header search finds both languages; no vote UI in the list.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add web/components/WordCard.tsx web/app/lexicon/page.tsx web/components/HeaderSearch.tsx
