@@ -6,6 +6,7 @@ import { VoteButtons } from './VoteButtons'
 import { createClient } from '@/lib/supabase-browser'
 import { GrammarRule, Expression } from '@/lib/types'
 import { ContributionComments } from './ContributionComments'
+import { CorrectionBox } from './CorrectionBox'
 import { useContributeRefresh } from '@/context/ContributeRefreshContext'
 import { useDialect } from '@/context/DialectContext'
 
@@ -17,6 +18,7 @@ type LexiconWord = {
   pos: string[] | null
   description: string | null
   notes: string | null
+  created_by: string | null
 }
 
 const POS_LABELS: Record<string, string> = {
@@ -51,7 +53,7 @@ export function PendingContributions() {
         .order('created_at', { ascending: false }).limit(10),
       client.from('expressions').select('*').eq('validated', false)
         .order('created_at', { ascending: false }).limit(10),
-      client.from('lexicon').select('id,bete_phonetic,bete_word,top_french,pos,description,notes')
+      client.from('lexicon').select('id,bete_phonetic,bete_word,top_french,pos,description,notes,created_by')
         .eq('validated', false).not('created_by', 'is', null).eq('dialect', dialect)
         .order('created_at', { ascending: false }).limit(10),
     ]).then(([rulesRes, exprsRes, wordsRes]) => {
@@ -95,6 +97,16 @@ export function PendingContributions() {
                   {(word.description || word.notes) && (
                     <p className="text-muted-foreground">{word.description || word.notes}</p>
                   )}
+                  <CorrectionBox
+                    targetType="word"
+                    targetId={word.id}
+                    ownerId={word.created_by}
+                    fields={[
+                      { field: 'bete_phonetic', current: word.bete_phonetic },
+                      { field: 'bete_word', current: word.bete_word },
+                      { field: 'description', current: word.description },
+                    ]}
+                  />
                   <ContributionComments targetTable="lexicon" targetId={word.id} />
                 </CardContent>
               </Card>
@@ -126,6 +138,17 @@ export function PendingContributions() {
                       <span className="font-medium">Mot à mot :</span> {ex.french_literal}
                     </p>
                   )}
+                  <CorrectionBox
+                    targetType="expression"
+                    targetId={ex.id}
+                    ownerId={ex.created_by}
+                    fields={[
+                      { field: 'bete_phrase', current: ex.bete_phrase },
+                      { field: 'bete_phonetic', current: ex.bete_phonetic },
+                      { field: 'french_phrase', current: ex.french_phrase },
+                      { field: 'french_literal', current: ex.french_literal },
+                    ]}
+                  />
                   <ContributionComments targetTable="expressions" targetId={ex.id} />
                 </CardContent>
               </Card>
@@ -152,6 +175,18 @@ export function PendingContributions() {
                 <CardContent className="text-sm space-y-1">
                   <p><span className="text-muted-foreground">FR:</span> {rule.pattern_french}</p>
                   <p><span className="text-muted-foreground">Bhété:</span> {rule.pattern_bete}</p>
+                  <CorrectionBox
+                    targetType="grammar_rule"
+                    targetId={rule.id}
+                    ownerId={rule.created_by}
+                    fields={[
+                      { field: 'pattern_french', current: rule.pattern_french },
+                      { field: 'pattern_bete', current: rule.pattern_bete },
+                      { field: 'description', current: rule.description },
+                      { field: 'example_bete', current: rule.example_bete },
+                      { field: 'example_french', current: rule.example_french },
+                    ]}
+                  />
                   <ContributionComments targetTable="grammar_rules" targetId={rule.id} />
                 </CardContent>
               </Card>

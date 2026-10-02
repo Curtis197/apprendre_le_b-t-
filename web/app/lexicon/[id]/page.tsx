@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase-server'
 import { LexiconEntry } from '@/components/LexiconEntry'
 import { LexiconTranslations } from '@/components/LexiconTranslations'
 import { LexiconDescription } from '@/components/LexiconDescription'
+import { CorrectionBox } from '@/components/CorrectionBox'
 import { notFound } from 'next/navigation'
 import type { LexiconEntry as TLexiconEntry, LexiconExample, LexiconTranslation } from '@/lib/types'
 import { JsonLd } from '@/components/JsonLd'
@@ -141,6 +142,18 @@ export default async function LexiconEntryPage({
       <JsonLd data={jsonLd} />
       <LexiconEntry entry={entry} />
       <LexiconDescription lexiconId={entry.id} initial={descText} />
+      {bete && (
+        <CorrectionBox
+          targetType="word"
+          targetId={entry.id}
+          ownerId={entry.created_by ?? null}
+          fields={[
+            { field: 'bete_phonetic', current: entry.bete_phonetic },
+            { field: 'bete_word', current: entry.bete_word },
+            { field: 'description', current: entry.description },
+          ]}
+        />
+      )}
       <LexiconTranslations lexiconId={entry.id} translations={translations} />
       {entry.lexicon_examples?.length > 0 && (
         <section className="space-y-3">
