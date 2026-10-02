@@ -1,132 +1,153 @@
 # Walkthrough: Word Usages in Community Texts
 
-**Date:** 2026-10-02  
-**Branch:** `feat/word-usages`  
-**Plan:** `docs/superpowers/plans/2026-10-02-word-usages.md`  
-**Design Spec:** `docs/superpowers/specs/2026-10-02-word-usages-design.md`  
+**Date:** 2026-10-02
+**Branch:** `feat/word-usages`
+**Plan:** `docs/superpowers/plans/2026-10-02-word-usages.md`
+**Design Spec:** `docs/superpowers/specs/2026-10-02-word-usages-design.md`
+**Corrected:** 2026-10-02, after a review that compared this document with the code, the local database and production. Corrections are listed in section 6.
 
 ---
 
 ## 1. Overview & Objectives
 
-This feature enables users to discover and inspect where any word (Bété or French) appears across community texts and linguistic records:
-1. **Cross-Corpus Usages Index:** Aggregates aligned text lines from 4 sources:
-   - `community_texts` (resources: stories, proverbs, songs, etc.)
-   - `lexicon.examples` (in-entry usage examples)
+This feature lets users see where a word (Bété or French) is used across the community corpus:
+
+1. **Cross-corpus usages index.** Aligned lines from four sources:
+   - `community_texts` (resources: stories, proverbs, songs…)
+   - `lexicon_examples` (the examples attached to a lexicon entry)
    - `expressions` (idiomatic expressions and phrases)
-   - `grammar_rules.examples` (grammar usage examples)
-2. **Variant & Phonetic Matching for Bété:**
-   - Exact token matches.
-   - Trigram similarity (`similarity >= 0.4` for tokens with length > 3) to match spelling variants (tone diacritics, apostrophes, minor spelling differences).
-   - Short-word edit distance (`levenshtein <= 1` with length window for tokens with length ≤ 3) to capture short variants without false positives.
-   - Lexicon Latin/IPA bridging: cross-references western Latin (`bete_phonetic`) and Bible/IPA (`bete_word`) forms.
-3. **Stem Matching for French:**
-   - Matches inflected French forms (plurals, verb conjugations, feminine endings) using PostgreSQL's French text search dictionary (`to_tsquery('french', ...)`).
-4. **Interactive UI & Exploration:**
-   - **Lexicon Detail Page (`/lexicon/[id]`):** Usages section displaying the top 5 occurrences, with a link to view all usages if more exist.
-   - **Dedicated Usages View (`/lexicon/[id]/usages`):** Paginated usages page with incremental loading ("Charger plus").
-   - **Free-Text Usages Search (`/usages`):** Standalone search page allowing arbitrary word or query lookups across the corpus.
-   - **Highlighted Terms:** Exact and variant matched words are highlighted with `<mark>` tags, and variant badges indicate matched spellings.
+   - `grammar_rules` (the Bété/French example of a rule)
+2. **Bété matching** (side `'bete'`):
+   - Exact word match on a normalised form (case, accents, tone marks, apostrophes and hyphens are ignored).
+   - Spelling variants by trigram similarity (`similarity >= 0.4` by default) for words longer than 3 characters.
+   - Very short words (3 characters or fewer): one edit away (`levenshtein <= 1`) and a length within ±1.
+   - Latin/IPA bridge, for **one-word queries only**: if the word is the western (`bete_phonetic`) or IPA (`bete_word`) form of a lexicon entry, the entry's other form is searched too.
+3. **French matching** (side `'fr'`): same stem, using PostgreSQL's `french_stem` dictionary (`ts_lexize`), so plurals, conjugations and feminine endings match. French matches count as exact.
+4. **Multi-word queries:** up to 6 words; **every** word must appear on the same line.
+5. **UI:** a usages block on lexicon pages, a per-word usages page with "Charger plus", and a free-text search page.
 
 ---
 
 ## 2. Key Changes & Architecture
 
-### Database Migrations (`supabase/migrations/`)
+### Database migrations (`supabase/migrations/`)
 
-- **`20261003000000_word_usages.sql`**:
-  - Created tables:
-    - `usage_lines`: Stores aligned source lines (`source_type`, `source_id`, `ref_id`, `line_no`, `bete`, `literal`, `french`, `dialect`, `title`). RLS allows public `SELECT` and restricts writes to `authenticated` users / triggers.
-    - `usage_tokens`: Stores extracted tokens for each line (`line_id`, `side` ['bete' | 'french'], `token`, `token_norm`, `token_stem`).
-  - Implemented helper & normalization functions:
-    - `usage_token_norm(text)`: Lowercases, unaccents, normalizes apostrophes/curly quotes, and strips punctuation.
-    - `usage_tokenize(text, side)`: Tokenizes input text into individual normalized words and generates French stems where applicable.
-    - `usage_split(text)`: Splits multiline text by stanza and line.
-    - `usage_same_shape(...)`: Validates whether multi-tier translations share the exact line shape before aligning French/literal lines with Bété.
-    - `rebuild_usage_lines(type, id)`: Idempotently extracts and re-tokenizes lines for any source record.
-  - Configured automatic triggers on `community_texts`, `lexicon`, `expressions`, and `grammar_rules` to keep `usage_lines` and `usage_tokens` synchronized on `INSERT`, `UPDATE`, and `DELETE`.
-  - Performed initial backfill across all existing rows in the 4 source tables.
+- **`20261003000000_word_usages.sql`**
+  - Extensions: `fuzzystrmatch` and `pg_trgm`. It also depends on `search_norm()`, defined in `20261002000000_search_lexicon_index.sql`.
+  - Tables:
+    - `usage_lines` (`source_type` in `resource | example | expression | grammar`, `source_id`, `ref_id`, `line_no`, `bete`, `literal`, `french`, `dialect`, `title`, `created_at`; unique on `(source_type, source_id, line_no)`).
+    - `usage_tokens` (`line_id`, `side` in **`'bete' | 'fr'`**, `token`, `token_norm`, `token_stem` for French).
+  - Indexes on `usage_tokens`: by line, by `(side, token_norm)`, a partial one on `(side, token_stem)` for French, by `(side, char_length(token_norm))`, and a partial trigram GIN index on `token_norm` for the Bété side.
+  - **Access:** both tables have a single public `SELECT` policy and **no** insert, update or delete policy. Only the security-definer functions below write. Execute on `usage_add_line` and `rebuild_usage_lines` is revoked from `public`, `anon` and `authenticated`.
+  - Helper functions:
+    - `usage_token_norm(text)`: folds case, accents and tone marks; drops apostrophes and hyphens.
+    - `usage_tokenize(text, side)`: splits into words. Bété keeps apostrophes inside a word; French also splits on apostrophes (`l'été` → `l`, `été`) and adds a stem.
+    - `usage_split(text)`: stanzas (blank-line separated) and lines, using the same rules as `web/lib/verses.ts`.
+    - `usage_same_shape(a, b)`: same stanza count and same line count in every stanza.
+    - `usage_add_line(...)`: writes one line and its tokens.
+    - `rebuild_usage_lines(type, id)`: deletes and recreates the lines of one source row.
+  - How a **resource** becomes lines: a single-line text is one line (`line_no = 0`) with its translations joined; a multi-line text is indexed line by line. Translations are attached **only if every translation that was supplied has the same shape as the Bété text**; otherwise none is attached (see section 5). The dialect is derived from the region: `Guiberoua` → `western`, `Gagnoa` → `northern`, `Daloa` → `eastern`, anything else → null. It is stored but not used for filtering yet.
+  - Triggers (`usage_sync`, calling the security-definer `usage_sync_trigger`), each also firing on delete:
+    - on `community_texts`: insert, or update of `title`, `region`, `content_bete`, `content_literal`, `content_french`;
+    - on `lexicon_examples`: `lexicon_id`, `bete_snippet`, `french_snippet`, `french_literal`, `dialect`;
+    - on `expressions`: `bete_phrase`, `bete_phonetic`, `french_phrase`, `french_literal`, `type`;
+    - on `grammar_rules`: `example_bete`, `example_french`, `example_bete_phonetic`.
+  - An initial backfill rebuilds every existing row of the four sources.
 
-- **`20261003000001_find_usages.sql`**:
-  - Implemented `find_usages(q text, side text, dialect text, lim int, off int)` RPC:
-    - Input sanitization: trims query, strips dangerous `%`, `_`, `\` patterns, and limits token length.
-    - Bété search branch: matches normalized tokens against exact matches, trigram variants (`similarity >= 0.4`), short-word Levenshtein distances (`<= 1`), and bridged Latin/IPA equivalents from `lexicon`.
-    - French search branch: matches normalized exact tokens or French stems (`to_tsquery('french', ...)`).
-    - Returns match rank (0 = exact, 1 = variant), matched token, total count, and full line context.
-    - Optimized with trigram GIN indexes on `usage_tokens(token_norm gin_trgm_ops)`.
+- **`20261003000001_find_usages.sql`**
+  - `find_usages(q text, p_side text default 'bete', p_limit int default 5, p_offset int default 0, p_threshold real default 0.4)`.
+  - `language sql stable`, security **invoker**, `search_path = public, extensions`; execute granted to `anon` and `authenticated`.
+  - The function sets `pg_trgm.similarity_threshold = '0.3'` so the trigram index returns candidates, then applies the caller's `p_threshold`.
+  - The query is cleaned of `%`, `_` and `\` (harmless: no `LIKE` is used), reduced to at most 6 words, and `p_limit` is clamped to 1–50. An unknown side returns nothing.
+  - Returns: `line_id, source_type, source_id, ref_id, line_no, title, dialect, bete, literal, french, created_at, match_kind ('exact' | 'variant'), matched_tokens, similarity, total_count`.
+  - Order: exact matches first, then by similarity, then newest first.
 
-### Business Logic & Client Helpers (`web/lib/`)
+### Client helpers (`web/lib/usages.ts`)
 
-- **`usages.ts`**:
-  - `findUsages(...)`: Typed wrapper around the `find_usages` RPC handling client parameters and returning `UsageResult`.
-  - `splitHighlight(...)`: Pure text parser that identifies matched words (handling word boundaries without regex lookbehind for Safari 16.1+ compatibility) and outputs segments (`{ text, highlight }`).
-  - `usageSourceLabel(...)`: Human-readable French labels for source categories ("Texte communautaire", "Exemple de dictionnaire", "Expression", "Règle de grammaire").
-  - `usageHref(...)`: Generates direct navigation links to source items.
-  - `normalizeSide(...)`: Safely normalizes side parameter to `'bete'` or `'french'`.
+- Types: `UsageSide = 'bete' | 'fr'`, `UsageSourceType`, `UsageRow`.
+- `normalizeSide(value)`: `'fr'` stays `'fr'`, anything else becomes `'bete'`.
+- `findUsages(client, { q, side, limit, offset })`: typed wrapper around the RPC; returns `{ rows, total, error }`. The threshold is left at its default.
+- `splitHighlight(text, tokens)`: pure parser returning `{ text, match }` parts, whole words only, no regex lookbehind (Safari 16.1).
+- `usageSourceLabel(row)`: a resource shows its title (or "Ressource"); an example shows "Exemple"; an expression shows "Expression idiomatique", "Expression figée" or "Proverbe" by type (else "Expression"); a grammar rule shows "Règle de grammaire".
+- `usageHref(row)`: `/resources/{ref_id}` for a resource, `/lexicon/{ref_id}` for an example, `null` for expressions and grammar rules.
 
-### UI Components & Routes (`web/components/` & `web/app/`)
+### UI components and routes (`web/components/`, `web/app/`)
 
-- **`UsageCard.tsx`**:
-  - Server-compatible card displaying Bété text, French translation, and literal/mot-à-mot translation when available.
-  - Highlights matched terms with styling (`bg-amber-100 text-amber-950 font-medium px-0.5 rounded`).
-  - Displays a variant badge (`« token »`) when a variant or stem matched rather than the exact query.
-  - Links to the source resource or entry.
-- **`UsageList.tsx`**:
-  - Client component managing incremental pagination ("Charger plus").
-  - Displays loading skeletons and empty/error states in French.
-- **`app/usages/page.tsx`**:
-  - Free-text search page with GET form and search input.
-  - Dynamic result list with side and dialect support.
-- **`app/lexicon/[id]/usages/page.tsx`**:
-  - Dedicated usages page for a specific lexicon word with breadcrumbs back to the lexicon entry.
-  - Pre-queries both Latin and Bible/IPA forms.
-- **`app/lexicon/[id]/page.tsx`**:
-  - Added an integrated "Exemples d'utilisation" section on the lexicon detail page.
-  - Displays up to 5 usages with a "Voir toutes les utilisations (N) →" link if more are available.
-- **`app/lexicon/page.tsx`**:
-  - Added a contextual link to `/usages` when a dictionary search returns no entries.
+- **`UsageCard.tsx`**: shows the Bété line, the mot à mot in italics and the French line. Matched words are wrapped in `<mark className="rounded bg-primary/15 px-0.5 text-foreground">`; the Bété line is highlighted for a Bété search and the French line for a French search. A variant match shows a badge `variante : <words>`. The source label links to the source when there is a page.
+- **`UsageList.tsx`** (client): "Charger plus" pagination, with "Chargement…" while loading and an error message. It renders nothing when there are no rows; the pages show the empty state. No skeletons.
+- **`/usages`**: GET form with the word (`q`, cut at 100 characters) and a language select (`side`: Bhété / Français). 20 results per page. **There is no dialect filter.** Not indexed by search engines. On the French side a note explains that only resources whose text and translation have the same number of lines are found.
+- **`/lexicon/[id]`**: a "Usages" section with the first 5 usages of the entry's headword (the western form, else the IPA form), and a "Voir tous les usages (N) →" link when there are more.
+- **`/lexicon/[id]/usages`**: all usages of that headword, 20 per page, not indexed. It searches **one** form (western, else IPA); the other form is reached through the lexicon bridge in the SQL.
+- **`/lexicon`**: when a dictionary search has no results, a link "Voir des usages de « … » dans les textes →".
 
 ---
 
 ## 3. Verification & Testing
 
-1. **Unit Tests (`npm test`):**
-   - 22 test files, 198 tests passed.
-   - Added `web/__tests__/usages.test.ts` (12 tests) verifying `splitHighlight` with exact matches, accents, diacritics, and punctuation, `usageSourceLabel`, `usageHref`, and error handling.
+**Reported by the author (not re-run in the review):** `npm run build`, the deletion audit, and the full RLS suite (13 files, 150 tests).
 
-2. **Database & RLS Integration Tests (`npm run test:rls`):**
-   - 13 test files, 150 tests passed.
-   - `web/__tests__/rls/usage-lines.test.ts` (15 tests): verifies triggers, cascading deletes, multi-tier shape alignment, and RLS policies on `usage_lines` and `usage_tokens`.
-   - `web/__tests__/rls/find-usages.test.ts` (20 tests): verifies exact matching, Bété trigram variant matching, short-word edit distance, French stemming, Latin/IPA bridging, pagination, and punctuation safety.
+**Re-checked on 2026-10-02:**
 
-3. **TypeScript & Static Analysis:**
-   - `npx tsc --noEmit`: 0 errors.
-   - `npx eslint`: 0 errors/warnings on all created and modified files.
-
-4. **Production Build (`npm run build`):**
-   - Successfully compiled and built all static and dynamic routes, including `/usages` and `/lexicon/[id]/usages`.
-
-5. **Deletion & Preservation Audit:**
-   - Verified with `git diff --name-status master...HEAD`: 0 unintended deletions across the entire repository.
+1. **Unit tests (`npm test`):** 22 files, 198 tests pass. `web/__tests__/usages.test.ts` has 12.
+2. **RLS test files:** `usage-lines.test.ts` has 15 tests; `find-usages.test.ts` has 20 (12 cases plus an 8-case parameterised one). Not re-run, because they share the local database with other work in progress.
+3. **TypeScript and lint:** `npx tsc --noEmit` reports 0 errors; `npx eslint` is clean on `lib/usages.ts`, the two components, the pages and the unit test.
+4. **Behaviour confirmed in a rolled-back local experiment:**
+   - A 3-line resource with a 2-line mot à mot and a 3-line French text produced lines with **no French at all**, and French search did not find it. The same text without a mot à mot kept the French on every line.
+   - The French tokenizer stores `Voici l'été de l'eau` as `Voici, l, été, de, l, eau`.
+5. **Highlighting check:** `splitHighlight("Voici l'été", ['été'])` highlights nothing, so elided French words are found but not highlighted.
 
 ---
 
 ## 4. Remote Production Deployment & Verification
 
-The database migrations were applied to the remote Supabase project (`agdqbzbjcxrzfhkvempe`) via the `supabase-mcp-server` (`apply_migration`):
+Applied to the production project (`agdqbzbjcxrzfhkvempe`) through the Supabase tool. The migration history records them as:
 
-1. **`20261002085129_word_usages`** (from `supabase/migrations/20261003000000_word_usages.sql`):
-   - Created `usage_lines` and `usage_tokens` tables with GIN and btree indexes.
-   - Configured RLS select policies and internal security definer sync triggers on `community_texts`, `lexicon_examples`, `expressions`, and `grammar_rules`.
-   - Executed initial backfill across all existing records in the remote corpus.
-2. **`20261002085145_find_usages`** (from `supabase/migrations/20261003000001_find_usages.sql`):
-   - Installed `find_usages` RPC with full exact, trigram variant, Levenshtein edit distance, and French stemming search capabilities.
-   - Granted execution permissions to `anon` and `authenticated` roles.
+| History entry | Repository file |
+|---|---|
+| `20261002085129_word_usages` | `20261003000000_word_usages.sql` |
+| `20261002085145_find_usages` | `20261003000001_find_usages.sql` |
 
-### Remote Verification Test
-Direct SQL query executed on production database confirmed operational status:
+Checked on production on 2026-10-02:
+- `find_usages` has the signature `(q text, p_side text, p_limit integer, p_offset integer, p_threshold real)` and is executable by `anon` and `authenticated`.
+- `rebuild_usage_lines` is security definer and **not** executable by `anon` or `authenticated`.
+- `usage_lines` and `usage_tokens` each have only a public `SELECT` policy.
+- The index is small: 2 lines (both from resources) and 19 tokens. No example, expression or grammar line is indexed yet.
+- Statement timeouts are `anon` = 3 s and `authenticated` = 8 s, which bound any runaway query.
+
+The original verification query still applies:
+
 ```sql
 select * from find_usages('test', 'bete', 5, 0, 0.4);
 ```
-Returned matched lines with exact match scoring (`match_kind: 'exact', similarity: 1.0, total_count: 1`), confirming that data indexing, triggers, and RPC search are fully operational in production.
 
+---
+
+## 5. Known Limitations
+
+1. **A mismatched mot à mot drops the French too.** `rebuild_usage_lines` uses one flag for both translations, so if either one does not have the same shape as the Bété text, neither is attached. French search then cannot find that resource. Aligning the two translations independently would fix it.
+2. **French words after an apostrophe are found but not highlighted** (`l'été`, `d'eau`, `qu'il`): the SQL tokenizer splits French on apostrophes and `splitHighlight` does not.
+3. **A lexicon entry's own examples can appear twice**: under "Exemples" and under "Usages", because the headword's usages include the entry's own indexed examples.
+4. **Cost per lexicon page view.** `find_usages` runs on every view of `/lexicon/[id]`, uncached, on pages that are public and listed in the sitemap. Negligible with the current index; worth a cache at scale.
+5. **Unvalidated expressions and grammar rules would be indexed.** The sync ignores their `validated` flag, whereas the translator and the grammar page filter on it. Nothing is indexed from those tables yet.
+6. **No dialect filtering.** The dialect is stored on each line but no parameter or UI uses it.
+
+---
+
+## 6. Corrections to the first version of this document
+
+| First version said | Actual |
+|---|---|
+| Token side is `'french'` | `'fr'` (database, RPC and client agree) |
+| `find_usages(q, side, dialect, lim, off)` | `find_usages(q, p_side, p_limit, p_offset, p_threshold)`; no dialect parameter |
+| "Side and dialect support" on `/usages` | Side only; there is no dialect filter |
+| Triggers on `lexicon` | Triggers on `lexicon_examples` (plus `community_texts`, `expressions`, `grammar_rules`) |
+| `usage_lines` writes restricted "to authenticated users" | No write policy at all: only the security-definer sync functions write |
+| French stems via `to_tsquery('french', …)` | Stems stored with `ts_lexize('french_stem', …)` and compared by equality |
+| Latin/IPA bridge for any Bété query | One-word Bété queries only |
+| `splitHighlight` returns `{ text, highlight }` | Returns `{ text, match }` |
+| Highlight style `bg-amber-100 text-amber-950 font-medium`; badge `« token »` | `bg-primary/15 px-0.5 text-foreground`; badge `variante : <words>` |
+| Source labels "Texte communautaire", "Exemple de dictionnaire", … | A resource shows its title; "Exemple"; "Expression idiomatique / figée" or "Proverbe"; "Règle de grammaire" |
+| `UsageList` shows loading skeletons | A "Chargement…" label only |
+| Lexicon page section "Exemples d'utilisation" | "Usages" |
+| The usages page pre-queries both Latin and IPA forms | Queries one form; the SQL bridge covers the other |
+| Verification query `find_usages('test', 'bete', 5, 0, 0.4)` consistent with the described function | Consistent with the deployed function, not with the signature described in the first version |
