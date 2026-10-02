@@ -5,6 +5,7 @@ import { parseFillInBlankText, evaluateFillInBlankAnswers, type BlankToken } fro
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase-browser'
 import { saveLessonProgress } from '@/lib/courses/mutations'
+import { FILL_IN_BLANK_PASS_PERCENT, fillInBlankOutcome } from '@/lib/courses/thresholds'
 
 interface Props {
   lessonId: string
@@ -85,51 +86,29 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
   }
 
   async function handleCheckAnswers() {
-    console.log('[FillInBlank] 🧪 Verifying answers...', {
-      lessonId,
-      userAnswers,
-      totalBlanks: parsed.blanks.length,
-      answeredCount: Object.values(userAnswers).filter(val => val && val.trim().length > 0).length,
-    })
-
     const evalResult = evaluateFillInBlankAnswers(parsed.blanks, userAnswers)
     setEvaluated(evalResult)
 
-    console.log('[FillInBlank] 📊 Evaluation Result:', {
-      scorePercent: evalResult.scorePercent,
-      correctCount: evalResult.correctCount,
-      totalCount: evalResult.totalCount,
-      passed: evalResult.scorePercent >= 80,
-      perBlankResults: evalResult.results,
-    })
-
     if (isAuthed) {
-      const isPassed = evalResult.scorePercent >= 80
-      console.log('[FillInBlank] 💾 Saving lesson progress and score:', {
-        lessonId,
-        scorePercent: evalResult.scorePercent,
-        isPassed,
-      })
+      const { passed, progressPercent } = fillInBlankOutcome(evalResult.scorePercent)
       setSubmitting(true)
       await saveLessonProgress(supabase, lessonId, {
-        progressPercent: isPassed ? 100 : evalResult.scorePercent,
+        progressPercent,
         score: evalResult.scorePercent,
-        completed: isPassed,
+        completed: passed,
       })
       setSubmitting(false)
-      if (isPassed && onComplete) onComplete()
+      if (passed && onComplete) onComplete()
     }
   }
 
   function handleReset() {
-    console.log('[FillInBlank] 🔄 Exercise reset / answers cleared')
     setUserAnswers({})
     setEvaluated(null)
     setActiveBlankId(null)
   }
 
   function handleSwitchMode(newMode: 'inline' | 'wordbank') {
-    console.log('[FillInBlank] 🔄 Mode toggled to:', newMode)
     setMode(newMode)
   }
 
@@ -304,7 +283,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
       {evaluated && (
         <div
           className={`p-4 rounded-xl border flex items-center justify-between gap-4 ${
-            evaluated.scorePercent >= 80
+            evaluated.scorePercent >= FILL_IN_BLANK_PASS_PERCENT
               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
               : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300'
           }`}
@@ -316,7 +295,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                 Score : {evaluated.correctCount} / {evaluated.totalCount} ({evaluated.scorePercent} %)
               </p>
               <p className="text-xs opacity-90">
-                {evaluated.scorePercent >= 80
+                {evaluated.scorePercent >= FILL_IN_BLANK_PASS_PERCENT
                   ? 'Félicitations ! Vous avez validé cet exercice.'
                   : 'Corrigez les erreurs surignées en rouge et réessayez.'}
               </p>

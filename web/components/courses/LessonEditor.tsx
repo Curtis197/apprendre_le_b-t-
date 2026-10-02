@@ -13,6 +13,7 @@ import { AudioUploader } from '@/components/courses/AudioUploader'
 import { VideoUploader } from '@/components/courses/VideoUploader'
 import { QuizBuilder } from '@/components/courses/QuizBuilder'
 import { FillInBlankExercise } from '@/components/courses/FillInBlankExercise'
+import { QUIZ_PASS_PERCENT } from '@/lib/courses/thresholds'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -172,7 +173,7 @@ export function LessonEditor({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-heading font-semibold">Questions du Quiz</h3>
-            <p className="text-xs text-muted-foreground">Note de passage minimale : 70 %</p>
+            <p className="text-xs text-muted-foreground">Note de passage minimale : {QUIZ_PASS_PERCENT} %</p>
           </div>
           <QuizBuilder
             lessonId={lesson.id}
