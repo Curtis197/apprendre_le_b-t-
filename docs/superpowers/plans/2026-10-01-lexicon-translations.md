@@ -1508,7 +1508,7 @@ git commit -m "feat(lexicon): search in Bété and French, alphabetical list, ex
 - Consumes: `addTranslation`, `DUPLICATE_TRANSLATION_MESSAGE`.
 - Produces: `WordFields.notes` renamed `description`; `buildWordPayload(f)` returns `description` (null when blank) instead of `notes`; new `buildWordClaimPayload(f)` returning `{ bete_phonetic, bete_word, pos, description, dialect }` for filling an existing placeholder.
 
-- [ ] **Step 1: Update the tests first** (`web/__tests__/contribution.test.ts`)
+- [x] **Step 1: Update the tests first** (`web/__tests__/contribution.test.ts`)
 
 In the `buildWordPayload` `base` object rename `notes: ''` to `description: ''`; replace the "stores empty notes as null…" test with:
 
@@ -1549,9 +1549,9 @@ describe('buildWordClaimPayload', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify failure**: `cd web && npx vitest run __tests__/contribution.test.ts` → FAIL.
+- [x] **Step 2: Run to verify failure**: `cd web && npx vitest run __tests__/contribution.test.ts` → FAIL.
 
-- [ ] **Step 3: Implement in `web/lib/contribution.ts`**: rename `notes` → `description` in `WordFields`; in `buildWordPayload` replace `notes: f.notes || null` with `description: f.description.trim() || null` (the insert still sends `top_french`, `french_candidates`, `probability`; the new-word trigger turns `top_french` into the first translation); add:
+- [x] **Step 3: Implement in `web/lib/contribution.ts`**: rename `notes` → `description` in `WordFields`; in `buildWordPayload` replace `notes: f.notes || null` with `description: f.description.trim() || null` (the insert still sends `top_french`, `french_candidates`, `probability`; the new-word trigger turns `top_french` into the first translation); add:
 
 ```ts
 // Filling in an existing untranslated placeholder: the database only accepts the Bété forms,
@@ -1568,21 +1568,21 @@ export function buildWordClaimPayload(f: WordFields) {
 }
 ```
 
-- [ ] **Step 4: `ContributionForm.tsx`**
+- [x] **Step 4: `ContributionForm.tsx`**
   - Rename state `wordNotes` → `wordDescription`; placeholder `Description du mot ou contexte d'usage (optionnel)`.
   - In `handleSubmit`'s word branch build `fields` once; when `initialId` is set use `buildWordClaimPayload(fields)` for the `.update(...).eq('id', initialId)`, then, if no error, `addTranslation(supabaseRef.current, initialId, { french: wordFrench })` and ignore a duplicate error (compare `res.error === DUPLICATE_TRANSLATION_MESSAGE`, exported from `lib/lexicon-mutations.ts`); any other translation error sets `error` so the existing catch shows the generic message. When `initialId` is absent keep the existing `.insert(buildWordPayload(fields))`.
   - Imports: `buildWordClaimPayload` from `@/lib/contribution`, `addTranslation` + `DUPLICATE_TRANSLATION_MESSAGE` from `@/lib/lexicon-mutations`.
 
-- [ ] **Step 5: `PendingContributions.tsx`**: for words only, remove the `<VoteButtons table="lexicon" …/>` element, drop `upvotes` from the `LexiconWord` type and from the `.select(...)`, add `description` to both and render `{(word.description || word.notes) && <p …>{word.description || word.notes}</p>}`. Keep `VoteButtons` for expressions and grammar rules (out of scope), and keep `ContributionComments`.
+- [x] **Step 5: `PendingContributions.tsx`**: for words only, remove the `<VoteButtons table="lexicon" …/>` element, drop `upvotes` from the `LexiconWord` type and from the `.select(...)`, add `description` to both and render `{(word.description || word.notes) && <p …>{word.description || word.notes}</p>}`. Keep `VoteButtons` for expressions and grammar rules (out of scope), and keep `ContributionComments`.
 
-- [ ] **Step 6: Verify**
+- [x] **Step 6: Verify**
 
 ```bash
 cd web && npx vitest run && npx tsc --noEmit && npm run lint
 ```
 Expected: all unit tests PASS. Manual: submit a brand-new word on `/contribute` (appears with exactly one translation on its detail page); open the homepage "mot du jour" link for a placeholder, fill it, submit → the word is now translated, shows the original French as its translation, and a different French typed in the form shows as a second translation.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add web/lib/contribution.ts web/__tests__/contribution.test.ts web/components/ContributionForm.tsx web/components/PendingContributions.tsx web/lib/lexicon-mutations.ts
@@ -1593,11 +1593,11 @@ git commit -m "feat(lexicon): contribution form writes description and fills pla
 
 ### Task 7: Full verification
 
-- [ ] **Step 1:** `cd web && npm test && npm run test:rls && npx tsc --noEmit && npm run lint && npm run build`
+- [x] **Step 1:** `cd web && npm test && npm run test:rls && npx tsc --noEmit && npm run lint && npm run build`
 Expected: everything green. Any failure: fix at the root before moving on; do not weaken tests.
 
-- [ ] **Step 2:** Repo-wide grep that voting is gone from the lexicon UI: `grep -rn "VoteButtons" web --include=*.tsx --exclude-dir=node_modules --exclude-dir=.next` → only `PendingContributions.tsx` (expressions, grammar rules), `VoteButtons.tsx` itself, and community texts/forum users; no `table="lexicon"`.
+- [x] **Step 2:** Repo-wide grep that voting is gone from the lexicon UI: `grep -rn "VoteButtons" web --include=*.tsx --exclude-dir=node_modules --exclude-dir=.next` → only `PendingContributions.tsx` (expressions, grammar rules), `VoteButtons.tsx` itself, and community texts/forum users; no `table="lexicon"`.
 
-- [ ] **Step 3:** Remind the user that `20261001000000_*.sql` and `20261001000001_*.sql` still have to be applied to production (project `agdqbzbjcxrzfhkvempe`) before the web deploy; do not apply them yourself without being asked.
+- [x] **Step 3:** Remind the user that `20261001000000_*.sql` and `20261001000001_*.sql` still have to be applied to production (project `agdqbzbjcxrzfhkvempe`) before the web deploy; do not apply them yourself without being asked.
 
-- [ ] **Step 4:** Use superpowers:finishing-a-development-branch.
+- [x] **Step 4:** Use superpowers:finishing-a-development-branch.
