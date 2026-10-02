@@ -46,7 +46,7 @@ This feature lets users see where a word (Bété or French) is used across the c
     - `usage_same_shape(a, b)`: same stanza count and same line count in every stanza.
     - `usage_add_line(...)`: writes one line and its tokens.
     - `rebuild_usage_lines(type, id)`: deletes and recreates the lines of one source row.
-  - How a **resource** becomes lines: a single-line text is one line (`line_no = 0`) with its translations joined; a multi-line text is indexed line by line. Translations are attached **only if every translation that was supplied has the same shape as the Bété text**; otherwise none is attached (see section 5). The dialect is derived from the region: `Guiberoua` → `western`, `Gagnoa` → `northern`, `Daloa` → `eastern`, anything else → null. It is stored but not used for filtering yet.
+  - How a **resource** becomes lines: a single-line text is one line (`line_no = 0`) with its translations joined; a multi-line text is indexed line by line. Each translation (mot à mot, French) is attached **on its own** when it has the same stanza and line shape as the Bété text; one that does not line up is left out without affecting the other (migration `20261003000002`). The dialect is derived from the region: `Guiberoua` → `western`, `Gagnoa` → `northern`, `Daloa` → `eastern`, anything else → null. It is stored but not used for filtering yet.
   - Triggers (`usage_sync`, calling the security-definer `usage_sync_trigger`), each also firing on delete:
     - on `community_texts`: insert, or update of `title`, `region`, `content_bete`, `content_literal`, `content_french`;
     - on `lexicon_examples`: `lexicon_id`, `bete_snippet`, `french_snippet`, `french_literal`, `dialect`;
@@ -62,12 +62,16 @@ This feature lets users see where a word (Bété or French) is used across the c
   - Returns: `line_id, source_type, source_id, ref_id, line_no, title, dialect, bete, literal, french, created_at, match_kind ('exact' | 'variant'), matched_tokens, similarity, total_count`.
   - Order: exact matches first, then by similarity, then newest first.
 
+- **`20261003000002_usage_translations_aligned_independently.sql`** (added after the review)
+  - Replaces `rebuild_usage_lines` (grants unchanged) so a resource's mot à mot and French translation are judged separately: each is attached when it has the Bété text's shape, whatever the other one does. Only the resource branch changed.
+  - Re-indexes the existing resources (idempotent).
+
 ### Client helpers (`web/lib/usages.ts`)
 
 - Types: `UsageSide = 'bete' | 'fr'`, `UsageSourceType`, `UsageRow`.
 - `normalizeSide(value)`: `'fr'` stays `'fr'`, anything else becomes `'bete'`.
 - `findUsages(client, { q, side, limit, offset })`: typed wrapper around the RPC; returns `{ rows, total, error }`. The threshold is left at its default.
-- `splitHighlight(text, tokens)`: pure parser returning `{ text, match }` parts, whole words only, no regex lookbehind (Safari 16.1).
+- `splitHighlight(text, tokens, side = 'bete')`: pure parser returning `{ text, match }` parts, whole words only, no regex lookbehind (Safari 16.1). `side` decides whether an apostrophe separates words: not for Bété (it stays inside the word), yes for French (`l'été` → `l`, `été`), matching `usage_tokenize`.
 - `usageSourceLabel(row)`: a resource shows its title (or "Ressource"); an example shows "Exemple"; an expression shows "Expression idiomatique", "Expression figée" or "Proverbe" by type (else "Expression"); a grammar rule shows "Règle de grammaire".
 - `usageHref(row)`: `/resources/{ref_id}` for a resource, `/lexicon/{ref_id}` for an example, `null` for expressions and grammar rules.
 
@@ -88,13 +92,13 @@ This feature lets users see where a word (Bété or French) is used across the c
 
 **Re-checked on 2026-10-02:**
 
-1. **Unit tests (`npm test`):** 22 files, 198 tests pass. `web/__tests__/usages.test.ts` has 12.
-2. **RLS test files:** `usage-lines.test.ts` has 15 tests; `find-usages.test.ts` has 20 (12 cases plus an 8-case parameterised one). Not re-run, because they share the local database with other work in progress.
-3. **TypeScript and lint:** `npx tsc --noEmit` reports 0 errors; `npx eslint` is clean on `lib/usages.ts`, the two components, the pages and the unit test.
-4. **Behaviour confirmed in a rolled-back local experiment:**
+1. **Unit tests (`npm test`):** 22 files, 202 tests pass. `web/__tests__/usages.test.ts` has 16 (4 added for French highlighting).
+2. **RLS test files:** `usage-lines.test.ts` has 18 tests (the old "pairs nothing when the fields do not line up" case, which asserted the lossy behaviour, became four cases); `find-usages.test.ts` has 20 (12 cases plus an 8-case parameterised one). Both files pass against the local database after the fix: 38 tests.
+3. **TypeScript and lint:** `npx tsc --noEmit` reports 0 errors; `npx eslint` is clean on `lib/usages.ts`, the card component and the two test files.
+4. **Behaviour confirmed before the fix, in a rolled-back local experiment:**
    - A 3-line resource with a 2-line mot à mot and a 3-line French text produced lines with **no French at all**, and French search did not find it. The same text without a mot à mot kept the French on every line.
-   - The French tokenizer stores `Voici l'été de l'eau` as `Voici, l, été, de, l, eau`.
-5. **Highlighting check:** `splitHighlight("Voici l'été", ['été'])` highlights nothing, so elided French words are found but not highlighted.
+   - The French tokenizer stores `Voici l'été de l'eau` as `Voici, l, été, de, l, eau`, while `splitHighlight("Voici l'été", ['été'])` highlighted nothing.
+5. **The fixes were checked red-then-green:** the three new RLS cases that exercise the bug failed before the migration was applied and pass after it; the French highlighting cases are covered by unit tests.
 
 ---
 
@@ -106,6 +110,8 @@ Applied to the production project (`agdqbzbjcxrzfhkvempe`) through the Supabase 
 |---|---|
 | `20261002085129_word_usages` | `20261003000000_word_usages.sql` |
 | `20261002085145_find_usages` | `20261003000001_find_usages.sql` |
+
+`20261003000002_usage_translations_aligned_independently.sql` was added after this deployment (see "Fixed after the review") and is applied separately.
 
 Checked on production on 2026-10-02:
 - `find_usages` has the signature `(q text, p_side text, p_limit integer, p_offset integer, p_threshold real)` and is executable by `anon` and `authenticated`.
@@ -124,12 +130,15 @@ select * from find_usages('test', 'bete', 5, 0, 0.4);
 
 ## 5. Known Limitations
 
-1. **A mismatched mot à mot drops the French too.** `rebuild_usage_lines` uses one flag for both translations, so if either one does not have the same shape as the Bété text, neither is attached. French search then cannot find that resource. Aligning the two translations independently would fix it.
-2. **French words after an apostrophe are found but not highlighted** (`l'été`, `d'eau`, `qu'il`): the SQL tokenizer splits French on apostrophes and `splitHighlight` does not.
-3. **A lexicon entry's own examples can appear twice**: under "Exemples" and under "Usages", because the headword's usages include the entry's own indexed examples.
-4. **Cost per lexicon page view.** `find_usages` runs on every view of `/lexicon/[id]`, uncached, on pages that are public and listed in the sitemap. Negligible with the current index; worth a cache at scale.
-5. **Unvalidated expressions and grammar rules would be indexed.** The sync ignores their `validated` flag, whereas the translator and the grammar page filter on it. Nothing is indexed from those tables yet.
-6. **No dialect filtering.** The dialect is stored on each line but no parameter or UI uses it.
+1. **A lexicon entry's own examples can appear twice**: under "Exemples" and under "Usages", because the headword's usages include the entry's own indexed examples.
+2. **Cost per lexicon page view.** `find_usages` runs on every view of `/lexicon/[id]`, uncached, on pages that are public and listed in the sitemap. Negligible with the current index; worth a cache at scale.
+3. **Unvalidated expressions and grammar rules would be indexed.** The sync ignores their `validated` flag, whereas the translator and the grammar page filter on it. Nothing is indexed from those tables yet.
+4. **No dialect filtering.** The dialect is stored on each line but no parameter or UI uses it.
+
+### Fixed after the review (2026-10-02)
+
+- **A mismatched mot à mot no longer drops the French** (and the other way round): each translation is attached on its own (`20261003000002`). A French search now finds a resource whose mot à mot is misaligned.
+- **French words after an apostrophe are now highlighted** (`l'été`, `d'eau`, `qu'il`): `splitHighlight` splits French on apostrophes like the SQL tokenizer.
 
 ---
 

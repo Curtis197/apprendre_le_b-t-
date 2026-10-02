@@ -58,11 +58,34 @@ describe('usage_lines sync', () => {
       expect(lines.map(l => l.line_no)).toEqual([0, 1, 2])
     })
 
-    it('keeps the Bété lines but pairs nothing when the fields do not line up', async () => {
+    it('keeps the French when only the mot à mot does not line up', async () => {
+      // the mot à mot is missing a line; the complete French translation must not be lost with it
       const id = await resource({ content_bete: 'a1\na2\na3', content_literal: 'l1\nl2', content_french: 'f1\nf2\nf3' })
       const lines = await linesOf('resource', id)
       expect(lines.map(l => l.bete)).toEqual(['a1', 'a2', 'a3'])
+      expect(lines.map(l => l.french)).toEqual(['f1', 'f2', 'f3'])
+      expect(lines.every(l => l.literal === null)).toBe(true)
+    })
+
+    it('keeps the mot à mot when only the French does not line up', async () => {
+      const id = await resource({ content_bete: 'a1\na2\na3', content_literal: 'l1\nl2\nl3', content_french: 'f1\nf2' })
+      const lines = await linesOf('resource', id)
+      expect(lines.map(l => l.literal)).toEqual(['l1', 'l2', 'l3'])
+      expect(lines.every(l => l.french === null)).toBe(true)
+    })
+
+    it('keeps the Bété lines but pairs nothing when neither translation lines up', async () => {
+      const id = await resource({ content_bete: 'a1\na2\na3', content_literal: 'l1\nl2', content_french: 'f1\nf2' })
+      const lines = await linesOf('resource', id)
+      expect(lines.map(l => l.bete)).toEqual(['a1', 'a2', 'a3'])
       expect(lines.every(l => l.literal === null && l.french === null)).toBe(true)
+    })
+
+    it('finds a resource by its French words even though its mot à mot is misaligned', async () => {
+      const word = `zzfr${uid()}`
+      const id = await resource({ content_bete: 'b1\nb2', content_literal: 'l1', content_french: `${word} un\n${word} deux` })
+      const { data } = await admin.rpc('find_usages', { q: word, p_side: 'fr', p_limit: 10, p_offset: 0 })
+      expect((data ?? []).filter((r: { source_id: string }) => r.source_id === id)).toHaveLength(2)
     })
 
     it('stores a single line as one usage, with its translations', async () => {
