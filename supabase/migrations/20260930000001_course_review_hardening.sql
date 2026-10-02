@@ -55,6 +55,7 @@ create trigger submissions_guard_review_fields
 -- server-side sync (service role), never by the browser.
 drop policy if exists media_assets_write_owner on media_assets;
 
+drop policy if exists media_assets_insert_owner on media_assets;
 create policy media_assets_insert_owner on media_assets
   for insert to authenticated
   with check (
@@ -72,6 +73,7 @@ create policy media_assets_insert_owner on media_assets
     )
   );
 
+drop policy if exists media_assets_delete_owner on media_assets;
 create policy media_assets_delete_owner on media_assets
   for delete to authenticated
   using (

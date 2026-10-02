@@ -78,18 +78,22 @@ create index if not exists resource_comments_resource_idx on resource_comments (
 
 alter table resource_comments enable row level security;
 
+drop policy if exists resource_comments_select on resource_comments;
 create policy resource_comments_select on resource_comments
   for select using (true);
 
+drop policy if exists resource_comments_insert_own on resource_comments;
 create policy resource_comments_insert_own on resource_comments
   for insert to authenticated
   with check (user_id = (select auth.uid()));
 
+drop policy if exists resource_comments_update_own on resource_comments;
 create policy resource_comments_update_own on resource_comments
   for update to authenticated
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
+drop policy if exists resource_comments_delete_own on resource_comments;
 create policy resource_comments_delete_own on resource_comments
   for delete to authenticated
   using (user_id = (select auth.uid()) or (select is_admin()));

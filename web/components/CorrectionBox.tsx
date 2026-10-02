@@ -26,9 +26,11 @@ interface Props {
   fields: { field: string; current: string | null }[]
   /** The content's author, if known: they edit it directly, so they are not offered to report it. */
   ownerId: string | null
+  /** Start with the report form already open (when the reader came here to report). */
+  startOpen?: boolean
 }
 
-export function CorrectionBox({ targetType, targetId, fields, ownerId }: Props) {
+export function CorrectionBox({ targetType, targetId, fields, ownerId, startOpen = false }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const supabaseRef = useRef(createClient())
@@ -38,7 +40,7 @@ export function CorrectionBox({ targetType, targetId, fields, ownerId }: Props) 
   const [isAdmin, setIsAdmin] = useState(false)
   const [corrections, setCorrections] = useState<Correction[]>([])
   const [listOpen, setListOpen] = useState(false)
-  const [formOpen, setFormOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(startOpen)
 
   const available = correctionFields(targetType).filter(f => fields.some(x => x.field === f.field))
   const currentOf = (field: string) => fields.find(f => f.field === field)?.current ?? null
