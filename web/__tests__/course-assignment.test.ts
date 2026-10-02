@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { escapeHtml, formatGradeDisplay, formatSubmissionStatusLabel } from '../lib/courses/assignment'
+import { escapeHtml, formatGradeDisplay, formatSubmissionStatusLabel, isPendingSubmission } from '../lib/courses/assignment'
 
 describe('formatGradeDisplay', () => {
   it('formats grade as percentage or unassigned placeholder', () => {
@@ -17,6 +17,15 @@ describe('formatSubmissionStatusLabel', () => {
   })
 })
 
+describe('isPendingSubmission', () => {
+  it('is true only while the teacher still has to act', () => {
+    expect(isPendingSubmission('submitted')).toBe(true)
+    expect(isPendingSubmission('reviewed')).toBe(false)
+    expect(isPendingSubmission('validated')).toBe(false)
+    expect(isPendingSubmission('needs_retry')).toBe(false)
+  })
+})
+
 describe('escapeHtml', () => {
   it('neutralises markup and quotes in teacher-supplied text', () => {
     expect(escapeHtml(`<a href="https://x">clic</a> & 'ok'`)).toBe(
@@ -24,3 +33,4 @@ describe('escapeHtml', () => {
     )
   })
 })
+

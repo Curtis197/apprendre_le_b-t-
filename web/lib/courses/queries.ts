@@ -474,7 +474,7 @@ export async function getPendingReviewsForTeacher(
   const courseMap = new Map(courses.map(c => [c.id, c]))
 
   // 2. Fetch lessons in those courses
-  const { data: lessons } = await client.from('lessons').select('id, title, course_id').in('course_id', courseIds)
+  const { data: lessons } = await client.from('lessons').select('id, title, course_id, kind').in('course_id', courseIds)
   if (!lessons || lessons.length === 0) return []
 
   const lessonIds = lessons.map(l => l.id)

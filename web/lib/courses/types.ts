@@ -3,7 +3,7 @@ import type { DialectKey } from '../dialect'
 export type CourseStatus = 'draft' | 'published' | 'archived' | 'suspended'
 export type CourseAccess = 'free' | 'paid'
 export type CourseLevel = 'beginner' | 'intermediate' | 'advanced'
-export type LessonKind = 'text' | 'audio' | 'video' | 'quiz' | 'assignment' | 'fill_in_blank'
+export type LessonKind = 'text' | 'audio' | 'video' | 'quiz' | 'assignment' | 'fill_in_blank' | 'pronunciation'
 
 export interface Course {
   id: string
