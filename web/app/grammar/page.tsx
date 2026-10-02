@@ -6,6 +6,7 @@ import { PatternDivider } from '@/components/PatternDivider'
 import { createClient } from '@/lib/supabase-server'
 import type { GrammarRule } from '@/lib/types'
 import { DialectSelector } from '@/components/DialectSelector'
+import { CorrectionBox } from '@/components/CorrectionBox'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -103,6 +104,20 @@ export default async function GrammarPage() {
                     {rule.example_bete && <p>BT: <em>{rule.example_bete}</em></p>}
                   </div>
                 )}
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <CorrectionBox
+                    targetType="grammar_rule"
+                    targetId={rule.id}
+                    ownerId={rule.created_by}
+                    fields={[
+                      { field: 'pattern_french', current: rule.pattern_french },
+                      { field: 'pattern_bete', current: rule.pattern_bete },
+                      { field: 'description', current: rule.description },
+                      { field: 'example_bete', current: rule.example_bete },
+                      { field: 'example_french', current: rule.example_french },
+                    ]}
+                  />
+                </div>
               </div>
             ))}
           </div>
