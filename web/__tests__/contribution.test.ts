@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildExampleRow,
+  buildWordClaimPayload,
   buildWordPayload,
   contributionErrorMessage,
   exampleState,
@@ -29,7 +30,7 @@ describe('buildWordPayload', () => {
     beteIPA: '',
     french: 'mère',
     pos: 'noun',
-    notes: '',
+    description: '',
     dialect: 'northern' as const,
     userId: 'user-1',
   }
@@ -50,11 +51,35 @@ describe('buildWordPayload', () => {
     expect(payload.bete_phonetic).toBe('gnaa')
   })
 
-  it('stores empty notes as null and marks the entry as contributed', () => {
+  it('stores an empty description as null and marks the entry as contributed', () => {
     const payload = buildWordPayload(base)
-    expect(payload.notes).toBeNull()
+    expect(payload.description).toBeNull()
     expect(payload.source).toBe('contributed')
     expect(payload.created_by).toBe('user-1')
+  })
+
+  it('keeps a typed description, trimmed', () => {
+    expect(buildWordPayload({ ...base, description: '  Un repas. ' }).description).toBe('Un repas.')
+  })
+})
+
+describe('buildWordClaimPayload', () => {
+  const base = {
+    betePhonetic: 'ɓɔ', beteIPA: '', french: 'chien', pos: 'noun',
+    description: '', dialect: 'western' as const, userId: 'user-1',
+  }
+
+  it('only carries what the database lets a contributor fill in (no French, score or owner)', () => {
+    expect(Object.keys(buildWordClaimPayload(base)).sort()).toEqual(
+      ['bete_phonetic', 'bete_word', 'description', 'dialect', 'pos'],
+    )
+  })
+
+  it('applies the same IPA fallback and description trimming as a new word', () => {
+    const p = buildWordClaimPayload({ ...base, description: ' Animal ' })
+    expect(p.bete_word).toBe('ɓɔ')
+    expect(p.description).toBe('Animal')
+    expect(p.pos).toEqual(['noun'])
   })
 })
 

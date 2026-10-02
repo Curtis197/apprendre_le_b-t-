@@ -18,7 +18,7 @@ export interface WordFields {
   beteIPA: string        // IPA / Bible form   → lexicon.bete_word
   french: string
   pos: string
-  notes: string
+  description: string
   dialect: DialectKey
   userId: string
 }
@@ -34,10 +34,23 @@ export function buildWordPayload(f: WordFields) {
     french_candidates: [{ word: f.french, prob: 1.0 }],
     probability: 1.0,
     pos: [f.pos],
-    notes: f.notes || null,
+    description: f.description.trim() || null,
     dialect: f.dialect,
     created_by: f.userId,
     source: 'contributed' as const,
+  }
+}
+
+// Filling in an existing untranslated placeholder: the database only accepts the Bété forms,
+// part of speech, dialect and description from the client, and stamps the author itself. The French
+// word is not part of this payload; it is added as a translation.
+export function buildWordClaimPayload(f: WordFields) {
+  return {
+    bete_phonetic: f.betePhonetic,
+    bete_word: f.beteIPA || f.betePhonetic,
+    pos: [f.pos],
+    description: f.description.trim() || null,
+    dialect: f.dialect,
   }
 }
 
