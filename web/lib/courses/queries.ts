@@ -12,6 +12,8 @@ import { generateMuxPlaybackToken } from './video'
 import { createServiceClient } from '../supabase-service'
 import type { Submission, PendingReviewItem } from './assignment'
 import type { CourseOrder } from './payment'
+import { PRONUNCIATION_BUCKET } from './pronunciation'
+import type { ProgressRow } from './stats'
 
 export async function getPublishedCourses(
   client: SupabaseClient,
@@ -461,6 +463,18 @@ export async function getSubmissionForLesson(
   return (data ?? null) as Submission | null
 }
 
+/** Creates a temporary signed URL for a learner's pronunciation recording (default: 1 hour). */
+export async function getPronunciationAudioUrl(
+  client: SupabaseClient,
+  audioPath: string | null,
+): Promise<string | null> {
+  if (!audioPath) return null
+  const { data } = await client.storage
+    .from(PRONUNCIATION_BUCKET)
+    .createSignedUrl(audioPath, 3600)
+  return data?.signedUrl ?? null
+}
+
 /** Fetches pending and reviewed submissions for courses owned by the teacher. */
 export async function getPendingReviewsForTeacher(
   client: SupabaseClient,
@@ -474,7 +488,7 @@ export async function getPendingReviewsForTeacher(
   const courseMap = new Map(courses.map(c => [c.id, c]))
 
   // 2. Fetch lessons in those courses
-  const { data: lessons } = await client.from('lessons').select('id, title, course_id').in('course_id', courseIds)
+  const { data: lessons } = await client.from('lessons').select('id, title, course_id, kind').in('course_id', courseIds)
   if (!lessons || lessons.length === 0) return []
 
   const lessonIds = lessons.map(l => l.id)
@@ -491,8 +505,30 @@ export async function getPendingReviewsForTeacher(
 
   // 4. Fetch learner profiles
   const userIds = Array.from(new Set(submissions.map(s => s.user_id)))
-  const { data: profiles } = await client.from('profiles').select('id, full_name').in('id', userIds)
+  const { data: profiles } = await client.from('profiles').select('id, name').in('id', userIds)
   const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
+
+  // 5. Batch-sign audio paths for pronunciation submissions
+  const signedUrlMap = new Map<string, string>()
+  const audioPaths = Array.from(
+    new Set(
+      submissions
+        .map(s => s.audio_path)
+        .filter((p): p is string => typeof p === 'string' && p.length > 0),
+    ),
+  )
+  if (audioPaths.length > 0) {
+    const { data: signed } = await client.storage
+      .from(PRONUNCIATION_BUCKET)
+      .createSignedUrls(audioPaths, 3600)
+    if (signed) {
+      for (const item of signed) {
+        if (item.path && item.signedUrl) {
+          signedUrlMap.set(item.path, item.signedUrl)
+        }
+      }
+    }
+  }
 
   return submissions.map(sub => {
     const lesson = lessonMap.get(sub.lesson_id)!
@@ -506,8 +542,9 @@ export async function getPendingReviewsForTeacher(
       learner: {
         id: sub.user_id,
         email: null,
-        full_name: profile?.full_name ?? 'Apprenant',
+        full_name: profile?.name ?? 'Apprenant',
       },
+      audioUrl: sub.audio_path ? (signedUrlMap.get(sub.audio_path) ?? null) : null,
     }
   })
 }
@@ -535,6 +572,12 @@ export async function getUserOrders(client: SupabaseClient, userId: string): Pro
     .order('created_at', { ascending: false })
 
   return (data ?? []) as CourseOrder[]
+}
+
+/** Learner progress for a course the caller owns (or any course, for admins). Empty on error. */
+export async function getCourseProgressRows(client: SupabaseClient, courseId: string): Promise<ProgressRow[]> {
+  const { data } = await client.rpc('course_progress_rows', { p_course_id: courseId })
+  return (data ?? []) as ProgressRow[]
 }
 
 

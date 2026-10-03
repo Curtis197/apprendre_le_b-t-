@@ -31,6 +31,7 @@ export const KIND_LABELS: Record<LessonKind, string> = {
   quiz: 'QCM',
   assignment: 'Exercice',
   fill_in_blank: 'Texte à trous',
+  pronunciation: 'Prononciation',
 }
 
 export function isDialect(value: unknown): value is DialectKey {

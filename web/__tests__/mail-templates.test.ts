@@ -36,6 +36,21 @@ describe('renderTemplate', () => {
     expect(out.html).not.toContain('/ 100')
   })
 
+  it('words pronunciation decisions differently from a graded assignment', () => {
+    const base = { lesson_title: 'Salutations', course_title: 'Bhété 1', course_slug: 's', feedback: 'Bien <b>dit</b>', grade: null }
+    const ok = renderTemplate('submission_reviewed', { ...base, outcome: 'validated' }, ctx)!
+    expect(ok.subject).toBe('Prononciation validée — Salutations')
+    expect(ok.html).toContain('validé votre prononciation')
+    expect(ok.html).toContain('Bien &lt;b&gt;dit&lt;/b&gt;')
+    const retry = renderTemplate('submission_reviewed', { ...base, outcome: 'needs_retry' }, ctx)!
+    expect(retry.subject).toBe('Prononciation à refaire — Salutations')
+    expect(retry.text).toContain('réenregistrer')
+    const graded = renderTemplate('submission_reviewed', { ...base, outcome: 'reviewed' }, ctx)!
+    expect(graded.subject).toBe('Votre devoir a été corrigé — Salutations')
+    const legacy = renderTemplate('submission_reviewed', base, ctx)!
+    expect(legacy.subject).toBe('Votre devoir a été corrigé — Salutations')
+  })
+
   it('links the teacher to the review queue for submission_received', () => {
     const out = renderTemplate('submission_received', { lesson_title: 'L', course_title: 'C', course_slug: 's' }, ctx)!
     expect(out.html).toContain('https://apprendre-le-bhete.com/teach/reviews')

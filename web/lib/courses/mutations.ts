@@ -8,6 +8,7 @@ import { buildSlug } from './slug'
 import type { CourseInput, LessonKind, Result } from './types'
 import type { Submission } from './assignment'
 import type { CourseOrder, PaymentRail } from './payment'
+import { MAX_RECORDING_BYTES, PRONUNCIATION_BUCKET, baseMimeType, buildRecordingPath, extensionForMime } from './pronunciation'
 
 async function checkAdmin(client: SupabaseClient): Promise<boolean> {
   const { data } = await client.rpc('is_admin')
@@ -540,6 +541,81 @@ export async function reviewSubmission(
   if (updateError) return fail(updateError.message)
 
   // The "devoir corrigé" email is queued by the submissions_enqueue_reviewed database trigger.
+  return ok(null)
+}
+
+// ── Pronunciation exercises ────────────────────────────────────────────────
+
+/**
+ * Uploads the learner's recording and creates or replaces their submission.
+ * Unlike a written assignment this does NOT mark the lesson complete: the
+ * teacher's validation does (database trigger).
+ */
+export async function submitPronunciation(
+  client: SupabaseClient,
+  lessonId: string,
+  blob: Blob,
+): Promise<Result<Submission>> {
+  const user = await getAuthUser(client)
+  if (!user) return fail('Connectez-vous pour envoyer votre enregistrement.')
+  if (blob.size === 0) return fail('L’enregistrement est vide, veuillez recommencer.')
+  if (blob.size > MAX_RECORDING_BYTES) return fail('Enregistrement trop volumineux (5 Mo maximum).')
+
+  const { data: previous } = await client
+    .from('submissions')
+    .select('audio_path')
+    .eq('lesson_id', lessonId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const path = buildRecordingPath(user.id, lessonId, Date.now(), extensionForMime(blob.type))
+  const upload = await client.storage
+    .from(PRONUNCIATION_BUCKET)
+    .upload(path, blob, { contentType: baseMimeType(blob.type), upsert: false })
+  if (upload.error) return fail(upload.error.message)
+
+  const { data, error } = await client
+    .from('submissions')
+    .upsert(
+      { lesson_id: lessonId, user_id: user.id, audio_path: path, status: 'submitted', updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,lesson_id' },
+    )
+    .select('*')
+    .single()
+
+  if (error || !data) {
+    await client.storage.from(PRONUNCIATION_BUCKET).remove([path])
+    return fail(error?.message ?? 'Erreur lors de l’envoi de l’enregistrement.')
+  }
+
+  // Best effort: the replaced recording is no longer referenced.
+  const oldPath = (previous as { audio_path: string | null } | null)?.audio_path
+  if (oldPath && oldPath !== path) {
+    await client.storage.from(PRONUNCIATION_BUCKET).remove([oldPath])
+  }
+
+  return ok(data as Submission)
+}
+
+/** Teacher decision on a pronunciation recording. A comment is always required. */
+export async function reviewPronunciation(
+  client: SupabaseClient,
+  submissionId: string,
+  outcome: 'validated' | 'needs_retry',
+  feedback: string,
+): Promise<Result<null>> {
+  const user = await getAuthUser(client)
+  if (!user) return fail('Connectez-vous pour corriger cet enregistrement.')
+  if (!feedback.trim()) return fail('Veuillez saisir un commentaire pour l’apprenant.')
+
+  const now = new Date().toISOString()
+  const { error } = await client
+    .from('submissions')
+    .update({ status: outcome, teacher_feedback: feedback.trim(), reviewed_at: now, updated_at: now })
+    .eq('id', submissionId)
+  if (error) return fail(error.message)
+
+  // The learner's email is queued by the submissions_enqueue_reviewed database trigger.
   return ok(null)
 }
 

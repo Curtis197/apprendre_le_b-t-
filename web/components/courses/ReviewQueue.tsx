@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { CheckCircle2, Clock, Send } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { reviewSubmission } from '@/lib/courses/mutations'
-import type { PendingReviewItem } from '@/lib/courses/assignment'
+import { isPendingSubmission, type PendingReviewItem } from '@/lib/courses/assignment'
+import { PronunciationReviewCard } from '@/components/courses/PronunciationReviewCard'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -22,10 +23,23 @@ export function ReviewQueue({ initialItems }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const filtered = items.filter(item => {
-    if (filter === 'pending') return item.submission.status === 'submitted'
-    if (filter === 'reviewed') return item.submission.status === 'reviewed'
+    if (filter === 'pending') return isPendingSubmission(item.submission.status)
+    if (filter === 'reviewed') return !isPendingSubmission(item.submission.status)
     return true
   })
+
+  function handlePronunciationReviewed(submissionId: string, status: 'validated' | 'needs_retry', feedback: string) {
+    setItems(prev =>
+      prev.map(item =>
+        item.submission.id === submissionId
+          ? {
+              ...item,
+              submission: { ...item.submission, status, teacher_feedback: feedback, reviewed_at: new Date().toISOString() },
+            }
+          : item,
+      ),
+    )
+  }
 
   async function handleSaveReview(submissionId: string) {
     setSubmitting(true)
@@ -72,7 +86,7 @@ export function ReviewQueue({ initialItems }: Props) {
             filter === 'pending' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
-          À corriger ({items.filter(i => i.submission.status === 'submitted').length})
+          À corriger ({items.filter(i => isPendingSubmission(i.submission.status)).length})
         </button>
         <button
           type="button"
@@ -81,7 +95,7 @@ export function ReviewQueue({ initialItems }: Props) {
             filter === 'reviewed' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
           }`}
         >
-          Corrigés ({items.filter(i => i.submission.status === 'reviewed').length})
+          Corrigés ({items.filter(i => !isPendingSubmission(i.submission.status)).length})
         </button>
         <button
           type="button"
@@ -100,8 +114,19 @@ export function ReviewQueue({ initialItems }: Props) {
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map(({ submission, lesson, course, learner }) => (
-            <div key={submission.id} className="border border-border rounded-xl p-5 bg-card space-y-4">
+          {filtered.map(item => {
+            if (item.lesson.kind === 'pronunciation') {
+              return (
+                <PronunciationReviewCard
+                  key={item.submission.id}
+                  item={item}
+                  onReviewed={handlePronunciationReviewed}
+                />
+              )
+            }
+            const { submission, lesson, course, learner } = item
+            return (
+              <div key={submission.id} className="border border-border rounded-xl p-5 bg-card space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
                 <div>
                   <span className="text-xs text-muted-foreground">{course.title}</span>
@@ -189,7 +214,8 @@ export function ReviewQueue({ initialItems }: Props) {
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

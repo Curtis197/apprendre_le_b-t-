@@ -151,6 +151,40 @@ describe('email triggers', () => {
     await teacher.client.from('submissions').update({ teacher_feedback: 'Très bien joué', reviewed_at: reviewedAt }).eq('id', sub.id)
     expect((await outbox(l1.id, 'submission_reviewed')).filter((r) => r.payload.submission_id === sub.id)).toHaveLength(1)
   })
+
+  it('queues one email per pronunciation decision (retry, then validated) with the outcome in the payload', async () => {
+    const lesson = must(
+      await admin.from('lessons').insert({ section_id: seed.section.id, course_id: seed.course.id, title: 'Prononciation', position: 60, kind: 'pronunciation' }).select('id').single(),
+      'pronunciation lesson',
+    )
+    const sub = must(
+      await admin.from('submissions').insert({ lesson_id: lesson.id, user_id: l1.id, audio_path: `${l1.id}/${lesson.id}.webm` }).select('id').single(),
+      'recording',
+    )
+    const mine = async () => (await outbox(l1.id, 'submission_reviewed')).filter((r) => r.payload.submission_id === sub.id)
+
+    const t1 = new Date(Date.now() - 60_000).toISOString()
+    must(
+      await teacher.client.from('submissions').update({ status: 'needs_retry', teacher_feedback: 'Plus lentement', reviewed_at: t1 }).eq('id', sub.id).select(),
+      'needs_retry',
+    )
+    expect(await mine()).toHaveLength(1)
+    expect((await mine())[0].payload.outcome).toBe('needs_retry')
+
+    // Replaying the same decision must not queue another email.
+    await teacher.client.from('submissions').update({ teacher_feedback: 'Un peu plus lentement', reviewed_at: t1 }).eq('id', sub.id)
+    expect(await mine()).toHaveLength(1)
+
+    // The learner re-records (row returns to submitted), then the teacher validates.
+    await admin.from('submissions').update({ status: 'submitted', teacher_feedback: null, reviewed_at: null }).eq('id', sub.id)
+    must(
+      await teacher.client.from('submissions').update({ status: 'validated', teacher_feedback: 'Parfait', reviewed_at: new Date().toISOString() }).eq('id', sub.id).select(),
+      'validated',
+    )
+    const rows = await mine()
+    expect(rows).toHaveLength(2)
+    expect(rows.map((r) => r.payload.outcome).sort()).toEqual(['needs_retry', 'validated'])
+  })
 })
 
 describe('weekly digest', () => {

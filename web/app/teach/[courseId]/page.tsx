@@ -4,9 +4,11 @@ import { ChevronLeft } from 'lucide-react'
 import { CourseBuilder } from '@/components/courses/CourseBuilder'
 import { CourseForm } from '@/components/courses/CourseForm'
 import { CourseStatusPanel } from '@/components/courses/CourseStatusPanel'
+import { CourseStatsPanel } from '@/components/courses/CourseStatsPanel'
 import { createClient } from '@/lib/supabase-server'
-import { getCourseById, getCourseOutline } from '@/lib/courses/queries'
-import { publishBlocker } from '@/lib/courses/outline'
+import { getCourseById, getCourseOutline, getCourseProgressRows } from '@/lib/courses/queries'
+import { flattenLessons, publishBlocker } from '@/lib/courses/outline'
+import { summarizeCourseStats } from '@/lib/courses/stats'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +28,11 @@ export default async function BuilderPage({ params }: Props) {
   if (!course || course.owner_id !== user.id) notFound()
 
   const outline = await getCourseOutline(supabase, course.id)
+  const lessons = flattenLessons(outline)
+  const stats = summarizeCourseStats(
+    await getCourseProgressRows(supabase, course.id),
+    lessons.map(l => ({ id: l.id, title: l.title, kind: l.kind })),
+  )
   const readOnly = course.status === 'suspended'
 
   return (
@@ -41,6 +48,8 @@ export default async function BuilderPage({ params }: Props) {
       <h1 className="font-heading text-3xl font-bold">{course.title}</h1>
 
       <CourseStatusPanel course={course} blocker={publishBlocker(outline)} />
+
+      <CourseStatsPanel stats={stats} />
 
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">
         <h2 className="font-heading font-bold text-base">Informations</h2>

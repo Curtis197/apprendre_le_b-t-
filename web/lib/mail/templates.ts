@@ -68,15 +68,35 @@ const RENDERERS: Record<string, (payload: Payload, ctx: RenderContext) => Render
     const grade = num(payload, 'grade')
     const url = courseUrl(ctx, str(payload, 'course_slug'))
     const gradeHtml = grade !== null ? p(`<strong>Note :</strong> ${grade} / 100`) : ''
+    // Pronunciation decisions arrive with outcome 'validated' or 'needs_retry'; everything else is a graded assignment.
+    const outcome = str(payload, 'outcome')
+    const wording =
+      outcome === 'validated'
+        ? {
+            subject: `Prononciation validée — ${lesson}`,
+            html: `Votre enseignant a validé votre prononciation pour la leçon <strong>${escapeHtml(lesson)}</strong> du cours <strong>${escapeHtml(course)}</strong>.`,
+            text: `Votre enseignant a validé votre prononciation pour la leçon « ${lesson} » (cours « ${course} »).`,
+          }
+        : outcome === 'needs_retry'
+          ? {
+              subject: `Prononciation à refaire — ${lesson}`,
+              html: `Votre enseignant vous demande de réenregistrer votre prononciation pour la leçon <strong>${escapeHtml(lesson)}</strong> du cours <strong>${escapeHtml(course)}</strong>.`,
+              text: `Votre enseignant vous demande de réenregistrer votre prononciation pour la leçon « ${lesson} » (cours « ${course} »).`,
+            }
+          : {
+              subject: `Votre devoir a été corrigé — ${lesson}`,
+              html: `Votre enseignant a publié une correction pour votre devoir de la leçon <strong>${escapeHtml(lesson)}</strong> du cours <strong>${escapeHtml(course)}</strong>.`,
+              text: `Votre enseignant a corrigé votre devoir de la leçon « ${lesson} » (cours « ${course} »).`,
+            }
     return build(
       ctx,
-      `Votre devoir a été corrigé — ${lesson}`,
-      p(`Votre enseignant a publié une correction pour votre devoir de la leçon <strong>${escapeHtml(lesson)}</strong> du cours <strong>${escapeHtml(course)}</strong>.`) +
+      wording.subject,
+      p(wording.html) +
         gradeHtml +
         `<div style="background:#f4f4f5;border-left:4px solid #7c3aed;padding:12px 16px;margin:16px 0;"><p style="margin:0;font-weight:bold;">Commentaire de l’enseignant :</p><p style="margin:8px 0 0;white-space:pre-wrap;">${escapeHtml(feedback)}</p></div>` +
         emailButton(url, 'Voir mes devoirs'),
       [
-        `Votre enseignant a corrigé votre devoir de la leçon « ${lesson} » (cours « ${course} »).`,
+        wording.text,
         ...(grade !== null ? [`Note : ${grade} / 100`] : []),
         `Commentaire : ${feedback}`,
         url,

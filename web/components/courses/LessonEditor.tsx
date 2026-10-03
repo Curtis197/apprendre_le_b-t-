@@ -13,6 +13,7 @@ import { AudioUploader } from '@/components/courses/AudioUploader'
 import { VideoUploader } from '@/components/courses/VideoUploader'
 import { QuizBuilder } from '@/components/courses/QuizBuilder'
 import { FillInBlankExercise } from '@/components/courses/FillInBlankExercise'
+import { QUIZ_PASS_PERCENT } from '@/lib/courses/thresholds'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -120,6 +121,7 @@ export function LessonEditor({
               <option value="quiz">Quiz QCM (questions à choix multiples)</option>
               <option value="assignment">Devoir à rendre (réponse écrite ou enregistrement)</option>
               <option value="fill_in_blank">Texte à trous (exercice interactif à compléter)</option>
+              <option value="pronunciation">Prononciation (l’apprenant s’enregistre, vous validez)</option>
             </select>
           </div>
         </div>
@@ -139,9 +141,11 @@ export function LessonEditor({
       </div>
 
       {/* Audio upload section */}
-      {kind === 'audio' && (
+      {(kind === 'audio' || kind === 'pronunciation') && (
         <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-          <h3 className="text-sm font-semibold">Enregistrement audio de la leçon</h3>
+          <h3 className="text-sm font-semibold">
+            {kind === 'pronunciation' ? 'Audio modèle (la prononciation à imiter)' : 'Enregistrement audio de la leçon'}
+          </h3>
           <AudioUploader
             courseOwnerId={courseOwnerId}
             lessonId={lesson.id}
@@ -172,7 +176,7 @@ export function LessonEditor({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-heading font-semibold">Questions du Quiz</h3>
-            <p className="text-xs text-muted-foreground">Note de passage minimale : 70 %</p>
+            <p className="text-xs text-muted-foreground">Note de passage minimale : {QUIZ_PASS_PERCENT} %</p>
           </div>
           <QuizBuilder
             lessonId={lesson.id}
@@ -196,6 +200,8 @@ export function LessonEditor({
               ? 'Notes & Ressources complémentaires (Markdown)'
               : kind === 'fill_in_blank'
               ? 'Texte à trous (Markdown avec [[réponse]])'
+              : kind === 'pronunciation'
+              ? 'Consigne et phrase à prononcer (Markdown)'
               : 'Contenu du cours (Markdown)'}
           </label>
           <div className="flex gap-1 lg:hidden">
@@ -226,6 +232,8 @@ export function LessonEditor({
                   ? 'Ajoutez les remarques, résumés ou liens utiles accompagnant la vidéo…'
                   : kind === 'fill_in_blank'
                   ? 'Ex: En bhété, [[Awa]] signifie bonjour et [[N\'zue|Oua|Awa:Mot pour l\'eau]] signifie eau.'
+                  : kind === 'pronunciation'
+                  ? 'Ex: Répétez la phrase : **Awa ɛ wa.** Écoutez le modèle puis enregistrez-vous.'
                   : 'Écrivez votre leçon ici…'
               }
             />
