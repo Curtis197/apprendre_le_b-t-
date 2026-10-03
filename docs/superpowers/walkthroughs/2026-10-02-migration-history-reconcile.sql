@@ -1,0 +1,33 @@
+begin;
+update supabase_migrations.schema_migrations set version='20260630000000', name='avatars_storage' where version='20260630175819';
+update supabase_migrations.schema_migrations set version='20260925000002', name='lexicon_examples_contrib' where version='20260925203712';
+update supabase_migrations.schema_migrations set version='20260925000000', name='fix_handle_new_user_search_path' where version='20260926211729';
+update supabase_migrations.schema_migrations set version='20260925000001', name='courses_core' where version='20260926211734';
+update supabase_migrations.schema_migrations set version='20260925000004', name='progress_reports' where version='20260926211738';
+update supabase_migrations.schema_migrations set version='20260928000000', name='courses_phase2_audio_quiz' where version='20260928081939';
+update supabase_migrations.schema_migrations set version='20260928000001', name='courses_phase3_video' where version='20260928101038';
+update supabase_migrations.schema_migrations set version='20260928000002', name='courses_phase4_assignments' where version='20260928104610';
+update supabase_migrations.schema_migrations set version='20260928000003', name='courses_phase5_payments' where version='20260928114828';
+update supabase_migrations.schema_migrations set version='20260928000004', name='courses_fill_in_blank' where version='20260928151258';
+update supabase_migrations.schema_migrations set version='20260930000000', name='lesson_progress_percent' where version='20260930070143';
+update supabase_migrations.schema_migrations set version='20260930000002', name='community_texts_literal' where version='20261001162453';
+update supabase_migrations.schema_migrations set version='20260930000003', name='community_texts_allow_video_type' where version='20261001162458';
+update supabase_migrations.schema_migrations set version='20261001000000', name='lexicon_translations' where version='20261001205258';
+update supabase_migrations.schema_migrations set version='20261001000001', name='search_lexicon' where version='20261001205931';
+update supabase_migrations.schema_migrations set version='20261002000000', name='search_lexicon_index' where version='20261002070922';
+update supabase_migrations.schema_migrations set version='20261003000000', name='word_usages' where version='20261002085129';
+update supabase_migrations.schema_migrations set version='20261003000001', name='find_usages' where version='20261002085145';
+update supabase_migrations.schema_migrations set version='20261003000002', name='usage_translations_aligned_independently' where version='20261002102159';
+update supabase_migrations.schema_migrations set version='20261003000003', name='revoke_client_execute_on_internal_functions' where version='20261002112007';
+update supabase_migrations.schema_migrations set name='user_votes', statements='{}' where version='20260517000001';
+delete from supabase_migrations.schema_migrations where version in ('20260928090327','20260928091408','20260928092110');
+insert into supabase_migrations.schema_migrations (version, name, statements) values ('20260925000003', 'lexicon_reconcile_prod_drift', '{}');
+insert into supabase_migrations.schema_migrations (version, name, statements) values ('20260930000001', 'course_review_hardening', '{}');
+insert into supabase_migrations.schema_migrations (version, name, statements) values ('20261003000004', 'find_usages_exclude_own_examples', '{}');
+insert into supabase_migrations.schema_migrations (version, name, statements) values ('20261003000005', 'corrections', '{}');
+do $$ declare extra text; missing text; begin
+  select string_agg(version, ',') into extra from supabase_migrations.schema_migrations where version not in ('20260513000000','20260513000001','20260514000000','20260514000001','20260514000002','20260514000003','20260514000004','20260514000005','20260516000001','20260516000002','20260516000003','20260516000004','20260517000000','20260517000001','20260517000002','20260517000003','20260517000004','20260518000001','20260518000002','20260519000001','20260519000002','20260522000001','20260619000001','20260630000000','20260925000000','20260925000001','20260925000002','20260925000003','20260925000004','20260928000000','20260928000001','20260928000002','20260928000003','20260928000004','20260930000000','20260930000001','20260930000002','20260930000003','20260930000004','20260930000005','20261001000000','20261001000001','20261002000000','20261003000000','20261003000001','20261003000002','20261003000003','20261003000004','20261003000005');
+  select string_agg(v, ',') into missing from unnest(array['20260513000000','20260513000001','20260514000000','20260514000001','20260514000002','20260514000003','20260514000004','20260514000005','20260516000001','20260516000002','20260516000003','20260516000004','20260517000000','20260517000001','20260517000002','20260517000003','20260517000004','20260518000001','20260518000002','20260519000001','20260519000002','20260522000001','20260619000001','20260630000000','20260925000000','20260925000001','20260925000002','20260925000003','20260925000004','20260928000000','20260928000001','20260928000002','20260928000003','20260928000004','20260930000000','20260930000001','20260930000002','20260930000003','20260930000004','20260930000005','20261001000000','20261001000001','20261002000000','20261003000000','20261003000001','20261003000002','20261003000003','20261003000004','20261003000005']) v where v not in (select version from supabase_migrations.schema_migrations);
+  if extra is not null or missing is not null or (select count(*) from supabase_migrations.schema_migrations) <> 49 then
+    raise exception 'history mismatch: extra=%, missing=%', extra, missing; end if; end $$;
+commit;

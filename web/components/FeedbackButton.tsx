@@ -1,46 +1,27 @@
 'use client'
-import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase-browser'
 import { FeedbackToken } from '@/lib/types'
 
 interface Props {
   token: FeedbackToken
+  active: boolean
+  onToggle: () => void
 }
 
-export function FeedbackButton({ token }: Props) {
-  const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
-  const supabaseRef = useRef(createClient())
-
-  async function handleFlag() {
-    if (state !== 'idle') return
-    setState('loading')
-    try {
-      const { data: { user } } = await supabaseRef.current.auth.getUser()
-      const { error } = await supabaseRef.current.from('user_feedback').insert({
-        user_id: user?.id ?? null,
-        lexicon_id: token.lexicon_id ?? null,
-        type: 'reject',
-        translator_phrase: `${token.french_word} → ${token.bete_western}`,
-      })
-      if (error) throw error
-      setState('done')
-    } catch {
-      setState('error')
-    }
-  }
-
-  if (state === 'done') return <p className="text-xs text-muted-foreground mt-1">Signalé ✓</p>
-  if (state === 'error') return <p className="text-xs text-red-500 mt-1">Erreur</p>
+// Opens the report panel for the word behind this token (see TranslatorOutput). A token that
+// is not tied to a lexicon entry has nothing to report on.
+export function FeedbackButton({ token, active, onToggle }: Props) {
+  if (!token.lexicon_id) return null
 
   return (
     <button
-      onClick={handleFlag}
-      disabled={state === 'loading'}
-      className="text-xs text-red-400 hover:text-red-600 mt-1 block disabled:opacity-50"
+      type="button"
+      onClick={onToggle}
+      aria-expanded={active}
+      className={`text-xs mt-1 block ${active ? 'text-red-600' : 'text-red-400 hover:text-red-600'}`}
       title="Signaler une erreur"
       aria-label="Signaler une erreur de traduction"
     >
-      {state === 'loading' ? '…' : '✗'}
+      ✗
     </button>
   )
 }
