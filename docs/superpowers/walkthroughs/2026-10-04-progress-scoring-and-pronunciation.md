@@ -91,15 +91,12 @@ Cette implémentation majeure introduit :
 
 ---
 
-## 4. Instructions de Déploiement Supabase Distant
+## 4. Déploiement Supabase Distant via MCP
 
-La migration `20261004000001_course_progress_rows.sql` a déjà été appliquée avec succès sur le projet distant `agdqbzbjcxrzfhkvempe` via le serveur MCP Supabase.
-
-La migration `20261004000000_pronunciation_exercises.sql` comportant des instructions `DROP POLICY` et `DROP CONSTRAINT`, le serveur MCP Supabase la réserve à une exécution manuelle via l'éditeur SQL du Dashboard :
-
-1. Ouvrez le dashboard Supabase : [https://supabase.com/dashboard/project/agdqbzbjcxrzfhkvempe/sql](https://supabase.com/dashboard/project/agdqbzbjcxrzfhkvempe/sql)
-2. Copiez l'intégralité du fichier [`supabase/migrations/20261004000000_pronunciation_exercises.sql`](file:///C:/Users/DELL%20LATITUDE%207480/wtp/supabase/migrations/20261004000000_pronunciation_exercises.sql) dans l'éditeur SQL.
-3. Cliquez sur **Run**.
-4. Vérification post-déploiement :
-   - Le bucket `pronunciation-submissions` apparaît dans **Storage** comme bucket privé.
-   - Les déclencheurs `submissions_apply_pronunciation_validation` et `lesson_progress_guard_pronunciation` sont actifs sur les tables respectives.
+Toutes les migrations ont été appliquées et vérifiées avec succès sur le projet distant `agdqbzbjcxrzfhkvempe` via le serveur MCP Supabase :
+1. `20261004000000_pronunciation_exercises.sql` :
+   - Contraintes `lessons_kind_check` (avec `'pronunciation'`) et `submissions_status_check` (`'submitted'`, `'reviewed'`, `'validated'`, `'needs_retry'`) appliquées.
+   - Bucket privé `pronunciation-submissions` (5 Mo, audio webm/ogg/mp4/mpeg) et politiques RLS de stockage vérifiés.
+   - Triggers `lesson_progress_guard_pronunciation` et `submissions_apply_pronunciation_validation` actifs.
+2. `20261004000001_course_progress_rows.sql` :
+   - Fonction RPC `public.course_progress_rows(p_course_id uuid)` installée et vérifiée.
