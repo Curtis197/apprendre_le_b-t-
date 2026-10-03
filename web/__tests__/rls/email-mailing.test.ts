@@ -184,7 +184,9 @@ describe('weekly digest', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].category).toBe('weekly_progress')
     expect(rows[0].payload.lessons_completed).toBe(1)
-    expect(rows[0].payload.courses[0]).toMatchObject({ completed_this_week: 1, completed_total: 1, total_lessons: 1 })
+    // seedCourse already creates lessons, so compare against the real count rather than assuming 1.
+    const { count: totalLessons } = await admin.from('lessons').select('id', { count: 'exact', head: true }).eq('course_id', seed.course.id)
+    expect(rows[0].payload.courses[0]).toMatchObject({ completed_this_week: 1, completed_total: 1, total_lessons: totalLessons })
 
     const idleRows = must(await admin.from('email_outbox').select('id').eq('dedupe_key', `digest:${week}:${idle.id}`), 'idle rows')
     expect(idleRows).toHaveLength(0)
