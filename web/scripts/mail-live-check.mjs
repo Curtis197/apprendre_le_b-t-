@@ -12,15 +12,22 @@ if (!to) throw new Error('Usage: node scripts/mail-live-check.mjs <email>')
 const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repoRoot = path.resolve(webDir, '..')
 
-const status = execFileSync('supabase', ['status', '-o', 'env'], { cwd: repoRoot, encoding: 'utf8', shell: process.platform === 'win32' })
+// Use API_URL + SERVICE_ROLE_KEY/SECRET_KEY from the environment when set (stack started from another
+// folder, so `supabase status` cannot see it); otherwise ask the CLI.
 const sb = {}
-for (const line of status.split(/\r?\n/)) {
-  const m = /^([A-Z0-9_]+)="?(.*?)"?$/.exec(line.trim())
-  if (m) sb[m[1]] = m[2]
+if (process.env.API_URL && (process.env.SERVICE_ROLE_KEY || process.env.SECRET_KEY)) {
+  sb.API_URL = process.env.API_URL
+  sb.SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY ?? process.env.SECRET_KEY
+} else {
+  const status = execFileSync('supabase', ['status', '-o', 'env'], { cwd: repoRoot, encoding: 'utf8', shell: process.platform === 'win32' })
+  for (const line of status.split(/\r?\n/)) {
+    const m = /^([A-Z0-9_]+)="?(.*?)"?$/.exec(line.trim())
+    if (m) sb[m[1]] = m[2]
+  }
 }
 const envFile = readFileSync(path.join(webDir, '.env.local'), 'utf8')
-const cronSecret = /^CRON_SECRET=(.+)$/m.exec(envFile)?.[1]?.trim()
-if (!cronSecret) throw new Error('CRON_SECRET missing from web/.env.local')
+const cronSecret = process.env.CRON_SECRET ?? /^CRON_SECRET=(.+)$/m.exec(envFile)?.[1]?.trim()
+if (!cronSecret) throw new Error('CRON_SECRET missing (set it in the environment or in web/.env.local)')
 
 const admin = createClient(sb.API_URL, sb.SERVICE_ROLE_KEY ?? sb.SECRET_KEY, { auth: { persistSession: false } })
 
