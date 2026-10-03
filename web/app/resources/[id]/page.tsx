@@ -17,6 +17,7 @@ import { VerseTranslation } from '@/components/VerseTranslation'
 import { JsonLd } from '@/components/JsonLd'
 import { ResourceComments } from '@/components/ResourceComments'
 import { ResourceOwnerActions } from '@/components/ResourceOwnerActions'
+import { CorrectionBox } from '@/components/CorrectionBox'
 
 // Cached so generateMetadata and the page share a single DB query per request.
 const getText = cache(async (id: string) => {
@@ -146,6 +147,18 @@ export default async function ResourceDetailPage({
         original={text.content_bete}
         literal={text.content_literal}
         french={text.content_french}
+      />
+
+      <CorrectionBox
+        targetType="resource"
+        targetId={id}
+        ownerId={text.created_by}
+        fields={[
+          { field: 'title', current: text.title },
+          { field: 'content_bete', current: text.content_bete },
+          { field: 'content_literal', current: text.content_literal },
+          { field: 'content_french', current: text.content_french },
+        ]}
       />
 
       <ResourceComments

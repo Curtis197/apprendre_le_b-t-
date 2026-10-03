@@ -4,12 +4,16 @@ import { createClient } from '@/lib/supabase-server'
 import { LexiconEntry } from '@/components/LexiconEntry'
 import { LexiconTranslations } from '@/components/LexiconTranslations'
 import { LexiconDescription } from '@/components/LexiconDescription'
+import { CorrectionBox } from '@/components/CorrectionBox'
 import { notFound } from 'next/navigation'
 import type { LexiconEntry as TLexiconEntry, LexiconExample, LexiconTranslation } from '@/lib/types'
 import { JsonLd } from '@/components/JsonLd'
 import { SITE_URL } from '@/lib/site'
 import { cleanBeteForm, pickDescription, sortTranslations, translationsSummary } from '@/lib/lexicon'
 import { InterlinearGloss } from '@/components/InterlinearGloss'
+import { findUsages } from '@/lib/usages'
+import { UsageCard } from '@/components/UsageCard'
+import Link from 'next/link'
 
 type Entry = TLexiconEntry & {
   lexicon_examples: LexiconExample[]
@@ -97,6 +101,8 @@ export default async function LexiconEntryPage({
   const bete = western || ipa
   const label = bete || french || 'Mot'
   const descText = pickDescription(entry)
+  // The entry's own examples are listed in "Exemples" above: leave them out of "Usages".
+  const usages = bete ? await findUsages(await createClient(), { q: bete, limit: 5, excludeRef: id }) : null
 
   const jsonLd = [
     // Only describe a real dictionary term once the entry has a translation.
@@ -136,6 +142,18 @@ export default async function LexiconEntryPage({
       <JsonLd data={jsonLd} />
       <LexiconEntry entry={entry} />
       <LexiconDescription lexiconId={entry.id} initial={descText} />
+      {bete && (
+        <CorrectionBox
+          targetType="word"
+          targetId={entry.id}
+          ownerId={entry.created_by ?? null}
+          fields={[
+            { field: 'bete_phonetic', current: entry.bete_phonetic },
+            { field: 'bete_word', current: entry.bete_word },
+            { field: 'description', current: entry.description },
+          ]}
+        />
+      )}
       <LexiconTranslations lexiconId={entry.id} translations={translations} />
       {entry.lexicon_examples?.length > 0 && (
         <section className="space-y-3">
@@ -151,6 +169,19 @@ export default async function LexiconEntryPage({
               />
             ))}
           </div>
+        </section>
+      )}
+      {usages && usages.rows.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-semibold text-lg font-heading">Usages</h2>
+          <div className="space-y-3">
+            {usages.rows.map(row => <UsageCard key={row.line_id} row={row} side="bete" />)}
+          </div>
+          {usages.total > usages.rows.length && (
+            <Link href={`/lexicon/${id}/usages`} className="text-sm text-primary hover:underline font-medium">
+              Voir tous les usages ({usages.total}) →
+            </Link>
+          )}
         </section>
       )}
     </main>

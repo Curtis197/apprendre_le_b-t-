@@ -15,6 +15,8 @@ export interface LexiconEntry {
   validated: boolean
   upvotes: number
   source: 'seed' | 'contributed'
+  /** The contributor who added the word; null for words imported from the Bible. */
+  created_by?: string | null
 }
 
 export interface LexiconExample {
