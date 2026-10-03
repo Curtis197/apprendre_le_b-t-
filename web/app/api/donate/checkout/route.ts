@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
             currency: 'eur',
             unit_amount: amount,
             product_data: {
-              name: 'Soutien à Parlons Bhété',
+              name: 'Soutien à Apprendre le bhété',
               description: 'Contribution au financement de la plateforme linguistique bhété.',
             },
           },

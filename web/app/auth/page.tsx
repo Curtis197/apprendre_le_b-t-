@@ -95,7 +95,7 @@ function AuthForm() {
   return (
     <main className="max-w-md mx-auto py-12 px-4">
       <div className="text-center mb-8">
-        <h1 className="font-heading text-3xl font-bold text-primary">Parlons Bhété</h1>
+        <h1 className="font-heading text-3xl font-bold text-primary">Apprendre le bhété</h1>
         <p className="text-sm text-muted-foreground mt-1">Plateforme linguistique bhété</p>
       </div>
       <Card>

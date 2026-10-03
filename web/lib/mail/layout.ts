@@ -16,11 +16,11 @@ export function renderLayout(opts: { bodyHtml: string; unsubscribeUrl?: string }
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;">
         <tr><td style="background:#7c3aed;padding:24px 32px;text-align:center;">
-          <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff;">Parlons Bhété</p>
+          <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff;">Apprendre le bhété</p>
         </td></tr>
         <tr><td style="padding:32px;font-size:16px;line-height:1.6;color:#374151;">${opts.bodyHtml}</td></tr>
         <tr><td style="padding:20px 32px;background:#f9f5f0;text-align:center;border-top:1px solid #e5e7eb;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">Parlons Bhété — Préserver la langue bhété, ensemble.</p>
+          <p style="margin:0;font-size:12px;color:#9ca3af;">Apprendre le bhété — Préserver la langue bhété, ensemble.</p>
           ${footer}
         </td></tr>
       </table>

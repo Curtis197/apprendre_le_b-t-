@@ -25,8 +25,8 @@ export function TranslatorGate({ counts }: Props) {
   return (
     <>
       <p className="text-muted-foreground mb-6">
-        Le traducteur n&apos;est pas encore disponible pour ce dialecte.
-        Aidez la communauté à atteindre les seuils ci-dessous.
+        Le traducteur s&apos;ouvrira pour ce dialecte quand la communauté aura traduit assez de mots.
+        Aidez-nous à atteindre les seuils ci-dessous.
       </p>
       <div className="mb-6"><DialectSelector /></div>
       <TranslatorProgress counts={counts} />

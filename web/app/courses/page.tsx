@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Cours de bhété',
   description:
-    'Cours en ligne pour apprendre le bhété (bété) de Côte d’Ivoire : leçons créées par la communauté, gratuites et accessibles sur mobile.',
+    'Les premiers cours pour apprendre le bhété (bété) de Côte d’Ivoire sont en préparation : leçons créées par la communauté, gratuites et accessibles sur mobile.',
   alternates: { canonical: '/courses' },
 }
 
@@ -48,7 +48,7 @@ export default async function CoursesPage({ searchParams }: Props) {
       <PageHeader
         badge="Cours"
         title="Apprendre le bhété"
-        subtitle="Des cours créés par la communauté. Choisissez un parcours, inscrivez-vous et avancez à votre rythme."
+        subtitle="Les premiers cours sont en préparation. Ils seront créés par des locuteurs et des enseignants de la communauté."
       />
 
       <div className="flex flex-col gap-3 mb-8">
@@ -79,8 +79,14 @@ export default async function CoursesPage({ searchParams }: Props) {
           <p className="text-muted-foreground">
             {dialect || level
               ? 'Aucun cours ne correspond à ces filtres pour le moment.'
-              : 'Aucun cours n’est encore publié.'}
+              : 'Les premiers cours arrivent. Vous parlez bhété et voulez en créer un ?'}
           </p>
+          <Link
+            href="/teach"
+            className="inline-flex items-center bg-primary text-white font-semibold px-6 h-10 rounded-lg text-sm hover:bg-primary/90 transition-colors"
+          >
+            Devenir enseignant
+          </Link>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

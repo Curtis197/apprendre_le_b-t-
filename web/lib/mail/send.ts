@@ -19,7 +19,7 @@ export interface Sender {
 }
 
 export function senderAddress(): string {
-  return process.env.RESEND_FROM_EMAIL || 'Parlons Bhété <notif@apprendre-le-bhete.com>'
+  return process.env.RESEND_FROM_EMAIL || 'Apprendre le bhété <notif@apprendre-le-bhete.com>'
 }
 
 export async function sendEmail(email: OutgoingEmail, sender?: Sender): Promise<SendResult> {

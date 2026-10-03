@@ -12,7 +12,7 @@ describe('senderAddress', () => {
   })
   it('falls back to the verified-domain address', () => {
     vi.stubEnv('RESEND_FROM_EMAIL', '')
-    expect(senderAddress()).toBe('Parlons Bhété <notif@apprendre-le-bhete.com>')
+    expect(senderAddress()).toBe('Apprendre le bhété <notif@apprendre-le-bhete.com>')
   })
 })
 
@@ -24,7 +24,7 @@ describe('sendEmail', () => {
     const send = vi.fn().mockResolvedValue({ data: { id: 'abc' }, error: null })
     const res = await sendEmail({ ...email, headers: { 'List-Unsubscribe': '<u>' } }, { emails: { send } })
     expect(res).toEqual({ ok: true, id: 'abc' })
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({ from: 'Parlons Bhété <notif@apprendre-le-bhete.com>', to: 'a@b.c', headers: { 'List-Unsubscribe': '<u>' } }))
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ from: 'Apprendre le bhété <notif@apprendre-le-bhete.com>', to: 'a@b.c', headers: { 'List-Unsubscribe': '<u>' } }))
   })
 
   it('returns ok:false with the Resend message on an API error', async () => {

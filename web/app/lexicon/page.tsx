@@ -209,8 +209,15 @@ export default function LexiconPage() {
       <PageHeader
         badge="Dictionnaire"
         title="Lexique Bhété"
-        subtitle="Explorez les mots de la langue bhété, leur prononciation et leur traduction en français."
+        subtitle="Le dictionnaire bhété ↔ français, construit mot après mot par la communauté."
       />
+
+      <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-3 mb-6">
+        Le lexique est en construction : beaucoup de mots n’ont pas encore de traduction.{' '}
+        <Link href="/contribute?type=word" className="text-primary font-medium hover:underline">
+          Apportez la vôtre →
+        </Link>
+      </p>
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
         <DialectSelector />
