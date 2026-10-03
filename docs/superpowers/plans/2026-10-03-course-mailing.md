@@ -38,8 +38,8 @@ Inputs the spec implies but a happy-path test would miss (each pinned by a test 
 
 | File | Responsibility |
 |---|---|
-| `supabase/migrations/20261003000002_email_outbox.sql` | `email_preferences`, `email_outbox`, RLS/grants, `claim_email_batch` |
-| `supabase/migrations/20261003000003_email_triggers.sql` | Course/submission triggers, `enqueue_weekly_digest` |
+| `supabase/migrations/20261005000000_email_outbox.sql` | `email_preferences`, `email_outbox`, RLS/grants, `claim_email_batch` |
+| `supabase/migrations/20261005000001_email_triggers.sql` | Course/submission triggers, `enqueue_weekly_digest` |
 | `supabase/ops/mail-cron.sql` | One-time `pg_cron` schedule, run by hand (holds no secret) |
 | `web/lib/mail/categories.ts` | Category constants, labels, type guard |
 | `web/lib/mail/send.ts` | `sendEmail()` Resend wrapper, `senderAddress()` |
@@ -460,7 +460,7 @@ git commit -m "feat(mail): sender wrapper, layout and email templates" -m "Co-Au
 ### Task 2: Outbox and preferences tables, claim function
 
 **Files:**
-- Create: `supabase/migrations/20261003000002_email_outbox.sql`, `web/lib/mail/unsubscribe.ts`
+- Create: `supabase/migrations/20261005000000_email_outbox.sql`, `web/lib/mail/unsubscribe.ts`
 - Test: `web/__tests__/rls/email-mailing.test.ts`
 
 **Interfaces:**
@@ -566,7 +566,7 @@ Expected: FAIL — `../../lib/mail/unsubscribe` not found (and the tables do not
 
 - [ ] **Step 3: Write the migration**
 
-`supabase/migrations/20261003000002_email_outbox.sql`:
+`supabase/migrations/20261005000000_email_outbox.sql`:
 
 ```sql
 -- Course mailing: per-user email preferences and the outbox queue.
@@ -692,7 +692,7 @@ Expected: PASS (6 tests).
 
 ```bash
 git branch --show-current
-git add supabase/migrations/20261003000002_email_outbox.sql web/lib/mail/unsubscribe.ts web/__tests__/rls/email-mailing.test.ts
+git add supabase/migrations/20261005000000_email_outbox.sql web/lib/mail/unsubscribe.ts web/__tests__/rls/email-mailing.test.ts
 git commit -m "feat(mail): email preferences, outbox queue and claim function" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ```
 
@@ -701,7 +701,7 @@ git commit -m "feat(mail): email preferences, outbox queue and claim function" -
 ### Task 3: Event triggers and weekly digest function
 
 **Files:**
-- Create: `supabase/migrations/20261003000003_email_triggers.sql`
+- Create: `supabase/migrations/20261005000001_email_triggers.sql`
 - Test: `web/__tests__/rls/email-mailing.test.ts` (append two `describe` blocks)
 
 **Interfaces:**
@@ -841,7 +841,7 @@ Expected: the new tests FAIL (no rows queued; `enqueue_weekly_digest` does not e
 
 - [ ] **Step 3: Write the migration**
 
-`supabase/migrations/20261003000003_email_triggers.sql`:
+`supabase/migrations/20261005000001_email_triggers.sql`:
 
 ```sql
 -- Course mailing: triggers that queue emails, and the weekly digest enqueue function.
@@ -992,7 +992,7 @@ Expected: PASS (all tests in the file). If publishing a course is blocked by an 
 
 ```bash
 git branch --show-current
-git add supabase/migrations/20261003000003_email_triggers.sql web/__tests__/rls/email-mailing.test.ts
+git add supabase/migrations/20261005000001_email_triggers.sql web/__tests__/rls/email-mailing.test.ts
 git commit -m "feat(mail): queue emails from course, submission and digest events" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ```
 

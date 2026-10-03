@@ -56,3 +56,9 @@ Les deux migrations ont été appliquées avec succès sur le projet Supabase di
 3. **Build de production Next.js :**
    - `npm run build` : **Succès total** (18/18 pages statiques générées, compilation Turbopack sans avertissement bloquant).
    - Routes API `/api/mail/dispatch`, `/api/mail/unsubscribe`, `/api/send-welcome`, `/api/contact` opérationnelles.
+
+---
+
+## 5. Note de renommage (avant fusion)
+
+Avant la fusion dans `master`, les deux migrations ont été renommées `20261005000000_email_outbox.sql` et `20261005000001_email_triggers.sql` : `master` utilisait déjà les versions `20261003000002` et `20261003000003` pour d'autres migrations (word usages). Le contenu est inchangé. Sur la base distante elles sont enregistrées sous les versions `20261003122230` / `20261003122349` ; les rejouer est sans danger (créations conditionnelles, `create or replace`, politiques gardées).
