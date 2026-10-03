@@ -5,11 +5,11 @@ export const SITE_URL = (
 ).replace(/\/+$/, '')
 
 export const SITE_NAME = 'Apprendre le bhété'
-export const SITE_TAGLINE = 'Plateforme linguistique bhété'
+export const SITE_TAGLINE = 'Projet communautaire pour apprendre et préserver la langue bhété'
 
 export const SITE_DESCRIPTION =
-  'Lexique, traducteur, grammaire et ressources pour apprendre et préserver la langue ' +
-  'bhété (bété) de Côte d’Ivoire — une plateforme collaborative et communautaire.'
+  'Projet communautaire en construction : lexique, traducteur, cours et ressources pour apprendre ' +
+  'et préserver la langue bhété (bété) de Côte d’Ivoire. Contributeurs bienvenus.'
 
 export const SITE_KEYWORDS = [
   'bhété', 'bété', 'langue bété', 'langue bhété', 'dictionnaire bété',

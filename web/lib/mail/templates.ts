@@ -146,13 +146,13 @@ export function renderWelcomeEmail(opts: { name: string; baseUrl: string }): Ren
   const name = opts.name.replace(/[\r\n]+/g, ' ').trim() || 'Contributeur'
   const bodyHtml =
     `<h1 style="margin:0 0 16px;font-size:24px;color:#1a1a2e;">Bienvenue, ${escapeHtml(name)} !</h1>` +
-    p('Votre compte a été créé sur <strong>Parlons Bhété</strong>. Vous faites maintenant partie d’une communauté dédiée à la préservation et à la valorisation de la langue bhété.') +
+    p('Votre compte a été créé sur <strong>Apprendre le bhété</strong>. Vous faites maintenant partie d’une communauté dédiée à la préservation et à la valorisation de la langue bhété.') +
     p('Vous pouvez explorer le lexique, contribuer des mots et des expressions, suivre des cours et rejoindre le forum.') +
     emailButton(opts.baseUrl, 'Accéder à la plateforme') +
     p('<span style="font-size:13px;color:#6b7280;">Si vous n’êtes pas à l’origine de cette inscription, ignorez cet e-mail.</span>')
   return {
-    subject: `Bienvenue sur Parlons Bhété, ${name} !`,
+    subject: `Bienvenue sur Apprendre le bhété, ${name} !`,
     html: renderLayout({ bodyHtml }),
-    text: [`Bienvenue, ${name} !`, 'Votre compte a été créé sur Parlons Bhété.', opts.baseUrl].join('\n'),
+    text: [`Bienvenue, ${name} !`, 'Votre compte a été créé sur Apprendre le bhété.', opts.baseUrl].join('\n'),
   }
 }
