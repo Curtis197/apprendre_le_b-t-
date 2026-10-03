@@ -282,6 +282,12 @@ export default function LexiconPage() {
             >
               Ajouter « {debounced.trim()} » au lexique →
             </Link>
+            <Link
+              href={`/usages?q=${encodeURIComponent(debounced.trim())}`}
+              className="block text-primary hover:underline text-sm"
+            >
+              Voir des usages de « {debounced.trim()} » dans les textes →
+            </Link>
           </div>
         ) : (
           <p className="text-muted-foreground text-sm py-10 text-center">

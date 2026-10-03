@@ -540,14 +540,7 @@ export async function reviewSubmission(
 
   if (updateError) return fail(updateError.message)
 
-  // The email needs the service-role key and the Resend key, so a server route
-  // sends it. Fire-and-forget: a failed notification must not fail the review.
-  void fetch('/api/courses/submissions/notify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ submissionId }),
-  }).catch(() => null)
-
+  // The "devoir corrigé" email is queued by the submissions_enqueue_reviewed database trigger.
   return ok(null)
 }
 
@@ -622,12 +615,7 @@ export async function reviewPronunciation(
     .eq('id', submissionId)
   if (error) return fail(error.message)
 
-  void fetch('/api/courses/submissions/notify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ submissionId }),
-  }).catch(() => null)
-
+  // The learner's email is queued by the submissions_enqueue_reviewed database trigger.
   return ok(null)
 }
 

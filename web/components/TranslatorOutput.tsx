@@ -2,8 +2,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Copy, Check } from 'lucide-react'
-import { TranslationResult } from '@/lib/types'
+import { FeedbackToken, TranslationResult } from '@/lib/types'
 import { FeedbackButton } from './FeedbackButton'
+import { CorrectionBox } from './CorrectionBox'
 import { Badge } from '@/components/ui/badge'
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 
 export function TranslatorOutput({ result }: Props) {
   const [copied, setCopied] = useState(false)
+  const [flagged, setFlagged] = useState<FeedbackToken | null>(null)
 
   // Older cached results stored the Bhété sentence as its own "literal"; never show that as a gloss.
   const literal =
@@ -76,10 +78,45 @@ export function TranslatorOutput({ result }: Props) {
                   <p className="text-[10px] font-mono text-muted-foreground">{token.bete_word}</p>
                 </div>
                 <div className="mt-1">
-                  <FeedbackButton token={token} />
+                  <FeedbackButton
+                    token={token}
+                    active={flagged === token}
+                    onToggle={() => setFlagged(f => (f === token ? null : token))}
+                  />
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {flagged?.lexicon_id && (
+          <div className="rounded-lg border border-border/80 bg-card p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm">
+                <span className="text-muted-foreground">{flagged.french_word}</span>
+                {' → '}
+                <span className="font-semibold">{flagged.bete_western}</span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setFlagged(null)}
+                aria-label="Fermer"
+                className="text-xs text-muted-foreground hover:text-foreground px-1"
+              >
+                ✕
+              </button>
+            </div>
+            <CorrectionBox
+              key={flagged.lexicon_id}
+              targetType="word"
+              targetId={flagged.lexicon_id}
+              ownerId={null}
+              startOpen
+              fields={[
+                { field: 'bete_phonetic', current: flagged.bete_western },
+                { field: 'bete_word', current: flagged.bete_word },
+              ]}
+            />
           </div>
         )}
       </div>

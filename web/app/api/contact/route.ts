@@ -1,28 +1,29 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
+import { NextRequest, NextResponse } from 'next/server'
+import { escapeHtml } from '@/lib/courses/assignment'
+import { sendEmail } from '@/lib/mail/send'
 
-export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
+
+const CONTACT_INBOX = 'curtiscapre@gmail.com'
 
 export async function POST(req: NextRequest) {
-  const resend = new Resend(process.env.RESEND_API_KEY)
-  const { name, email, subject, message } = await req.json()
-  if (!name || !email || !message) {
+  const { name, email, subject, message } = (await req.json().catch(() => ({}))) as Record<string, unknown>
+  if (typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string' || !name || !email || !message) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
+  const subj = typeof subject === 'string' && subject ? subject : 'Sans sujet'
+  const oneLine = (s: string) => s.replace(/[\r\n]+/g, ' ').trim()
 
-  const { error } = await resend.emails.send({
-    from: 'Parlons Bhété <onboarding@resend.dev>',
-    to: 'curtiscapre@gmail.com',
-    replyTo: email,
-    subject: `[Contact] ${subject || 'Sans sujet'} — de ${name}`,
-    html: `
-      <p><strong>De :</strong> ${name} (${email})</p>
-      <p><strong>Sujet :</strong> ${subject || '—'}</p>
-      <hr />
-      <p>${message.replace(/\n/g, '<br />')}</p>
-    `,
+  const result = await sendEmail({
+    to: CONTACT_INBOX,
+    replyTo: oneLine(email),
+    subject: `[Contact] ${oneLine(subj)} — de ${oneLine(name)}`,
+    html: `<p><strong>De :</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p><p><strong>Sujet :</strong> ${escapeHtml(subj)}</p><hr /><p>${escapeHtml(message).replace(/\n/g, '<br />')}</p>`,
+    text: `De : ${name} (${email})\nSujet : ${subj}\n\n${message}`,
   })
-
-  if (error) return NextResponse.json({ error: 'Failed to send' }, { status: 500 })
+  if (!result.ok) {
+    console.error('[contact] failed:', result.error)
+    return NextResponse.json({ error: 'Failed to send' }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }
