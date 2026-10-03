@@ -62,7 +62,7 @@ Exact column names for triggers (published flag, review status) must be read fro
 
 **Templates** — `web/lib/mail/templates/*.ts`: one shared layout (French, `<meta charset="utf-8">`, styling from the existing welcome email) and one function per template returning `{ subject, html, text }`. All user-supplied text is HTML-escaped (reuse `escapeHtml`).
 
-**Sender wrapper** — `web/lib/mail/send.ts` reads `RESEND_FROM_EMAIL` (required in production). `assignment-email.ts`, `send-welcome` and `contact` all go through it, which removes the hard-coded and mistyped addresses.
+**Sender wrapper** — `web/lib/mail/send.ts` reads `RESEND_FROM_EMAIL`, falling back to `Parlons Bhété <notif@apprendre-le-bhete.com>` (the verified domain). `assignment-email.ts`, `send-welcome` and `contact` all go through it, which removes the hard-coded and mistyped addresses. `send-welcome` previously accepted any address from an unauthenticated request and interpolated the posted name into HTML; it now sends only to the signed-in user's own address and escapes the name.
 
 **Scheduling** — `pg_cron` + `pg_net` (secret in Supabase Vault): dispatcher every 5 minutes; weekly digest enqueue Monday 07:00 UTC (07:00 in Côte d'Ivoire, no DST).
 
