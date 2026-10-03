@@ -77,12 +77,10 @@ sequenceDiagram
 export const QUIZ_PASS_PERCENT = 70
 export const FILL_IN_BLANK_PASS_PERCENT = 80
 
-export function isQuizPassed(score: number): boolean {
-  return score >= QUIZ_PASS_PERCENT
-}
-
-export function isFillInBlankPassed(score: number): boolean {
-  return score >= FILL_IN_BLANK_PASS_PERCENT
+/** Un échec enregistre le score mais n'ajoute aucune progression de leçon. */
+export function fillInBlankOutcome(scorePercent: number): { passed: boolean; progressPercent: number } {
+  const passed = scorePercent >= FILL_IN_BLANK_PASS_PERCENT
+  return { passed, progressPercent: passed ? 100 : 0 }
 }
 ```
 
@@ -152,13 +150,14 @@ export function isFillInBlankPassed(score: number): boolean {
 | **Modifié** | `web/app/courses/[slug]/learn/[lessonId]/page.tsx` | Intégration exercice prononciation, désactivation bouton manuel |
 | **Modifié** | `web/app/teach/[courseId]/page.tsx` | Intégration de `CourseStatsPanel` |
 | **Modifié** | `web/app/api/courses/submissions/notify/route.ts` | Notifications email adaptées pour validation et retry |
+| **Corrigé** | `web/lib/courses/queries.ts` | La file de correction lisait `profiles.full_name` (colonne inexistante : la colonne est `name`), d'où « Apprenant » pour tous. Ce bug existe encore sur `master`. |
 
 ---
 
 ## 5. Résultats des Tests & Validations Complètes
 
 ### A. Tests Unitaires (`npm run test`)
-**24 suites passées avec succès, 210 tests au total (100% de réussite)** :
+**24 suites passées avec succès, 210 tests au total (100% de réussite)** (relancés après le retrait des `console.log` de `FillInBlankExercise` : 24 suites, 210 tests, `tsc --noEmit` sans erreur) :
 - `__tests__/course-thresholds.test.ts` (3 tests) : OK
 - `__tests__/course-pronunciation.test.ts` (8 tests) : OK
 - `__tests__/course-mutations.test.ts` (18 tests) : OK
@@ -208,7 +207,13 @@ export function isFillInBlankPassed(score: number): boolean {
 6. `phase2-audio-quiz` (7 tests) : OK
 7. `courses-core` (26 tests) : OK
 
-### C. Vérification TypeScript & Build de Production
+### C. Ce qui n'a PAS été vérifié
+
+- **Aucun test dans un vrai navigateur** : l'enregistreur (`MediaRecorder`), la demande d'accès au micro, la préécoute et l'envoi n'ont été exécutés ni sous Chrome/Firefox ni sous Safari/iOS. Le support `audio/mp4` pour Safari repose sur la logique de repli testée en unitaire, pas sur un essai réel.
+- Le tableau de bord enseignant (`CourseStatsPanel`) n'a pas été contrôlé visuellement avec de vraies données.
+- À faire avant fusion : le parcours manuel de la Tâche 7 du plan (enseignant crée la leçon → apprenant s'enregistre → à refaire → valider → annuler la décision → refus du micro).
+
+### D. Vérification TypeScript & Build de Production
 - `npx tsc --noEmit` : **0 erreur**. Typage strict vérifié sur l'ensemble du projet.
 - `npm run build` : **Compilation réussie sans aucune erreur**. Toutes les routes dynamiques et statiques (dont `/teach/[courseId]`, `/courses/[slug]/learn/[lessonId]`, `/teach/reviews`) ont été générées et optimisées.
 - **Audit de suppression (`git diff --diff-filter=D`)** : Aucun fichier ni route supprimé involontairement.

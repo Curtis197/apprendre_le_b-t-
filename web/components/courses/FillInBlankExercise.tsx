@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { CheckCircle2, XCircle, HelpCircle, RefreshCw, Award, Sparkles } from 'lucide-react'
 import { parseFillInBlankText, evaluateFillInBlankAnswers, type BlankToken } from '@/lib/courses/fill-in-blank'
 import { Button } from '@/components/ui/button'
@@ -31,16 +31,6 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
     setEvaluated(null)
   }
 
-  useEffect(() => {
-    console.log('[FillInBlank] 🎯 Exercise initialized for lesson:', {
-      lessonId,
-      totalBlanks: parsed.blanks.length,
-      blankIds: parsed.blanks.map(b => b.id),
-      wordBankWordsCount: parsed.allWordBankOptions.length,
-      isAuthed,
-    })
-  }, [lessonId, parsed, isAuthed])
-
   if (parsed.blanks.length === 0) {
     return (
       <div className="p-6 border border-dashed border-border rounded-xl text-center text-muted-foreground text-sm">
@@ -50,18 +40,8 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
   }
 
   function handleInputChange(blankId: string, value: string) {
-    const blank = parsed.blanks.find(b => b.id === blankId)
-    console.log('[FillInBlank] ✍️ Typing / input in blank:', {
-      blankId,
-      value,
-      characterCount: value.length,
-      isDropdown: Boolean(blank?.options && blank.options.length > 0),
-      hasHint: Boolean(blank?.hint),
-    })
-
     setUserAnswers(prev => ({ ...prev, [blankId]: value }))
     if (evaluated) {
-      console.log('[FillInBlank] 🔄 User modified answer after check; resetting previous evaluation state.')
       setEvaluated(null)
     }
   }
@@ -76,11 +56,6 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
     }
 
     if (targetBlankId) {
-      console.log('[FillInBlank] 🏷️ Selected word from Word Bank:', {
-        word,
-        targetBlankId,
-        wasPreviouslyActive: Boolean(activeBlankId),
-      })
       handleInputChange(targetBlankId, word)
     }
   }
@@ -114,11 +89,6 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
 
   function handleToggleHint(blankId: string, hint: string) {
     const nextState = !showHint[blankId]
-    console.log('[FillInBlank] 💡 Hint toggled for blank:', {
-      blankId,
-      hint,
-      isVisibleNow: nextState,
-    })
     setShowHint(prev => ({ ...prev, [blankId]: nextState }))
   }
 
@@ -179,7 +149,6 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                     value={value}
                     onChange={e => handleInputChange(blank.id, e.target.value)}
                     onFocus={() => {
-                      console.log('[FillInBlank] 🎯 Focused select dropdown for blank:', blank.id)
                       setActiveBlankId(blank.id)
                     }}
                     disabled={isEvaluated && isCorrect}
@@ -206,7 +175,6 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                     value={value}
                     onChange={e => handleInputChange(blank.id, e.target.value)}
                     onFocus={() => {
-                      console.log('[FillInBlank] 🎯 Focused input field for blank:', blank.id)
                       setActiveBlankId(blank.id)
                     }}
                     placeholder="…"
