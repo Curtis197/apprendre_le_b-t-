@@ -7,20 +7,11 @@ import path from 'node:path'
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const shell = process.platform === 'win32'
 
-let status
-try {
-  status = execFileSync('supabase', ['status', '-o', 'env'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    shell,
-  })
-} catch {
-  status = execFileSync('supabase', ['status', '-o', 'env'], {
-    cwd: path.resolve(repoRoot, '..', 'traduction bété'),
-    encoding: 'utf8',
-    shell,
-  })
-}
+const status = execFileSync('supabase', ['status', '-o', 'env'], {
+  cwd: repoRoot,
+  encoding: 'utf8',
+  shell,
+})
 
 const env = { ...process.env }
 for (const line of status.split(/\r?\n/)) {
