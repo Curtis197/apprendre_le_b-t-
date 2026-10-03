@@ -6,8 +6,6 @@ import { PenLine, BookOpen, Languages, GraduationCap, Library } from 'lucide-rea
 import { PatternDivider } from '@/components/PatternDivider'
 import { ContributionFormWithParams } from '@/components/ContributionForm'
 import { DonateForm } from '@/components/DonateForm'
-import { createClient } from '@/lib/supabase-server'
-import type { LexiconEntry } from '@/lib/types'
 import { JsonLd } from '@/components/JsonLd'
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
 
@@ -50,40 +48,7 @@ const STEPS = [
   'Si vous le souhaitez, créez un cours.',
 ]
 
-async function getWordsOfDay(): Promise<LexiconEntry[]> {
-  const supabase = await createClient()
-  const { count } = await supabase
-    .from('lexicon')
-    .select('*', { count: 'exact', head: true })
-    .eq('bete_phonetic', '')
-    
-  if (!count) return []
-
-  const dayIndex = Math.floor(Date.now() / 86400000) % count
-  const indices = [
-    dayIndex % count,
-    (dayIndex + Math.floor(count / 3)) % count,
-    (dayIndex + Math.floor((2 * count) / 3)) % count,
-  ]
-
-  const results = await Promise.all(
-    indices.map(i =>
-      supabase
-        .from('lexicon')
-        .select('*')
-        .eq('bete_phonetic', '')
-        .order('created_at')
-        .range(i, i)
-        .maybeSingle()
-        .then(r => r.data as LexiconEntry | null)
-    )
-  )
-  return results.filter((w): w is LexiconEntry => w !== null)
-}
-
-export default async function HomePage() {
-  const words = await getWordsOfDay()
-
+export default function HomePage() {
   const jsonLd = [
     {
       '@context': 'https://schema.org',
@@ -245,36 +210,6 @@ export default async function HomePage() {
         </p>
         <ContributionFormWithParams />
       </div>
-
-      {/* 3 Words of the Day */}
-      {words.length > 0 && (
-        <div>
-          <h2 className="font-heading text-2xl mb-1">Mots à traduire</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Voici des mots qui attendent encore leur traduction.
-          </p>
-        <div className="grid md:grid-cols-3 gap-6">
-          {words.map((wotd, i) => (
-            <div key={wotd.id} className={`rounded-2xl p-6 border-l-4 ${i === 0 ? 'bg-primary/10 border-primary' : i === 1 ? 'bg-secondary/10 border-secondary' : 'bg-accent/20 border-accent-foreground/30'}`}>
-              <span className={`text-xs font-semibold rounded-full px-3 py-1 inline-block mb-4 ${i === 0 ? 'bg-secondary text-white' : i === 1 ? 'bg-primary text-white' : 'bg-foreground/10 text-foreground'}`}>
-                {i === 0 ? 'Mot à Traduire du Jour' : i === 1 ? 'Mot à Traduire #2' : 'Mot à Traduire #3'}
-              </span>
-              <h3 className={`font-heading text-3xl font-bold mb-1 ${i === 0 ? 'text-primary' : i === 1 ? 'text-secondary' : 'text-foreground'}`}>
-                À TRADUIRE
-              </h3>
-              <div className="w-12 h-0.5 bg-border my-3" />
-              <p className="italic text-foreground/80 text-sm">{wotd.top_french}</p>
-              <Link 
-                href={`/contribute?type=word&word=${encodeURIComponent(wotd.top_french)}&id=${wotd.id}`} 
-                className="inline-block mt-4 text-primary text-sm font-semibold hover:underline"
-              >
-                Traduire ce mot →
-              </Link>
-            </div>
-          ))}
-        </div>
-        </div>
-      )}
 
       <PatternDivider />
 
