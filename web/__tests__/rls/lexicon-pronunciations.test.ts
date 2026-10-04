@@ -157,3 +157,90 @@ describe('add_lexicon_pronunciation and delete_lexicon_pronunciation', () => {
     expect(must(await admin.from('lexicon_pronunciations').select('id').eq('lexicon_id', lex), 'rows')).toHaveLength(0)
   })
 })
+
+describe('reports on a recording', () => {
+  let alice: TestUser // author
+  let bob: TestUser // listener
+  let boss: TestUser
+  let lexId: string
+  let recId: string
+  let path: string
+
+  const report = (user: TestUser, message: string | null = 'Trop de bruit.') =>
+    user.client
+      .from('corrections')
+      .insert({ target_type: 'pronunciation', target_id: recId, field: 'audio', kind: 'other', message, reporter_id: user.id })
+      .select('*')
+      .single()
+
+  beforeAll(async () => {
+    ;[alice, bob, boss] = await Promise.all([createUser('pr-alice'), createUser('pr-bob'), createUser('pr-boss')])
+    await makeAdmin(boss.id)
+    lexId = await newEntry(alice)
+    path = await uploadFor(alice, lexId)
+    recId = must(await alice.client.rpc('add_lexicon_pronunciation', { p_lexicon_id: lexId, p_path: path }), 'rec') as string
+  })
+
+  it('lets a listener report with a message and fills the target data', async () => {
+    const res = await report(bob)
+    expect(res.error).toBeNull()
+    expect(res.data).toMatchObject({ original: path, ref_id: lexId, owner_id: alice.id, status: 'open', suggestion: null })
+    expect(res.data.label).toBeTruthy()
+  })
+
+  it('refuses the author reporting their own recording, a second open report and an empty report', async () => {
+    expect((await report(alice)).error).not.toBeNull()
+    expect((await report(bob)).error?.code).toBe('23505')
+    expect((await report(boss, null)).error).not.toBeNull()
+  })
+
+  it('cannot be accepted (no suggestion) but can be dismissed by the author or an admin only', async () => {
+    const id = must(await admin.from('corrections').select('id').eq('target_id', recId).eq('status', 'open'), 'open')[0].id as string
+    expect((await alice.client.rpc('accept_correction', { p_id: id })).error).not.toBeNull()
+    expect((await bob.client.rpc('reject_correction', { p_id: id })).error).not.toBeNull()
+    expect((await alice.client.rpc('reject_correction', { p_id: id })).error).toBeNull()
+    expect(must(await admin.from('corrections').select('status').eq('id', id).single(), 'row').status).toBe('rejected')
+  })
+
+  it('removes the reports with the recording', async () => {
+    const lex = await newEntry(alice)
+    const rec = must(await alice.client.rpc('add_lexicon_pronunciation', { p_lexicon_id: lex, p_path: await uploadFor(alice, lex) }), 'rec') as string
+    must(
+      await bob.client.from('corrections').insert({ target_type: 'pronunciation', target_id: rec, field: 'audio', kind: 'other', message: 'Faux mot.', reporter_id: bob.id }).select('id').single(),
+      'report',
+    )
+    await boss.client.rpc('delete_lexicon_pronunciation', { p_id: rec })
+    expect(must(await admin.from('corrections').select('id').eq('target_id', rec), 'rows')).toHaveLength(0)
+  })
+
+  it('keeps the allow-list entry for the audio field', async () => {
+    const { data } = await admin.rpc('correction_column', { p_type: 'pronunciation', p_field: 'audio' })
+    expect(data).toEqual(['lexicon_pronunciations', 'audio_path'])
+    const word = await admin.rpc('correction_column', { p_type: 'word', p_field: 'marker_meaning' })
+    expect(word.data).toEqual(['lexicon', 'marker_meaning'])
+  })
+})
+
+describe('audio in the entry summary', () => {
+  it('carries the 3 latest recordings, newest first, and still the other keys', async () => {
+    const alice = await createUser('ps-alice')
+    const lex = await newEntry(alice)
+    await admin.from('profiles').update({ name: 'Awa' }).eq('id', alice.id)
+    const ids: string[] = []
+    for (let i = 0; i < 3; i++) {
+      ids.push(must(await alice.client.rpc('add_lexicon_pronunciation', { p_lexicon_id: lex, p_path: await uploadFor(alice, lex) }), 'rec') as string)
+      await new Promise(r => setTimeout(r, 20))
+    }
+    const bob = await createUser('ps-bob')
+    ids.push(must(await bob.client.rpc('add_lexicon_pronunciation', { p_lexicon_id: lex, p_path: await uploadFor(bob, lex) }), 'rec') as string)
+    const { data } = await anonClient().rpc('get_lexicon_entry', { p_id: lex })
+    expect(data.audio).toHaveLength(3)
+    expect(data.audio.map((a: { id: string }) => a.id)).toEqual([ids[3], ids[2], ids[1]])
+    expect(data.audio[1]).toMatchObject({ author: 'Awa' })
+    expect(data).toMatchObject({ id: lex, kind: 'word' })
+    expect(data.senses).toHaveLength(1)
+    const empty = await newEntry(alice)
+    expect((await anonClient().rpc('get_lexicon_entry', { p_id: empty })).data.audio).toEqual([])
+  })
+})
+
