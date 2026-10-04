@@ -56,17 +56,71 @@ Le contributeur d'une ressource peut désormais relier directement les blocs de 
 
 ---
 
-## 4. Statut du déploiement en production
+## 4. Application de la migration distante et statut de production
 
-1. **Migration SQL distante (Supabase)** :
-   - Appliquée avec succès le 2026-10-04 sur le projet `agdqbzbjcxrzfhkvempe` via `supabase-mcp-server:apply_migration`.
-   - Migration : `lexicon_from_word_links`.
-   - Cache PostgREST rechargé : `NOTIFY pgrst, 'reload schema';`.
-   - Schéma vérifié : table `lexicon_spellings` active, colonnes `entry_kind`, `lexicon_id`, `translation_id` créées, table legacy `resource_word_markers` supprimée, et les 6 procédures stockées publiques (`lexicon_summary`, `get_lexicon_entry`, `create_lexicon_entry`, `add_lexicon_spelling`, `set_marker_meaning`, `find_lexicon_candidates`) opérationnelles.
+La migration SQL a été exécutée et validée à distance sur le projet Supabase de production (`agdqbzbjcxrzfhkvempe`) :
 
-2. **Déploiement du code applicatif** :
-   - Pour déployer vers Vercel / GitHub, il suffit d'exécuter :
-     ```bash
-     git push origin master
-     ```
+### A. Audit pré-migration (dry-run lecture seule)
+Avant exécution, un audit d'impact a été mené via `supabase-mcp-server:execute_sql` :
+- `select count(*) from resource_word_markers;` → `0` ligne (aucune donnée legacy orpheline à migrer ou risquant d'être perdue par le `DROP TABLE`).
+- `select count(*) from lexicon;` → `0` ligne (aucun conflit de contraintes ou d'intégrité).
+
+### B. Application de la migration via MCP
+- **Outil** : `supabase-mcp-server:apply_migration`
+- **Fichier source** : `supabase/migrations/20261008000000_lexicon_from_word_links.sql` (719 lignes DDL/DML, idempotent).
+- **Nom de migration** : `lexicon_from_word_links`
+- **Projet distant** : `agdqbzbjcxrzfhkvempe`
+- **Résultat de l'exécution** :
+  ```json
+  { "success": true }
+  ```
+
+### C. Rechargement du cache de schéma PostgREST
+Pour que les nouvelles colonnes et fonctions RPC soient immédiatement visibles par l'API REST Supabase et le client JS :
+```sql
+NOTIFY pgrst, 'reload schema';
+```
+Exécuté avec succès via `supabase-mcp-server:execute_sql`.
+
+### D. Vérifications post-migration sur la base distante
+1. **Tables et colonnes modifiées** :
+   ```sql
+   SELECT
+     to_regclass('public.resource_word_markers') as markers_table,
+     to_regclass('public.lexicon_spellings') as spellings_table,
+     (SELECT column_name FROM information_schema.columns WHERE table_name = 'lexicon' AND column_name = 'entry_kind') as lexicon_entry_kind,
+     (SELECT column_name FROM information_schema.columns WHERE table_name = 'resource_word_blocks' AND column_name = 'lexicon_id') as rwb_lexicon_id,
+     (SELECT column_name FROM information_schema.columns WHERE table_name = 'resource_word_blocks' AND column_name = 'translation_id') as rwb_translation_id;
+   ```
+   **Résultat retourné** :
+   ```json
+   [{
+     "markers_table": null,
+     "spellings_table": "lexicon_spellings",
+     "lexicon_entry_kind": "entry_kind",
+     "rwb_lexicon_id": "lexicon_id",
+     "rwb_translation_id": "translation_id"
+   }]
+   ```
+   - `resource_word_markers` est bien détruite (`null`).
+   - `lexicon_spellings` est bien créée avec ses index et politiques RLS.
+   - Les colonnes `lexicon.entry_kind`, `resource_word_blocks.lexicon_id` et `translation_id` sont opérationnelles.
+
+2. **Procédures stockées / RPC exposées** :
+   ```sql
+   SELECT routine_name
+   FROM information_schema.routines
+   WHERE routine_schema = 'public'
+     AND routine_name IN ('lexicon_summary', 'get_lexicon_entry', 'create_lexicon_entry', 'add_lexicon_spelling', 'set_marker_meaning', 'find_lexicon_candidates')
+   ORDER BY routine_name;
+   ```
+   **Résultat retourné** : Les 6 fonctions requises sont créées avec leurs droits d'exécution corrects (`anon`, `authenticated`, `security definer`).
+
+### E. Prochaine étape : Déploiement applicatif
+La base de production étant déjà prête et conforme, le déploiement du code applicatif s'effectue via :
+```bash
+git push origin master
+```
+Vercel déploiera automatiquement la nouvelle version du site.
+
 
