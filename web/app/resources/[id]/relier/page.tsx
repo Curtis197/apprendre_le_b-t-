@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase-server'
 import { getCommunityText } from '@/lib/community'
 import { getResourceWords } from '@/lib/word-blocks-data'
 import { nonEmptyLines } from '@/lib/word-blocks'
-import { readiness, readinessMessage } from '@/lib/word-link-editor'
+import { readerWillShowWords, readiness, readinessMessage } from '@/lib/word-link-editor'
 import { WordLinkEditor } from '@/components/word-link/WordLinkEditor'
 
 export const metadata: Metadata = {
@@ -25,6 +25,7 @@ export default async function LinkWordsPage({ params }: { params: Promise<{ id: 
   if (!text || text.created_by !== user.id) notFound()
 
   const ready = readiness(text.content_bete, text.content_literal)
+  const reader = ready.ok ? readerWillShowWords(text.content_bete, text.content_literal, text.content_french) : null
   const saved = ready.ok ? await getResourceWords(supabase, id) : []
 
   return (
@@ -44,12 +45,27 @@ export default async function LinkWordsPage({ params }: { params: Promise<{ id: 
       </p>
 
       {ready.ok ? (
-        <WordLinkEditor
-          resourceId={id}
-          beteLines={nonEmptyLines(text.content_bete)}
-          literalLines={nonEmptyLines(text.content_literal ?? '')}
-          saved={saved}
-        />
+        <>
+          <p className="-mt-6 mb-8 text-sm">
+            <Link href={`/resources/${id}/edit`} className="text-primary underline underline-offset-2">
+              Modifier le texte
+            </Link>
+          </p>
+          {reader && !reader.ok && (
+            <div className="mb-6 rounded-lg border border-amber-500/50 bg-amber-50 p-4 text-sm dark:bg-amber-950/30">
+              <p>{reader.message}</p>
+              <Link href={`/resources/${id}/edit`} className="mt-2 inline-block text-primary underline underline-offset-2">
+                Modifier la ressource
+              </Link>
+            </div>
+          )}
+          <WordLinkEditor
+            resourceId={id}
+            beteLines={nonEmptyLines(text.content_bete)}
+            literalLines={nonEmptyLines(text.content_literal ?? '')}
+            saved={saved}
+          />
+        </>
       ) : (
         <div className="rounded-lg border border-amber-500/50 bg-amber-50 p-4 text-sm dark:bg-amber-950/30">
           <p>{readinessMessage(ready)}</p>

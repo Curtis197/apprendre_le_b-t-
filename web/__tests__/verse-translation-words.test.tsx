@@ -68,4 +68,48 @@ describe('VerseTranslation with word blocks', () => {
     const html = renderToStaticMarkup(<VerseTranslation original="wa yi sa zo" literal="ils vont ça faire" french="ils vont faire comme ça" />)
     expect(html).toContain('Texte original')
   })
+
+  it('does not draw the words of SQL verse 3 on the reader row 3 when a line holds only a non-breaking space', () => {
+    const nb = String.fromCharCode(160)
+    // the reader numbers 3 verses (the NBSP line is blank for trim()); the database counts 4 lines
+    const sqlVerse3: VerseWords = {
+      verse_no: 3, stale: false, bete_line: 'B b', literal_line: 'l3 l4',
+      blocks: [block(1, [0], [0]), block(2, [1], [1])],
+    }
+    const html = renderToStaticMarkup(
+      <VerseTranslation
+        original={['A a', nb, 'B b', 'C c'].join('\n')}
+        literal={['l1 l2', nb, 'l3 l4', 'l5 l6'].join('\n')}
+        french={['F1', nb, 'F2', 'F3'].join('\n')}
+        words={[sqlVerse3]}
+      />,
+    )
+    expect(buttons(html)).not.toContain('B')
+    expect(buttons(html)).not.toContain('C')
+    expect(html).toContain('C c')
+    expect(html).not.toContain('Mot par mot')
+  })
+
+  it('falls back to the plain tree for a misaligned text even when words are supplied', () => {
+    const html = renderToStaticMarkup(
+      <VerseTranslation original={'ba ko\nsa ni\nto mi'} literal={'l1 l2\nl3 l4'} french={'F1\nF2\nF3'} words={[verse1]} />,
+    )
+    expect(buttons(html)).not.toContain('ba')
+    expect(html).not.toContain('Mot par mot')
+    expect(html).toContain('ba ko')
+  })
+
+  it('falls back to the plain tree for stanzas with different line counts', () => {
+    const html = renderToStaticMarkup(
+      <VerseTranslation
+        original={'ba ko\nsa ni\n\nto mi'}
+        literal={'l1 l2\n\nl3 l4\nl5 l6'}
+        french={'F1\nF2\n\nF3'}
+        words={[verse1]}
+      />,
+    )
+    expect(buttons(html)).not.toContain('ba')
+    expect(html).not.toContain('Mot par mot')
+    expect(html).toContain('ba ko')
+  })
 })

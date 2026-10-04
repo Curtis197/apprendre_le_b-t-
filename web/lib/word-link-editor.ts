@@ -6,6 +6,7 @@ import {
   nonEmptyLines, normWord, pairUnits, remapAtt, remapKeys, splitRuns, splitWords,
   type BlockInput, type IndexMap, type Pair, type Side, type Unit, type VerseWords,
 } from './word-blocks'
+import { alignVerses, numberLines } from './verses'
 
 export interface MarkerDef {
   type: string
@@ -36,8 +37,6 @@ export interface VerseDraft {
   attG: Record<number, number>
   /** Per Bété block, keyed by blockKey (word indices joined by "-"). */
   meta: Record<string, BlockMeta>
-  /** Marker meanings, keyed by normWord of the block's words: shared by the whole resource. */
-  markers: Record<string, MarkerDef>
 }
 
 export interface Derived {
@@ -73,9 +72,8 @@ export function initDraft(
   bete: string,
   literal: string,
   saved: VerseWords | undefined,
-  markers: Record<string, MarkerDef>,
 ): VerseDraft {
-  const base = { verseNo, baseBete: bete, baseLiteral: literal, bete, literal, markers }
+  const base = { verseNo, baseBete: bete, baseLiteral: literal, bete, literal }
   if (!saved || saved.stale || saved.blocks.length === 0) {
     return { ...base, attB: {}, attG: autoGroup(splitWords(literal)), meta: {} }
   }
@@ -153,10 +151,46 @@ export function setKind(d: VerseDraft, key: string, kind: 'word' | 'marker', sol
   return setMeta(d, key, kind === 'marker' ? { isMarker: true, solo } : { isMarker: false, solo: false })
 }
 
-/** Edit the meaning of a marker, shared by every block with the same word. `words` is the block's words. */
-export function setMarkerDef(d: VerseDraft, words: string, patch: Partial<MarkerDef>): VerseDraft {
+// ── Marker meanings: ONE map for the whole editor, keyed by normWord of the block's words ───────
+// They are shared by every verse of the resource, so they do not live in a verse draft: a verse that
+// was never touched must send the meaning set elsewhere, not an empty one that would erase it.
+
+/** What the editor shows and saves: the server's meanings, overridden by the edits made here. */
+export function effectiveMarkers(
+  server: Record<string, MarkerDef>,
+  edits: Record<string, MarkerDef>,
+): Record<string, MarkerDef> {
+  return { ...server, ...edits }
+}
+
+/** The new map of edits after changing the meaning of a marker. `words` is the block's words. */
+export function setMarkerEdit(
+  server: Record<string, MarkerDef>,
+  edits: Record<string, MarkerDef>,
+  words: string,
+  patch: Partial<MarkerDef>,
+): Record<string, MarkerDef> {
   const key = normWord(words)
-  return { ...d, markers: { ...d.markers, [key]: { ...(d.markers[key] ?? EMPTY_MARKER), ...patch } } }
+  return { ...edits, [key]: { ...(edits[key] ?? server[key] ?? EMPTY_MARKER), ...patch } }
+}
+
+/** Drops the edits the server now holds exactly (after a save and a refresh). */
+export function pruneMarkerEdits(
+  server: Record<string, MarkerDef>,
+  edits: Record<string, MarkerDef>,
+): Record<string, MarkerDef> {
+  const out: Record<string, MarkerDef> = {}
+  for (const [k, m] of Object.entries(edits)) {
+    const s = server[k]
+    if (s && s.type === m.type && s.meaning === m.meaning && s.french === m.french) continue
+    out[k] = m
+  }
+  return out
+}
+
+/** Numbers of the verses saved blocks no longer match (their text changed elsewhere). */
+export function staleVerseNumbers(saved: VerseWords[]): number[] {
+  return saved.filter(v => v.stale === true).map(v => v.verse_no)
 }
 
 // ── Text corrections: the links, notes and markers follow the words ─────────────────────────────
@@ -221,7 +255,8 @@ export interface SavePayload {
   blocks: BlockInput[]
 }
 
-export function toSave(d: VerseDraft): SavePayload {
+/** `markers` is the effective map of the editor (see effectiveMarkers). */
+export function toSave(d: VerseDraft, markers: Record<string, MarkerDef>): SavePayload {
   const { bw, pairs } = derive(d)
   const blocks: BlockInput[] = pairs
     .filter((p): p is Pair & { b: Unit } => p.b != null && (p.g != null || p.solo === true))
@@ -235,7 +270,7 @@ export function toSave(d: VerseDraft): SavePayload {
         note: m.note.trim() || null,
         composition: m.composition.trim() || null,
       }
-      if (m.isMarker) block.marker = d.markers[normWord(blockWords(bw, p.b.idx))] ?? EMPTY_MARKER
+      if (m.isMarker) block.marker = markers[normWord(blockWords(bw, p.b.idx))] ?? EMPTY_MARKER
       return block
     })
   return {
@@ -271,13 +306,16 @@ export function reconcileDraft(
 
 export type Readiness =
   | { ok: true; verses: number }
-  | { ok: false; reason: 'no_bete' | 'no_literal' | 'line_count'; bete: number; literal: number }
+  | { ok: false; reason: 'no_bete' | 'no_literal' | 'line_count' | 'odd_whitespace'; bete: number; literal: number }
 
 export function readiness(bete: string, literal: string | null): Readiness {
   const b = nonEmptyLines(bete).length
   const l = literal ? nonEmptyLines(literal).length : 0
   if (b === 0) return { ok: false, reason: 'no_bete', bete: b, literal: l }
   if (l === 0) return { ok: false, reason: 'no_literal', bete: b, literal: l }
+  // The reader and the gutter number lines with trim(), which also strips NBSP and other Unicode spaces.
+  const numbered = (t: string) => numberLines(t).filter(n => n != null).length
+  if (b !== numbered(bete) || l !== numbered(literal ?? '')) return { ok: false, reason: 'odd_whitespace', bete: b, literal: l }
   if (b !== l) return { ok: false, reason: 'line_count', bete: b, literal: l }
   return { ok: true, verses: b }
 }
@@ -287,6 +325,9 @@ export function readinessMessage(r: Readiness): string {
   if (r.reason === 'no_bete') return "Cette ressource n'a pas de texte en bhété."
   if (r.reason === 'no_literal') {
     return 'Pour relier les mots, ajoutez d’abord le mot à mot (la traduction exacte, mot par mot) dans « Modifier la ressource ».'
+  }
+  if (r.reason === 'odd_whitespace') {
+    return 'Une ligne ne contient que des espaces spéciaux (espace insécable…) : supprimez-la ou remplacez-la dans « Modifier la ressource », sinon les numéros de vers ne correspondent plus.'
   }
   return `Le texte bhété a ${r.bete} lignes et le mot à mot a ${r.literal} lignes : il faut le même nombre de lignes dans les deux champs (un vers par ligne). Corrigez-le dans « Modifier la ressource ».`
 }
@@ -321,4 +362,28 @@ export function buildCells(pairs: Pair[], bw: string[]): Cell[] {
     )
   })
   return cells.sort((a, b) => a.start - b.start)
+}
+
+// ── Will readers see the words? ─────────────────────────────────────────────────────────────────
+
+/** Readers get word blocks only when the three fields line up verse by verse (one verse per line). */
+export function readerWillShowWords(
+  bete: string,
+  literal: string | null,
+  french: string | null,
+): { ok: true } | { ok: false; message: string } {
+  const a = alignVerses(bete, literal, french)
+  if (a.kind === 'single' || (a.kind === 'verses' && a.unit === 'line')) return { ok: true }
+  if (a.kind === 'verses') {
+    return {
+      ok: false,
+      message:
+        'Ce texte est découpé en phrases à l’affichage : les mots ne s’afficheront pas pour les lecteurs. Mettez un vers par ligne dans « Modifier la ressource ».',
+    }
+  }
+  return {
+    ok: false,
+    message:
+      'Le bhété, le mot à mot et le français ne s’alignent pas vers par vers (même nombre de couplets et de lignes dans les trois champs) : les lecteurs ne verront pas les mots tant que ce n’est pas corrigé. Corrigez-le dans « Modifier la ressource ».',
+  }
 }

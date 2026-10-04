@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   addWords, afterSave, attachUnits, buildCells, collectMarkers, derive, editWords, initDraft, markSaved, readiness,
-  readinessMessage, reconcileDraft, removeWord, setKind, setMarkerDef, setMeta, splitUnit, toSave, unitMeta,
-  type VerseDraft,
+  effectiveMarkers, pruneMarkerEdits, readerWillShowWords, readinessMessage, reconcileDraft, removeWord, setKind,
+  setMarkerEdit, setMeta, splitUnit, staleVerseNumbers, toSave, unitMeta,
+  type MarkerDef, type VerseDraft,
 } from '../lib/word-link-editor'
 import { blockKey, labelOf, splitWords, type Unit, type VerseWords } from '../lib/word-blocks'
 
@@ -21,7 +22,7 @@ const LIT = [
   'Ne nous laisse nous ne pas mauvaise chose dedans tomber mais enlève nous Satan son envoyé bouche père toi seul toi commande toi puissant toi grand éternellement Amen',
 ]
 
-const draftOf = (i: number): VerseDraft => initDraft(i + 1, BETE[i], LIT[i], undefined, {})
+const draftOf = (i: number): VerseDraft => initDraft(i + 1, BETE[i], LIT[i], undefined)
 const unitAt = (d: VerseDraft, side: 'b' | 'g', first: number): Unit => {
   const r = derive(d)
   return (side === 'b' ? r.bu : r.gu).find(u => u.idx[0] === first)!
@@ -136,7 +137,7 @@ describe('text corrections', () => {
 })
 
 describe('markers', () => {
-  const mk = () => initDraft(2, 'en ye zigbleh yi', 'je demain venir', undefined, {})
+  const mk = () => initDraft(2, 'en ye zigbleh yi', 'je demain venir', undefined)
 
   it('a marker with no mot à mot counterpart is set aside and the verse balances', () => {
     let d = mk()
@@ -156,10 +157,36 @@ describe('markers', () => {
   })
 
   it('the meaning of a marker is shared by word, whatever the case or accents', () => {
-    const d = setMarkerDef(mk(), 'Yé', { meaning: 'futur' })
-    expect(d.markers[Object.keys(d.markers)[0]]).toEqual({ type: '', meaning: 'futur', french: '' })
-    const again = setMarkerDef(d, 'ye', { french: 'aller + verbe' })
-    expect(Object.values(again.markers)).toEqual([{ type: '', meaning: 'futur', french: 'aller + verbe' }])
+    const e1 = setMarkerEdit({}, {}, 'Yé', { meaning: 'futur' })
+    expect(Object.values(e1)).toEqual([{ type: '', meaning: 'futur', french: '' }])
+    const e2 = setMarkerEdit({}, e1, 'ye', { french: 'aller + verbe' })
+    expect(Object.keys(e2)).toEqual(Object.keys(e1))
+    expect(Object.values(e2)).toEqual([{ type: '', meaning: 'futur', french: 'aller + verbe' }])
+  })
+
+  it('an edit starts from the server meaning and does not mutate its inputs', () => {
+    const server = { ye: { type: 'temps', meaning: 'futur', french: '' } }
+    const edits = setMarkerEdit(server, {}, 'ye', { french: 'aller + verbe' })
+    expect(edits.ye).toEqual({ type: 'temps', meaning: 'futur', french: 'aller + verbe' })
+    expect(server.ye.french).toBe('')
+    expect(effectiveMarkers(server, edits).ye.french).toBe('aller + verbe')
+    expect(effectiveMarkers(server, {}).ye).toEqual(server.ye)
+  })
+
+  it('drops an edit the server holds exactly and keeps a different one', () => {
+    const server: Record<string, MarkerDef> = { ye: { type: 'temps', meaning: 'futur', french: '' }, na: { type: '', meaning: 'a', french: '' } }
+    const edits: Record<string, MarkerDef> = {
+      ye: { type: 'temps', meaning: 'futur', french: '' },
+      na: { type: '', meaning: 'b', french: '' },
+      zz: { type: '', meaning: 'new', french: '' },
+    }
+    expect(Object.keys(pruneMarkerEdits(server, edits)).sort()).toEqual(['na', 'zz'])
+  })
+
+  it('lists the stale verse numbers', () => {
+    const v = (verse_no: number, stale: boolean): VerseWords => ({ verse_no, stale, bete_line: 'a', literal_line: 'b', blocks: [] })
+    expect(staleVerseNumbers([v(1, false), v(2, true), v(5, true)])).toEqual([2, 5])
+    expect(staleVerseNumbers([])).toEqual([])
   })
 
   it('collects the markers already defined in a resource from the saved verses', () => {
@@ -177,20 +204,20 @@ describe('markers', () => {
 describe('toSave / markSaved', () => {
   it('sends only the lines that were corrected, and the base lines never change until saved', () => {
     const d0 = draftOf(2)
-    expect(toSave(d0).beteLine).toBeNull()
-    expect(toSave(d0).literalLine).toBeNull()
+    expect(toSave(d0, {}).beteLine).toBeNull()
+    expect(toSave(d0, {}).literalLine).toBeNull()
     const d1 = addWords(d0, 'b', 5, ['x'])
-    expect(toSave(d1).beteLine).toBe('Nya anyi ziê a lilê x')
+    expect(toSave(d1, {}).beteLine).toBe('Nya anyi ziê a lilê x')
     expect(d1.baseBete).toBe(BETE[2])
-    expect(toSave(markSaved(d1)).beteLine).toBeNull()
+    expect(toSave(markSaved(d1), {}).beteLine).toBeNull()
   })
 
   it('builds one block per pair, marker blocks carrying their meaning and notes trimmed', () => {
-    let d = initDraft(2, 'en ye zigbleh yi', 'je demain venir', undefined, {})
+    let d = initDraft(2, 'en ye zigbleh yi', 'je demain venir', undefined)
     d = setKind(d, '1', 'marker', true)
-    d = setMarkerDef(d, 'ye', { type: 'temps', meaning: 'futur', french: 'aller + verbe' })
+    const markers = setMarkerEdit({}, {}, 'ye', { type: 'temps', meaning: 'futur', french: 'aller + verbe' })
     d = setMeta(d, '0', { note: '  sujet  ' })
-    const blocks = toSave(d).blocks
+    const blocks = toSave(d, markers).blocks
     expect(blocks).toHaveLength(4)
     expect(blocks[0]).toEqual({ bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, note: 'sujet', composition: null })
     expect(blocks[1]).toEqual({
@@ -199,11 +226,28 @@ describe('toSave / markSaved', () => {
     })
   })
 
+  it('a meaning set while editing one verse is carried by the save of another verse with the same word', () => {
+    const verse1 = setKind(initDraft(1, 'en ye', 'je va', undefined), '1', 'marker', false)
+    const verse4 = setKind(initDraft(4, 'ye tchi', 'va x', undefined), '0', 'marker', false)
+    expect(derive(verse1).balanced && derive(verse4).balanced).toBe(true)
+    const edits = setMarkerEdit({}, {}, 'ye', { type: 'temps', meaning: 'futur' })
+    const markers = effectiveMarkers({}, edits)
+    expect(toSave(verse1, markers).blocks[1].marker).toEqual({ type: 'temps', meaning: 'futur', french: '' })
+    expect(toSave(verse4, markers).blocks[0].marker).toEqual({ type: 'temps', meaning: 'futur', french: '' })
+  })
+
+  it('with no edit a marker block sends the server meaning, and with neither an empty marker', () => {
+    const d = setKind(initDraft(4, 'ye tchi', 'va x', undefined), '0', 'marker', false)
+    const server = { ye: { type: 'temps', meaning: 'futur', french: 'aller' } }
+    expect(toSave(d, effectiveMarkers(server, {})).blocks[0].marker).toEqual(server.ye)
+    expect(toSave(d, {}).blocks[0].marker).toEqual({ type: '', meaning: '', french: '' })
+  })
+
   it('round-trips: a saved verse reopens as the same pairs, notes and markers', () => {
     let d = attachUnits(draftOf(3), 'b', 9, 2)
     d = attachUnits(d, 'b', 18, 11)
     d = setMeta(d, '2-9', { note: 'verbe + particule' })
-    const blocks = toSave(d).blocks
+    const blocks = toSave(d, {}).blocks
     const saved: VerseWords = {
       verse_no: 4, stale: false, bete_line: d.bete, literal_line: d.literal,
       blocks: blocks.map((b, i) => ({
@@ -211,7 +255,7 @@ describe('toSave / markSaved', () => {
         note: b.note, composition: b.composition, marker: null,
       })),
     }
-    const reopened = initDraft(4, d.bete, d.literal, saved, collectMarkers([saved]))
+    const reopened = initDraft(4, d.bete, d.literal, saved)
     const a = derive(d)
     const b = derive(reopened)
     const flat = (r: ReturnType<typeof derive>) => r.pairs.map(p => [p.b!.idx, p.g!.idx])
@@ -220,13 +264,13 @@ describe('toSave / markSaved', () => {
   })
 
   it('on an unbalanced verse emits no block with an empty gloss unless solo', () => {
-    const blocks = toSave(initDraft(1, 'a b c', 'x y', undefined, {})).blocks
+    const blocks = toSave(initDraft(1, 'a b c', 'x y', undefined), {}).blocks
     expect(blocks.every(b => b.gloss_idx.length > 0 || b.solo)).toBe(true)
   })
 
   it('ignores saved blocks of a stale verse and starts from the automatic grouping', () => {
     const stale: VerseWords = { verse_no: 1, stale: true, bete_line: 'x', literal_line: 'y', blocks: [] }
-    const d = initDraft(1, BETE[0], LIT[0], stale, {})
+    const d = initDraft(1, BETE[0], LIT[0], stale)
     expect(derive(d).balanced).toBe(true)
   })
 })
@@ -250,6 +294,40 @@ describe('readiness', () => {
   })
 })
 
+describe('readiness with special spaces', () => {
+  it('refuses a line made only of a non-breaking space, which the reader would not count', () => {
+    const nb = String.fromCharCode(160)
+    const r = readiness('A a\n' + nb + '\nB b', 'x y\n' + nb + '\nz t')
+    expect(r).toMatchObject({ ok: false, reason: 'odd_whitespace' })
+    expect(readinessMessage(r)).toContain('espaces spéciaux')
+    expect(readiness('A a\nB b', 'x y\n' + nb + '\nz t')).toMatchObject({ ok: false, reason: 'odd_whitespace' })
+  })
+})
+
+describe('readerWillShowWords', () => {
+  it('is ok when the three fields line up line by line, or when there is a single verse', () => {
+    expect(readerWillShowWords('a b\nc d\ne f', 'x y\nz t\nu v', 'un\ndeux\ntrois')).toEqual({ ok: true })
+    expect(readerWillShowWords('a b c', 'x y z', 'un deux trois')).toEqual({ ok: true })
+    expect(readerWillShowWords('a b\nc d', 'x y\nz t', null)).toEqual({ ok: true })
+  })
+
+  it('warns when the French has fewer lines', () => {
+    const r = readerWillShowWords('a b\nc d\ne f', 'x y\nz t\nu v', 'un\ndeux')
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.message).toContain('ne s’alignent pas')
+  })
+
+  it('warns when a one-line paragraph is cut into sentences', () => {
+    const r = readerWillShowWords('A a. B b.', 'x y. z t.', 'Un. Deux.')
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.message).toContain('découpé en phrases')
+  })
+
+  it('is ok for a single sentence', () => {
+    expect(readerWillShowWords('A a b.', 'x y z.', 'Un deux.')).toEqual({ ok: true })
+  })
+})
+
 describe('buildCells', () => {
   it('keeps the sentence order and puts the partner of a linked word at its own place', () => {
     let d = attachUnits(draftOf(3), 'b', 9, 2)
@@ -266,7 +344,7 @@ describe('buildCells', () => {
   })
 
   it('puts a mot à mot unit that has no Bété word at the end', () => {
-    const d = initDraft(1, 'a b', 'x y z', undefined, {})
+    const d = initDraft(1, 'a b', 'x y z', undefined)
     const r = derive(d)
     const cells = buildCells(r.pairs, r.bw)
     expect(cells[cells.length - 1].pair.b).toBeNull()
@@ -287,7 +365,7 @@ describe('afterSave', () => {
     const r = afterSave(current, sent)
     expect(r.bete).toBe(sent.bete + ' x')
     expect(r.baseBete).toBe(sent.bete)
-    expect(toSave(r).beteLine).toBe(sent.bete + ' x')
+    expect(toSave(r, {}).beteLine).toBe(sent.bete + ' x')
   })
 })
 

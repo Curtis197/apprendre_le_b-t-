@@ -111,8 +111,8 @@ For the active verse:
 
 - **Pairing strip:** Bété words in sentence order, each block with its *mot à mot* below. A block with separated words appears at each of its places (`tatini ↔ yii` and a dashed partner box `yii ↔ tatini`). Tapping either half selects the same block; tapping the *mot à mot* half selects the same pair.
 - **Block panel:** regroup with another unit or split; correct, add or delete a word (the correction keeps attachments, notes, compositions and marker flags by remapping indices); composition and note fields; a switch "Mot / Marqueur grammatical".
-- **Marker:** type, what it indicates and how French renders it, all free text and optional; checkbox "Aucun mot du mot à mot ne lui correspond" (sets `solo`). An empty marker shows as "sens à préciser". The meaning is shared by every block of the resource with the same word, and the panel says how many other occurrences exist.
-- **Save:** per verse, `save_resource_verse` with the lines the editor was built on (refused as `text_changed` if the text moved meanwhile), only when the verse is balanced. A draft per resource and verse is kept in `localStorage` (try/catch) until saved. A verse whose text changed elsewhere is flagged "à revoir".
+- **Marker:** type, what it indicates and how French renders it, all free text and optional; checkbox "Aucun mot du mot à mot ne lui correspond" (sets `solo`). An empty marker shows as "sens à préciser". The meaning is shared by every block of the resource with the same word.
+- **Save:** per verse, `save_resource_verse` with the lines the editor was built on (refused as `text_changed` if the text moved meanwhile), only when the verse is balanced. A draft per resource and verse is kept in `localStorage` (try/catch) until saved. A verse whose text changed elsewhere is flagged "à revoir". The marker meanings are one map shared by all verses of the editor (not part of a verse draft): an unsaved edit survives a verse save and a refresh.
 
 ### Reader: changes to `VerseTranslation`
 

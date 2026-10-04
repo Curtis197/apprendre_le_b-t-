@@ -113,8 +113,15 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
     [words],
   )
 
+  // A verse's words are used only when its line is the one the reader shows: the database numbers lines
+  // by trimming space and tab only, the reader by trim(), so lines of odd whitespace can shift the numbers.
+  const wordsFor = (no: number, line: string) => {
+    const w = usable.get(no)
+    return w && w.bete_line.trim() === line.trim() ? w : undefined
+  }
+
   if (alignment.kind === 'single') {
-    const w = usable.get(1)
+    const w = wordsFor(1, original)
     if (!w) return <InterlinearGloss original={original} literal={literal} final={french} variant="card" />
     return (
       <section className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-sm">
@@ -136,12 +143,14 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
     return <InterlinearGloss original={original} literal={literal} final={french} variant="card" />
   }
 
-  const wordsApply = alignment.kind === 'verses' && alignment.unit === 'line' && usable.size > 0
-
   // Verse numbers, counted over all stanzas like the gutter does.
   let n = 0
   const numbered =
     alignment.kind === 'verses' ? alignment.stanzas.map(stanza => stanza.map(verse => ({ verse, no: ++n }))) : []
+  const wordsApply =
+    alignment.kind === 'verses' &&
+    alignment.unit === 'line' &&
+    numbered.some(stanza => stanza.some(({ verse, no }) => wordsFor(no, verse.original)))
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 space-y-5 shadow-sm">
@@ -184,7 +193,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
                   key={no}
                   verse={verse}
                   showLiteral={showLiteral}
-                  words={wordsApply ? usable.get(no) : undefined}
+                  words={wordsApply ? wordsFor(no, verse.original) : undefined}
                   mode={mode}
                 />
               ))}

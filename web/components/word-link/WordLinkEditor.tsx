@@ -5,7 +5,10 @@ import { createClient } from '@/lib/supabase-browser'
 import { cn } from '@/lib/utils'
 import { saveVerse } from '@/lib/word-blocks-data'
 import { type VerseWords } from '@/lib/word-blocks'
-import { afterSave, collectMarkers, derive, initDraft, markSaved, reconcileDraft, toSave, type VerseDraft } from '@/lib/word-link-editor'
+import {
+  afterSave, collectMarkers, derive, effectiveMarkers, initDraft, markSaved, pruneMarkerEdits, reconcileDraft, setMarkerEdit,
+  staleVerseNumbers, toSave, type MarkerDef, type VerseDraft,
+} from '@/lib/word-link-editor'
 import { BlockPanel } from './BlockPanel'
 import { PairStrip, type Focus } from './PairStrip'
 
@@ -32,12 +35,22 @@ function readStored(resourceId: string, verseNo: number): VerseDraft | null {
 export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: Props) {
   const router = useRouter()
   const supabaseRef = useRef(createClient())
-  const initial = useMemo(() => {
-    const markers = collectMarkers(saved)
-    return beteLines.map((b, i) =>
-      initDraft(i + 1, b, literalLines[i] ?? '', saved.find(v => v.verse_no === i + 1), markers),
-    )
-  }, [beteLines, literalLines, saved])
+  const initial = useMemo(
+    () => beteLines.map((b, i) => initDraft(i + 1, b, literalLines[i] ?? '', saved.find(v => v.verse_no === i + 1))),
+    [beteLines, literalLines, saved],
+  )
+  // Marker meanings are ONE map shared by every verse: the server's, overridden by the unsaved edits.
+  const serverMarkers = useMemo(() => collectMarkers(saved), [saved])
+  const [markerEdits, setMarkerEdits] = useState<Record<string, MarkerDef>>({})
+  const [seenServer, setSeenServer] = useState(serverMarkers)
+  if (seenServer !== serverMarkers) {
+    // New props after a save and a refresh: drop the edits the server now holds, keep the others.
+    setSeenServer(serverMarkers)
+    setMarkerEdits(pruneMarkerEdits(serverMarkers, markerEdits))
+  }
+  const markers = effectiveMarkers(serverMarkers, markerEdits)
+  const staleNos = useMemo(() => staleVerseNumbers(saved), [saved])
+  const [savedNos, setSavedNos] = useState<number[]>([])
   const [drafts, setDrafts] = useState<VerseDraft[]>(initial)
   // What each verse looked like when it was loaded or last saved: a verse is "modified" when it differs.
   const [baseline, setBaseline] = useState<string[]>(() => initial.map(d => JSON.stringify(d)))
@@ -81,13 +94,13 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
   }, [drafts, restored])
 
   useEffect(() => {
-    const anyDirty = drafts.some((d, i) => dirty(d, i))
+    const anyDirty = drafts.some((d, i) => dirty(d, i)) || Object.keys(markerEdits).length > 0
     if (!anyDirty) return
     const warn = (e: BeforeUnloadEvent) => e.preventDefault()
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drafts])
+  }, [drafts, markerEdits])
 
   const derived = drafts.map(derive)
   const draft = drafts[cur]
@@ -97,7 +110,7 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
   async function save() {
     setBusy(true)
     setStatus(s => ({ ...s, [cur]: '' }))
-    const payload = toSave(draft)
+    const payload = toSave(draft, markers)
     const res = await saveVerse(supabaseRef.current, {
       resourceId,
       verseNo: draft.verseNo,
@@ -120,9 +133,12 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
     const savedDraft = markSaved(draft)
     setDrafts(ds => ds.map((x, i) => (i === cur ? afterSave(x, draft) : x)))
     setBaseline(b => b.map((x, i) => (i === cur ? JSON.stringify(savedDraft) : x)))
+    setSavedNos(n => [...n, draft.verseNo])
     setStatus(s => ({ ...s, [cur]: 'Enregistré ✓' }))
     router.refresh()
   }
+
+  const isStale = (d: VerseDraft, i: number) => staleNos.includes(d.verseNo) && !dirty(d, i) && !savedNos.includes(d.verseNo)
 
   return (
     <div className="space-y-4">
@@ -143,11 +159,20 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
             <span className={cn('rounded-full border px-1.5 text-[11px] tabular-nums', derived[i].balanced ? 'border-primary text-primary' : 'border-amber-500 text-amber-700')}>
               {derived[i].bu.length}/{derived[i].gu.length}
             </span>
+            {isStale(d, i) && (
+              <span className="rounded-full border border-amber-500 bg-amber-50 px-1.5 text-[11px] text-amber-800">à revoir</span>
+            )}
             {dirty(d, i) && <span aria-label="modifié" className="text-amber-600">●</span>}
           </button>
         ))}
       </div>
       <p className="text-xs text-muted-foreground">Dans chaque onglet : blocs bhété / blocs du mot à mot. Un point ● signale un vers modifié et pas encore enregistré.</p>
+
+      {isStale(draft, cur) && (
+        <p className="text-sm text-amber-700">
+          Le texte de ce vers a changé depuis son enregistrement : les anciens liens ne sont plus affichés aux lecteurs. Reliez-le de nouveau puis enregistrez.
+        </p>
+      )}
 
       <div className="space-y-1 border-l-2 border-border pl-3">
         <p className="font-semibold">{draft.bete}</p>
@@ -162,7 +187,14 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
 
       <PairStrip pairs={r.pairs} bw={r.bw} gw={r.gw} meta={draft.meta} focus={focus} onFocus={setFocus} />
 
-      <BlockPanel draft={draft} focus={focus} onChange={update} onFocus={setFocus} />
+      <BlockPanel
+        draft={draft}
+        focus={focus}
+        markers={markers}
+        onMarkerChange={(words, patch) => setMarkerEdits(e => setMarkerEdit(serverMarkers, e, words, patch))}
+        onChange={update}
+        onFocus={setFocus}
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <button

@@ -3,14 +3,17 @@ import { useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { blockKey, blockWords, labelOf, normWord, type Side, type Unit } from '@/lib/word-blocks'
 import {
-  addWords, attachUnits, derive, editWords, EMPTY_MARKER, removeWord, setKind, setMarkerDef, setMeta, splitUnit,
-  type VerseDraft,
+  addWords, attachUnits, derive, editWords, EMPTY_MARKER, removeWord, setKind, setMeta, splitUnit,
+  type MarkerDef, type VerseDraft,
 } from '@/lib/word-link-editor'
 import type { Focus } from './PairStrip'
 
 interface Props {
   draft: VerseDraft
   focus: Focus | null
+  /** Marker meanings of the whole editor (shared by every verse), keyed by normWord. */
+  markers: Record<string, MarkerDef>
+  onMarkerChange: (words: string, patch: Partial<MarkerDef>) => void
   onChange: (d: VerseDraft) => void
   onFocus: (f: Focus | null) => void
 }
@@ -83,7 +86,7 @@ function WordTools({
   )
 }
 
-export function BlockPanel({ draft, focus, onChange, onFocus }: Props) {
+export function BlockPanel({ draft, focus, markers, onMarkerChange, onChange, onFocus }: Props) {
   const r = derive(draft)
   if (!focus) {
     return <p className="text-sm text-muted-foreground">Touchez un bloc pour le regrouper, le corriger, ajouter une note ou le marquer comme marqueur grammatical.</p>
@@ -100,7 +103,7 @@ export function BlockPanel({ draft, focus, onChange, onFocus }: Props) {
   const meta = key ? draft.meta[key] : undefined
   const bWords = b ? blockWords(r.bw, b.idx) : ''
   // Markers share one meaning per word: the model keys it by normWord of the block's words.
-  const markerDef = b && meta?.isMarker ? (draft.markers[normWord(bWords)] ?? EMPTY_MARKER) : null
+  const markerDef = b && meta?.isMarker ? (markers[normWord(bWords)] ?? EMPTY_MARKER) : null
 
   const apply = (next: VerseDraft) => onChange(next)
 
@@ -180,14 +183,14 @@ export function BlockPanel({ draft, focus, onChange, onFocus }: Props) {
               </p>
               <div className="grid gap-2.5 sm:grid-cols-2">
                 <Field label="Type (champ libre, ex : temps, aspect, mouvement)">
-                  <input className={inputClass} value={markerDef.type} onChange={e => apply(setMarkerDef(draft, bWords, { type: e.target.value }))} />
+                  <input className={inputClass} value={markerDef.type} onChange={e => onMarkerChange(bWords, { type: e.target.value })} maxLength={100} />
                 </Field>
                 <Field label="Ce qu'il indique (ex : futur, en cours)">
-                  <input className={inputClass} value={markerDef.meaning} onChange={e => apply(setMarkerDef(draft, bWords, { meaning: e.target.value }))} />
+                  <input className={inputClass} value={markerDef.meaning} onChange={e => onMarkerChange(bWords, { meaning: e.target.value })} maxLength={300} />
                 </Field>
               </div>
               <Field label="Comment le français le rend (ex : « aller + verbe » : je vais venir)">
-                <input className={inputClass} value={markerDef.french} onChange={e => apply(setMarkerDef(draft, bWords, { french: e.target.value }))} />
+                <input className={inputClass} value={markerDef.french} onChange={e => onMarkerChange(bWords, { french: e.target.value })} maxLength={300} />
               </Field>
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -204,10 +207,10 @@ export function BlockPanel({ draft, focus, onChange, onFocus }: Props) {
           )}
 
           <Field label="Composition du mot (optionnel), ex : ghèhi (en haut) + wu (lieu)">
-            <input className={inputClass} value={meta?.composition ?? ''} onChange={e => apply(setMeta(draft, key, { composition: e.target.value }))} />
+            <input className={inputClass} value={meta?.composition ?? ''} onChange={e => apply(setMeta(draft, key, { composition: e.target.value }))} maxLength={300} />
           </Field>
           <Field label={`Contexte ou explication de « ${bWords} » (optionnel)`}>
-            <input className={inputClass} value={meta?.note ?? ''} onChange={e => apply(setMeta(draft, key, { note: e.target.value }))} />
+            <input className={inputClass} value={meta?.note ?? ''} onChange={e => apply(setMeta(draft, key, { note: e.target.value }))} maxLength={500} />
           </Field>
         </div>
       )}

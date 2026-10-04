@@ -33,7 +33,7 @@ const unitAt = (d: VerseDraft, first: number): Unit => derive(d).bu.find(u => u.
 
 /** The drafts as the contributor would leave them in the editor. */
 function buildDrafts(): VerseDraft[] {
-  const drafts = BETE.map((b, i) => initDraft(i + 1, b, LIT[i], undefined, {}))
+  const drafts = BETE.map((b, i) => initDraft(i + 1, b, LIT[i], undefined))
   // verse 4: the two particles attached to the word they belong to
   drafts[3] = attachUnits(attachUnits(drafts[3], 'b', 9, 2), 'b', 18, 11)
   // verse 5: "en men" attached then corrected into the single word "enmen"
@@ -69,7 +69,7 @@ describe('resource word links: Notre Père pilot', () => {
     const drafts = buildDrafts()
     for (const d of drafts) {
       expect(derive(d).balanced, `verse ${d.verseNo} balanced`).toBe(true)
-      const p = toSave(d)
+      const p = toSave(d, {})
       const res = await saveVerse(owner.client, {
         resourceId: id, verseNo: d.verseNo, baseBete: d.baseBete, baseLiteral: d.baseLiteral,
         beteLine: p.beteLine, literalLine: p.literalLine, blocks: p.blocks,
@@ -104,7 +104,7 @@ describe('resource word links: Notre Père pilot', () => {
 
   it('refuses a save from anyone but the contributor', async () => {
     const d = buildDrafts()[0]
-    const p = toSave(d)
+    const p = toSave(d, {})
     const res = await saveVerse(other.client, {
       resourceId: id, verseNo: 1, baseBete: d.baseBete, baseLiteral: d.baseLiteral,
       beteLine: p.beteLine, literalLine: p.literalLine, blocks: p.blocks,
