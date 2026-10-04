@@ -314,4 +314,128 @@ describe('find_lexicon_candidates and get_lexicon_entry', () => {
   })
 })
 
+const BLOCK = (bete: number[], gloss: number[], over: Record<string, unknown> = {}) => ({
+  bete_idx: bete, gloss_idx: gloss, is_marker: false, solo: false, note: null, composition: null, ...over,
+})
+
+describe('links in save_resource_verse and get_resource_words', () => {
+  let alice: TestUser
+  let bob: TestUser
+  let wordId: string
+  let senseIds: string[]
+  let otherWordId: string
+  let otherSense: string
+  let markerId: string
+
+  beforeAll(async () => {
+    ;[alice, bob] = await Promise.all([createUser('lk-alice'), createUser('lk-bob')])
+    const w = (await rpc(alice, 'create_lexicon_entry', entryArgs({ p_senses: [{ french: 'ciel', context: null }, { french: 'haut', context: null }] }))).data
+    wordId = w.id
+    senseIds = w.sense_ids
+    const o = (await rpc(alice, 'create_lexicon_entry', entryArgs())).data
+    otherWordId = o.id
+    otherSense = o.sense_ids[0]
+    markerId = (await rpc(alice, 'create_lexicon_entry', entryArgs({ p_kind: 'marker', p_senses: [] }))).data.id
+  })
+
+  const resource = async (bete: string, literal: string) =>
+    must(
+      await admin.from('community_texts').insert({ title: 'T', type: 'song', content_bete: bete, content_literal: literal, created_by: alice.id }).select('id').single(),
+      'res',
+    ).id as string
+
+  const save = (id: string, blocks: unknown[], over: Record<string, unknown> = {}) =>
+    alice.client.rpc('save_resource_verse', {
+      p_resource: id, p_verse: 1, p_base_bete: 'a b', p_base_literal: 'x y',
+      p_bete_line: null, p_literal_line: null, p_blocks: blocks, ...over,
+    })
+
+  const get = async (id: string) => (await anonClient().rpc('get_resource_words', { p_resource: id })).data
+
+  it('saves and returns the entry and the sense of each block', async () => {
+    const id = await resource('a b', 'x y')
+    const res = await save(id, [BLOCK([0], [0], { lexicon_id: wordId, translation_id: senseIds[1] }), BLOCK([1], [1])])
+    expect(res.error).toBeNull()
+    const data = await get(id)
+    expect(data[0].blocks[0].lex).toMatchObject({ id: wordId, kind: 'word', sense_id: senseIds[1] })
+    expect(data[0].blocks[0].lex.senses.map((s: { french: string }) => s.french)).toEqual(['ciel', 'haut'])
+    expect(data[0].blocks[1].lex).toBeNull()
+    expect(data[0].blocks[0].marker).toBeNull()
+  })
+
+  it('links a marker block to a marker entry and exposes its meaning as `marker`', async () => {
+    const id = await resource('a b', 'x')
+    await rpc(alice, 'set_marker_meaning', { p_lexicon_id: markerId, p_type: 'temps', p_meaning: 'futur', p_french: 'aller + verbe' })
+    expect((await save(id, [BLOCK([0], [0]), BLOCK([1], [], { is_marker: true, solo: true, lexicon_id: markerId })], { p_base_literal: 'x' })).error).toBeNull()
+    const data = await get(id)
+    expect(data[0].blocks[1]).toMatchObject({ solo: true, is_marker: true, marker: { type: 'temps', meaning: 'futur', french: 'aller + verbe' } })
+    expect(data[0].blocks[1].lex.kind).toBe('marker')
+  })
+
+  it.each([
+    ['marker_needs_entry', () => [BLOCK([0], [0], { is_marker: true }), BLOCK([1], [1])]],
+    ['marker_needs_entry', () => [BLOCK([0], [0]), BLOCK([1], [], { is_marker: true, solo: true })]],
+    ['marker_needs_marker_entry', () => [BLOCK([0], [0], { is_marker: true, lexicon_id: wordId }), BLOCK([1], [1])]],
+    ['word_needs_word_entry', () => [BLOCK([0], [0], { lexicon_id: markerId }), BLOCK([1], [1])]],
+    ['sense_not_of_entry', () => [BLOCK([0], [0], { lexicon_id: wordId, translation_id: otherSense }), BLOCK([1], [1])]],
+    ['sense_without_entry', () => [BLOCK([0], [0], { translation_id: senseIds[0] }), BLOCK([1], [1])]],
+    ['entry_not_found', () => [BLOCK([0], [0], { lexicon_id: '00000000-0000-0000-0000-000000000000' }), BLOCK([1], [1])]],
+    ['bad_link', () => [BLOCK([0], [0], { lexicon_id: 'not-a-uuid' }), BLOCK([1], [1])]],
+  ])('refuses %s and writes nothing', async (code, blocks) => {
+    const id = await resource('a b', 'x y')
+    const res = await save(id, blocks())
+    expect(res.error?.message).toContain(code)
+    expect(must(await admin.from('resource_word_blocks').select('id').eq('resource_id', id), 'rows')).toHaveLength(0)
+  })
+
+  it('unlinks a block when its entry or its sense is deleted, and a marker block then has no meaning', async () => {
+    const id = await resource('a b', 'x y')
+    const w = (await rpc(alice, 'create_lexicon_entry', entryArgs({ p_senses: [{ french: 'a', context: null }, { french: 'b', context: null }] }))).data
+    const m = (await rpc(alice, 'create_lexicon_entry', entryArgs({ p_kind: 'marker', p_senses: [] }))).data.id
+    await rpc(alice, 'set_marker_meaning', { p_lexicon_id: m, p_type: '', p_meaning: 'futur', p_french: '' })
+    expect(
+      (await save(id, [BLOCK([0], [0], { lexicon_id: w.id, translation_id: w.sense_ids[1] }), BLOCK([1], [1], { is_marker: true, lexicon_id: m })])).error,
+    ).toBeNull()
+    await admin.from('lexicon_translations').delete().eq('id', w.sense_ids[1])
+    await admin.from('lexicon').delete().eq('id', m)
+    const data = await get(id)
+    expect(data[0].blocks[0].lex).toMatchObject({ id: w.id, sense_id: null })
+    expect(data[0].blocks[1]).toMatchObject({ lex: null, is_marker: true, marker: null })
+  })
+
+  it('keeps refusing another contributor', async () => {
+    const id = await resource('a b', 'x y')
+    const res = await bob.client.rpc('save_resource_verse', {
+      p_resource: id, p_verse: 1, p_base_bete: 'a b', p_base_literal: 'x y', p_bete_line: null, p_literal_line: null,
+      p_blocks: [BLOCK([0], [0], { lexicon_id: wordId }), BLOCK([1], [1])],
+    })
+    expect(res.error?.message).toContain('not_owner')
+  })
+})
+
+describe('readers of the lexicon in SQL', () => {
+  let alice: TestUser
+  const tag = uid()
+  beforeAll(async () => {
+    alice = await createUser('rd-alice')
+  })
+
+  it('hides a marker without meaning from search_lexicon and shows it once it has one', async () => {
+    const m = (await rpc(alice, 'create_lexicon_entry', entryArgs({ p_spelling: `zzmark${tag}`, p_kind: 'marker', p_senses: [] }))).data.id
+    const found = async () => (await anonClient().rpc('search_lexicon', { q: `zzmark${tag}` })).data as { id: string }[]
+    expect((await found()).map(r => r.id)).not.toContain(m)
+    await rpc(alice, 'set_marker_meaning', { p_lexicon_id: m, p_type: 'temps', p_meaning: 'futur', p_french: '' })
+    expect((await found()).map(r => r.id)).toContain(m)
+  })
+})
+
+describe('corrections allow-list', () => {
+  it('accepts the marker fields and the kind', async () => {
+    for (const f of ['marker_type', 'marker_meaning', 'marker_french', 'entry_kind']) {
+      const { data } = await admin.rpc('correction_column', { p_type: 'word', p_field: f })
+      expect(data).toEqual(['lexicon', f])
+    }
+  })
+})
+
 export { rpc, entryArgs }

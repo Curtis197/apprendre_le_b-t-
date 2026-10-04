@@ -46,6 +46,10 @@ export const CORRECTION_FIELDS: Record<CorrectionTargetType, CorrectableField[]>
     { field: 'bete_phonetic', label: 'Écriture usuelle' },
     { field: 'bete_word', label: 'Forme phonétique' },
     { field: 'description', label: 'Description', multiline: true },
+    { field: 'marker_type', label: 'Type du marqueur' },
+    { field: 'marker_meaning', label: 'Ce que le marqueur indique' },
+    { field: 'marker_french', label: 'Comment le français le rend' },
+    { field: 'entry_kind', label: 'Nature de l’entrée (mot ou marqueur)' },
   ],
   expression: [
     { field: 'bete_phrase', label: 'Bhété' },

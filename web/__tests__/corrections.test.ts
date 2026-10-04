@@ -36,8 +36,11 @@ describe('the correctable fields', () => {
   it('match the database allow-list, entry for entry', () => {
     // correction_column() in the migration is the source of truth for what the database accepts
     const dir = path.resolve(__dirname, '../../supabase/migrations')
-    const file = readdirSync(dir).find(f => f.endsWith('_corrections.sql'))
-    expect(file, 'the corrections migration is missing').toBeTruthy()
+    const file = readdirSync(dir)
+      .filter(f => f.endsWith('.sql') && readFileSync(path.join(dir, f), 'utf8').includes('function correction_column'))
+      .sort()
+      .pop()
+    expect(file, 'the migration defining correction_column is missing').toBeTruthy()
     const sql = readFileSync(path.join(dir, file!), 'utf8')
 
     const inSql = [...sql.matchAll(/when '(\w+)\.(\w+)'\s+then array\['(\w+)',\s*'(\w+)'\]/g)].map(m => `${m[1]}.${m[2]}`)

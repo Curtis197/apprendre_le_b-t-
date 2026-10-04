@@ -34,13 +34,13 @@ describe('resource word links: tables and reading', () => {
     ;[alice, bob] = await Promise.all([createUser('wl-alice'), createUser('wl-bob')])
   })
 
-  it('does not let clients write blocks or markers directly', async () => {
+  it('does not let clients write blocks directly', async () => {
     const id = await resource(alice.id, 'a b c', 'x y z')
     const hash = await hashOf('a b c', 'x y z', 1)
     const row = { resource_id: id, verse_no: 1, position: 1, bete_idx: [0], gloss_idx: [0], verse_hash: hash }
     expect((await alice.client.from('resource_word_blocks').insert(row)).error).not.toBeNull()
     expect((await anonClient().from('resource_word_blocks').insert(row)).error).not.toBeNull()
-    expect((await alice.client.from('resource_word_markers').insert({ resource_id: id, word_norm: 'a', word: 'a' })).error).not.toBeNull()
+    expect((await alice.client.from('lexicon_spellings').insert({ lexicon_id: id, spelling: 'a' })).error).not.toBeNull()
 
     ok(await admin.from('resource_word_blocks').insert(row), 'seed block')
     // with RLS and no policy, update and delete match no row (no error, no effect)
@@ -76,25 +76,6 @@ describe('resource word links: tables and reading', () => {
     ok(await admin.from('community_texts').update({ content_literal: 'x y q' }).eq('id', id), 'edit text')
     const { data } = await anonClient().rpc('get_resource_words', { p_resource: id })
     expect(data[0]).toMatchObject({ verse_no: 1, stale: true, blocks: [] })
-  })
-
-  it('attaches the shared marker meaning to every block of that word', async () => {
-    const id = await resource(alice.id, 'en ye\nen ye', 'je va\nje va')
-    const h1 = await hashOf('en ye\nen ye', 'je va\nje va', 1)
-    const h2 = await hashOf('en ye\nen ye', 'je va\nje va', 2)
-    ok(
-      await admin.from('resource_word_blocks').insert([
-        { resource_id: id, verse_no: 1, position: 1, bete_idx: [1], gloss_idx: [1], is_marker: true, verse_hash: h1 },
-        { resource_id: id, verse_no: 2, position: 1, bete_idx: [1], gloss_idx: [1], is_marker: true, verse_hash: h2 },
-      ]),
-      'seed',
-    )
-    ok(await admin.from('resource_word_markers').insert({ resource_id: id, word_norm: 'ye', word: 'ye', marker_type: 'temps', marker_meaning: 'futur', marker_french: 'aller + verbe' }), 'marker')
-    const { data } = await anonClient().rpc('get_resource_words', { p_resource: id })
-    expect(data.map((v: { blocks: { marker: unknown }[] }) => v.blocks[0].marker)).toEqual([
-      { type: 'temps', meaning: 'futur', french: 'aller + verbe' },
-      { type: 'temps', meaning: 'futur', french: 'aller + verbe' },
-    ])
   })
 
   it('returns nothing for a resource without blocks or one that does not exist', async () => {
@@ -234,53 +215,6 @@ describe('save_resource_verse', () => {
     expect(text.content_bete).toBe('a enmen c')
   })
 
-  it('stores a marker with no mot à mot counterpart and its shared meaning', async () => {
-    const id = await resource(alice.id, 'en ye zigbleh yi', 'je demain venir')
-    const res = await save(alice, id, {
-      p_base_bete: 'en ye zigbleh yi', p_base_literal: 'je demain venir',
-      p_blocks: [
-        BLOCK([0], [0]),
-        BLOCK([1], [], { is_marker: true, solo: true, marker: { type: ' temps ', meaning: 'futur', french: 'aller + verbe' } }),
-        BLOCK([2], [1]),
-        BLOCK([3], [2]),
-      ],
-    })
-    expect(res.error).toBeNull()
-    const markers = must(await admin.from('resource_word_markers').select('*').eq('resource_id', id), 'markers')
-    expect(markers).toHaveLength(1)
-    expect(markers[0]).toMatchObject({ word_norm: 'ye', word: 'ye', marker_type: 'temps', marker_meaning: 'futur', marker_french: 'aller + verbe' })
-    const { data } = await anonClient().rpc('get_resource_words', { p_resource: id })
-    expect(data[0].blocks[1]).toMatchObject({ solo: true, is_marker: true, gloss_idx: [], marker: { meaning: 'futur' } })
-  })
-
-  it('keeps the spelling first written for a marker and takes the latest meaning', async () => {
-    const id = await resource(alice.id, 'Ye\nye', 'va\nva')
-    const verse = (n: number, line: string, marker: object) =>
-      save(alice, id, { p_verse: n, p_base_bete: line, p_base_literal: 'va', p_blocks: [BLOCK([0], [0], { is_marker: true, marker })] })
-    expect((await verse(1, 'Ye', { type: 'temps', meaning: 'futur', french: 'a' })).error).toBeNull()
-    expect((await verse(2, 'ye', { type: 'aspect', meaning: 'passe', french: 'b' })).error).toBeNull()
-    const markers = must(await admin.from('resource_word_markers').select('*').eq('resource_id', id), 'markers')
-    expect(markers).toHaveLength(1)
-    expect(markers[0]).toMatchObject({ word: 'Ye', marker_type: 'aspect', marker_meaning: 'passe', marker_french: 'b' })
-  })
-
-  it('shares one meaning per word across verses and removes markers nothing uses any more', async () => {
-    const id = await resource(alice.id, 'en ye\nen ye', 'je va\nje va')
-    const marker = { type: 'temps', meaning: 'futur', french: '' }
-    const verse = (n: number, withMarker: boolean) =>
-      save(alice, id, {
-        p_verse: n, p_base_bete: 'en ye', p_base_literal: 'je va',
-        p_blocks: [BLOCK([0], [0]), withMarker ? BLOCK([1], [1], { is_marker: true, marker }) : BLOCK([1], [1])],
-      })
-    expect((await verse(1, true)).error).toBeNull()
-    expect((await verse(2, true)).error).toBeNull()
-    expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(1)
-    expect((await verse(1, false)).error).toBeNull()
-    expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(1) // verse 2 still uses it
-    expect((await verse(2, false)).error).toBeNull()
-    expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(0)
-  })
-
   it('counts words like the browser with tabs, non-breaking spaces and Windows line endings', async () => {
     const id = await resource(alice.id, 'x\r\na\u00a0b\tc  d', 'p q r s')
     const res = await save(alice, id, {
@@ -302,12 +236,11 @@ describe('save_resource_verse', () => {
     expect((await save(alice, id, { p_verse: 4 })).error?.message).toContain('verse_not_found')
   })
 
-  it('deletes the blocks and markers with the resource', async () => {
+  it('deletes the blocks with the resource', async () => {
     const id = await resource(alice.id, 'a b c', 'x y z')
-    await save(alice, id, { p_blocks: [BLOCK([0], [0]), BLOCK([1], [1], { is_marker: true, marker: { type: '', meaning: '', french: '' } }), BLOCK([2], [2])] })
+    await save(alice, id, { p_blocks: THREE })
     ok(await admin.from('community_texts').delete().eq('id', id), 'delete resource')
     expect(await rows(id)).toHaveLength(0)
-    expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(0)
   })
 
   const textOf = async (id: string) =>
@@ -343,20 +276,6 @@ describe('save_resource_verse', () => {
     const res = await save(alice, id, { p_bete_line: 'a b zz' })
     expect(res.error?.message).toContain('text_changed')
     expect((await textOf(id)).content_bete).toBe('a b d')
-  })
-
-  it('keeps the shared meaning when a marker block carries no marker object', async () => {
-    const id = await resource(alice.id, 'en ye\nen ye', 'je va\nje va')
-    const verse = (n: number, marker?: Record<string, unknown>) =>
-      save(alice, id, {
-        p_verse: n, p_base_bete: 'en ye', p_base_literal: 'je va',
-        p_blocks: [BLOCK([0], [0]), BLOCK([1], [1], marker ? { is_marker: true, marker } : { is_marker: true })],
-      })
-    expect((await verse(1, { type: 'temps', meaning: 'futur', french: '' })).error).toBeNull()
-    expect((await verse(2)).error).toBeNull()
-    const m = must(await admin.from('resource_word_markers').select('*').eq('resource_id', id), 'm')
-    expect(m).toHaveLength(1)
-    expect(m[0]).toMatchObject({ word_norm: 'ye', marker_meaning: 'futur', marker_type: 'temps' })
   })
 
   it('is not callable by anonymous clients', async () => {
