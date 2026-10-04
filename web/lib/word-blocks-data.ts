@@ -2,7 +2,7 @@
 // No 'server-only' import: the reader page calls getResourceWords on the server, the editor
 // calls saveVerse in the browser.
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { BlockInput, MarkerInfo, VerseWords, WordBlock } from './word-blocks'
+import type { BlockInput, LexSummary, MarkerInfo, VerseWords, WordBlock } from './word-blocks'
 
 export type Result<T> = { data: T; error: null } | { data: null; error: string }
 
@@ -17,6 +17,32 @@ function parseMarker(v: unknown): MarkerInfo | null {
   return { type: text(m.type), meaning: text(m.meaning), french: text(m.french) }
 }
 
+const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+
+/** A lexicon entry summary as the database returns it (see lexicon_summary), or null if it is not one. */
+export function parseLex(v: unknown): LexSummary | null {
+  if (!v || typeof v !== 'object') return null
+  const r = v as Record<string, unknown>
+  if (typeof r.id !== 'string' || (r.kind !== 'word' && r.kind !== 'marker')) return null
+  const senses = Array.isArray(r.senses) ? (r.senses as Record<string, unknown>[]) : []
+  return {
+    id: r.id,
+    kind: r.kind,
+    spelling: typeof r.spelling === 'string' ? r.spelling : '',
+    ipa: text(r.ipa),
+    dialect: typeof r.dialect === 'string' ? r.dialect : 'western',
+    pos: strs(r.pos),
+    description: text(r.description),
+    synonyms: strs(r.synonyms),
+    marker: parseMarker(r.marker) ?? { type: null, meaning: null, french: null },
+    senses: senses
+      .filter(s => s && typeof s.id === 'string' && typeof s.french === 'string')
+      .map(s => ({ id: s.id as string, french: s.french as string, context: text(s.context) })),
+    senseId: typeof r.sense_id === 'string' ? r.sense_id : null,
+    spellings: strs(r.spellings),
+  }
+}
+
 function parseBlock(raw: Record<string, unknown>): WordBlock {
   return {
     position: Number(raw.position),
@@ -27,6 +53,7 @@ function parseBlock(raw: Record<string, unknown>): WordBlock {
     note: text(raw.note),
     composition: text(raw.composition),
     marker: raw.is_marker === true ? parseMarker(raw.marker) : null,
+    lex: parseLex(raw.lex),
   }
 }
 
@@ -70,6 +97,13 @@ export const SAVE_ERROR_MESSAGES: Record<string, string> = {
   solo_has_gloss: 'Un marqueur « sans mot correspondant » ne peut pas avoir de mot à mot.',
   solo_not_marker: 'Seul un marqueur grammatical peut être sans mot correspondant.',
   block_without_gloss: 'Un bloc n’a aucun mot du mot à mot.',
+  marker_needs_entry: 'Un marqueur grammatical doit être relié à une entrée du lexique : créez-la ou choisissez-la dans le panneau.',
+  marker_needs_marker_entry: 'Un marqueur doit être relié à une entrée de type marqueur.',
+  word_needs_word_entry: 'Un mot ne peut pas être relié à une entrée de type marqueur.',
+  sense_not_of_entry: 'Le sens choisi n’appartient pas à cette entrée du lexique.',
+  sense_without_entry: 'Un sens est choisi sans entrée du lexique.',
+  entry_not_found: 'Cette entrée du lexique n’existe plus : déliez le mot et choisissez-en une autre.',
+  bad_link: 'Le lien vers le lexique est invalide.',
 }
 
 const GENERIC_SAVE_ERROR = "Erreur lors de l'enregistrement. Veuillez réessayer."

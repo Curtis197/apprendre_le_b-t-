@@ -23,8 +23,22 @@ describe('parseVerse', () => {
     const v = parseVerse({ verse_no: 1, blocks: [{ position: 1, bete_idx: 'x', is_marker: true }] })
     expect(v).toEqual({
       verse_no: 1, stale: false, bete_line: '', literal_line: '',
-      blocks: [{ position: 1, bete_idx: [], gloss_idx: [], is_marker: true, solo: false, note: null, composition: null, marker: null }],
+      blocks: [{ position: 1, bete_idx: [], gloss_idx: [], is_marker: true, solo: false, note: null, composition: null, marker: null, lex: null }],
     })
+  })
+
+  it('parses the linked entry of a block', () => {
+    const v = parseVerse({
+      verse_no: 1, stale: false, bete_line: 'a', literal_line: 'x',
+      blocks: [
+        { position: 1, bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, note: null, composition: null,
+          lex: { id: 'L1', kind: 'word', spelling: 'a', dialect: 'western', senses: [{ id: 'S1', french: 'x', context: null }], sense_id: 'S1' } },
+        { position: 2, bete_idx: [1], gloss_idx: [1], is_marker: false, solo: false, lex: 'garbage' },
+      ],
+    })
+    expect(v.blocks[0].lex).toMatchObject({ id: 'L1', kind: 'word', senseId: 'S1', pos: [], synonyms: [], spellings: [], ipa: null })
+    expect(v.blocks[0].lex!.senses).toEqual([{ id: 'S1', french: 'x', context: null }])
+    expect(v.blocks[1].lex).toBeNull()
   })
 })
 
@@ -70,6 +84,12 @@ describe('saveErrorMessage', () => {
     expect(saveErrorMessage('ERROR: not_owner (SQLSTATE 42501)')).toMatch(/contributeur/)
     expect(saveErrorMessage('bete_word_uncovered')).toMatch(/aucun bloc/)
     expect(saveErrorMessage('bad_line')).toMatch(/saut de ligne/)
+  })
+
+  it('has French messages for the link errors', () => {
+    for (const code of ['marker_needs_entry', 'marker_needs_marker_entry', 'word_needs_word_entry', 'sense_not_of_entry', 'sense_without_entry', 'entry_not_found', 'bad_link']) {
+      expect(saveErrorMessage(`x ${code} y`)).not.toMatch(/réessayer/i)
+    }
   })
 
   it('falls back to a generic message for anything else', () => {
