@@ -9,6 +9,7 @@ import { RESOURCE_REGIONS } from '@/lib/regions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberedTextarea } from '@/components/NumberedTextarea'
+import { postSaveDestination, type PostSaveIntent } from '@/lib/word-link-editor'
 import type { CommunityText, ContentType } from '@/lib/types'
 
 const TYPES: { value: ContentType; label: string }[] = [
@@ -49,7 +50,8 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
   const videoId = videoUrl.trim() ? extractYouTubeId(videoUrl.trim()) : null
   const videoInvalid = videoUrl.trim() !== '' && videoId === null
 
-  async function handleSubmit() {
+  /** Saving the text publishes it (step 1); `intent` says whether step 2, linking the words, follows. */
+  async function handleSubmit(intent: PostSaveIntent) {
     if (!title.trim() || !contentBete.trim()) return
     if (videoInvalid) { setError('URL YouTube invalide.'); return }
     setLoading(true)
@@ -67,7 +69,7 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
       : await submitCommunityText(supabaseRef.current, input)
     setLoading(false)
     if (err || !data) { setError(err ?? 'Une erreur est survenue.'); return }
-    router.push(`/resources/${data.id}`)
+    router.push(postSaveDestination(data.id, contentBete, contentLiteral || null, intent))
     router.refresh()
   }
 
@@ -157,13 +159,37 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
         </select>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button
-        onClick={handleSubmit}
-        disabled={loading || !title.trim() || !contentBete.trim() || videoInvalid}
-        className="w-full"
-      >
-        {loading ? 'Envoi…' : resource ? 'Enregistrer' : 'Publier la ressource'}
-      </Button>
+      {resource ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button
+            variant="outline"
+            onClick={() => handleSubmit('view')}
+            disabled={loading || !title.trim() || !contentBete.trim() || videoInvalid}
+          >
+            {loading ? 'Envoi…' : 'Enregistrer'}
+          </Button>
+          <Button
+            onClick={() => handleSubmit('link')}
+            disabled={loading || !title.trim() || !contentBete.trim() || videoInvalid}
+          >
+            {loading ? 'Envoi…' : 'Enregistrer et relier les mots'}
+          </Button>
+        </div>
+      ) : (
+        <>
+          <Button
+            onClick={() => handleSubmit('link-if-ready')}
+            disabled={loading || !title.trim() || !contentBete.trim() || videoInvalid}
+            className="w-full"
+          >
+            {loading ? 'Envoi…' : 'Publier la ressource'}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            La ressource est publiée dès cette étape. Si le mot à mot est rempli, l’étape suivante vous propose de relier les mots,
+            vers par vers.
+          </p>
+        </>
+      )}
     </div>
   )
 }

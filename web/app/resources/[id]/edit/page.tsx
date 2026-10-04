@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase-server'
 import { getCommunityText } from '@/lib/community'
+import { ResourceSteps } from '@/components/ResourceSteps'
 import { ResourceSubmitForm } from '@/components/ResourceSubmitForm'
 
 export const metadata: Metadata = {
@@ -34,6 +35,8 @@ export default async function EditResourcePage({
         <ChevronLeft className="w-4 h-4" />
         Retour à la ressource
       </Link>
+
+      <ResourceSteps step={1} resourceId={id} />
 
       <h1 className="font-heading text-3xl font-bold mb-8">Modifier la ressource</h1>
 

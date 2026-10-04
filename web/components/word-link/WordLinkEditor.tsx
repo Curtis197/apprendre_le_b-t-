@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { cn } from '@/lib/utils'
@@ -7,7 +8,7 @@ import { saveVerse } from '@/lib/word-blocks-data'
 import { type VerseWords } from '@/lib/word-blocks'
 import {
   afterSave, collectMarkers, derive, effectiveMarkers, initDraft, markSaved, pruneMarkerEdits, reconcileDraft, setMarkerEdit,
-  staleVerseNumbers, toSave, type MarkerDef, type VerseDraft,
+  staleVerseNumbers, toSave, verseStatus, type MarkerDef, type VerseDraft, type VerseStatus,
 } from '@/lib/word-link-editor'
 import { BlockPanel } from './BlockPanel'
 import { PairStrip, type Focus } from './PairStrip'
@@ -18,6 +19,14 @@ interface Props {
   beteLines: string[]
   literalLines: string[]
   saved: VerseWords[]
+}
+
+/** Colour code of a verse tab: colour AND a mark, so it never relies on colour alone. */
+const STATUS: Record<VerseStatus, { tab: string; mark: string; markClass: string; label: string }> = {
+  saved: { tab: 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30', mark: '✓', markClass: 'text-emerald-600', label: 'enregistré' },
+  modified: { tab: 'border-amber-500 bg-amber-50 dark:bg-amber-950/30', mark: '●', markClass: 'text-amber-600', label: 'modifié, pas encore enregistré' },
+  stale: { tab: 'border-orange-500 bg-orange-50 dark:bg-orange-950/30', mark: '⚠', markClass: 'text-orange-600', label: 'à revoir' },
+  todo: { tab: 'border-border', mark: '', markClass: '', label: 'pas encore relié' },
 }
 
 const draftKey = (resourceId: string, verseNo: number) => `word-links:${resourceId}:${verseNo}`
@@ -138,7 +147,17 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
     router.refresh()
   }
 
-  const isStale = (d: VerseDraft, i: number) => staleNos.includes(d.verseNo) && !dirty(d, i) && !savedNos.includes(d.verseNo)
+  // A verse is "saved" when the server holds links for it (or it was saved in this session), "à revoir" when its
+  // saved links no longer match the text and nothing was redone since.
+  const hasSavedNos = useMemo(() => new Set(saved.filter(v => !v.stale && v.blocks.length > 0).map(v => v.verse_no)), [saved])
+  const statusOf = (d: VerseDraft, i: number): VerseStatus =>
+    verseStatus({
+      dirty: dirty(d, i),
+      hasSaved: hasSavedNos.has(d.verseNo) || savedNos.includes(d.verseNo),
+      stale: staleNos.includes(d.verseNo) && !savedNos.includes(d.verseNo),
+    })
+  const isStale = (d: VerseDraft, i: number) => statusOf(d, i) === 'stale'
+  const anySaved = drafts.some((d, i) => statusOf(d, i) === 'saved')
 
   return (
     <div className="space-y-4">
@@ -152,21 +171,31 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
             onClick={() => { setCur(i); setFocus(null) }}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs',
-              cur === i ? 'border-primary bg-primary/10' : 'border-border',
+              STATUS[statusOf(d, i)].tab,
+              cur === i && 'font-semibold ring-2 ring-primary/40',
             )}
           >
             Vers {d.verseNo}
-            <span className={cn('rounded-full border px-1.5 text-[11px] tabular-nums', derived[i].balanced ? 'border-primary text-primary' : 'border-amber-500 text-amber-700')}>
+            <span className="rounded-full border border-border px-1.5 text-[11px] tabular-nums text-muted-foreground">
               {derived[i].bu.length}/{derived[i].gu.length}
             </span>
-            {isStale(d, i) && (
-              <span className="rounded-full border border-amber-500 bg-amber-50 px-1.5 text-[11px] text-amber-800">à revoir</span>
+            {STATUS[statusOf(d, i)].mark && (
+              <span aria-hidden="true" className={STATUS[statusOf(d, i)].markClass}>{STATUS[statusOf(d, i)].mark}</span>
             )}
-            {dirty(d, i) && <span aria-label="modifié" className="text-amber-600">●</span>}
+            <span className="sr-only">{STATUS[statusOf(d, i)].label}</span>
           </button>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">Dans chaque onglet : blocs bhété / blocs du mot à mot. Un point ● signale un vers modifié et pas encore enregistré.</p>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Légende des couleurs">
+        {(Object.keys(STATUS) as VerseStatus[]).map(k => (
+          <li key={k} className="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" className={cn('inline-block h-3 w-3 rounded-sm border', STATUS[k].tab)} />
+            {STATUS[k].mark && <span aria-hidden="true" className={STATUS[k].markClass}>{STATUS[k].mark}</span>}
+            {STATUS[k].label}
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-muted-foreground">Les deux chiffres de chaque onglet : blocs bhété / blocs du mot à mot.</p>
 
       {isStale(draft, cur) && (
         <p className="text-sm text-amber-700">
@@ -211,6 +240,21 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
             {status[cur]}
           </span>
         )}
+      </div>
+
+      <div className="border-t border-border pt-4">
+        <Link
+          href={`/resources/${resourceId}`}
+          className={cn(
+            'inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium',
+            anySaved ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:bg-muted',
+          )}
+        >
+          {anySaved ? 'Terminer et voir la ressource' : 'Passer cette étape'}
+        </Link>
+        <p className="mt-2 text-xs text-muted-foreground">
+          La ressource est déjà publiée. Vous pouvez revenir relier les mots à tout moment avec « Relier les mots ».
+        </p>
       </div>
     </div>
   )

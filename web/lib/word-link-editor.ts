@@ -387,3 +387,34 @@ export function readerWillShowWords(
       'Le bhété, le mot à mot et le français ne s’alignent pas vers par vers (même nombre de couplets et de lignes dans les trois champs) : les lecteurs ne verront pas les mots tant que ce n’est pas corrigé. Corrigez-le dans « Modifier la ressource ».',
   }
 }
+
+// ── Colour code of a verse tab ──────────────────────────────────────────────────────────────────
+
+/** saved: linked and saved · modified: unsaved changes · stale (à revoir): text changed since saving · todo: nothing saved. */
+export type VerseStatus = 'saved' | 'modified' | 'stale' | 'todo'
+
+/**
+ * One status per verse tab. Unsaved changes always win; a verse whose saved links no longer match
+ * its text is "stale" even if it has saved blocks; otherwise it is saved or not yet linked.
+ */
+export function verseStatus(o: { dirty: boolean; hasSaved: boolean; stale: boolean }): VerseStatus {
+  if (o.dirty) return 'modified'
+  if (o.stale) return 'stale'
+  return o.hasSaved ? 'saved' : 'todo'
+}
+
+// ── Steps of publishing ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * What the text form does after saving: `view` goes to the resource, `link` to step 2 (the linking
+ * page explains what to fix if the text is not ready), `link-if-ready` to step 2 only when the
+ * mot à mot lines up with the text (a new resource without mot à mot just opens).
+ */
+export type PostSaveIntent = 'view' | 'link' | 'link-if-ready'
+
+export function postSaveDestination(id: string, bete: string, literal: string | null, intent: PostSaveIntent): string {
+  const view = `/resources/${id}`
+  if (intent === 'view') return view
+  if (intent === 'link') return `${view}/relier`
+  return readiness(bete, literal).ok ? `${view}/relier` : view
+}

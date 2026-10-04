@@ -151,6 +151,9 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
     alignment.kind === 'verses' &&
     alignment.unit === 'line' &&
     numbered.some(stanza => stanza.some(({ verse, no }) => wordsFor(no, verse.original)))
+  // Once every verse is shown with its words, the word views already give the exact word-for-word
+  // reading: the older "Mot à mot" button would only repeat it, so it stays for unlinked verses only.
+  const allLinked = wordsApply && numbered.every(stanza => stanza.every(({ verse, no }) => wordsFor(no, verse.original)))
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 space-y-5 shadow-sm">
@@ -166,7 +169,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
         </h2>
         <div className="flex items-center gap-2">
           {wordsApply && <ModeToggle mode={mode} onChange={setMode} />}
-          {hasLiteral && (
+          {hasLiteral && !allLinked && (
             <button
               type="button"
               onClick={() => setShowLiteral(v => !v)}
@@ -192,7 +195,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
                 <VerseRow
                   key={no}
                   verse={verse}
-                  showLiteral={showLiteral}
+                  showLiteral={showLiteral && !allLinked}
                   words={wordsApply ? wordsFor(no, verse.original) : undefined}
                   mode={mode}
                 />

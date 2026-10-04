@@ -7,6 +7,7 @@ import { getCommunityText } from '@/lib/community'
 import { getResourceWords } from '@/lib/word-blocks-data'
 import { nonEmptyLines } from '@/lib/word-blocks'
 import { readerWillShowWords, readiness, readinessMessage } from '@/lib/word-link-editor'
+import { ResourceSteps } from '@/components/ResourceSteps'
 import { WordLinkEditor } from '@/components/word-link/WordLinkEditor'
 
 export const metadata: Metadata = {
@@ -37,6 +38,8 @@ export default async function LinkWordsPage({ params }: { params: Promise<{ id: 
         <ChevronLeft className="w-4 h-4" />
         Retour à la ressource
       </Link>
+
+      <ResourceSteps step={2} resourceId={id} />
 
       <h1 className="font-heading text-3xl font-bold mb-2">Relier les mots</h1>
       <p className="text-sm text-muted-foreground mb-8">

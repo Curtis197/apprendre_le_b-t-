@@ -1,6 +1,7 @@
 ﻿// web/app/resources/new/page.tsx
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
+import { ResourceSteps } from '@/components/ResourceSteps'
 import { ResourceSubmitForm } from '@/components/ResourceSubmitForm'
 import type { Metadata } from 'next'
 
@@ -19,6 +20,8 @@ export default function NewResourcePage() {
         <ChevronLeft className="w-4 h-4" />
         Retour aux ressources
       </Link>
+
+      <ResourceSteps step={1} />
 
       <div className="mb-8">
         <h1 className="font-heading text-3xl font-bold mb-2">Soumettre une ressource</h1>
