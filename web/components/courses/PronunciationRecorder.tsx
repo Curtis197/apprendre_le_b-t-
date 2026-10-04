@@ -7,10 +7,22 @@ import { MAX_RECORDING_SECONDS, pickRecordingMimeType } from '@/lib/courses/pron
 interface Props {
   disabled?: boolean
   sending?: boolean
+  maxSeconds?: number
+  startLabel?: string
+  sendLabel?: string
+  sendingLabel?: string
   onSend: (blob: Blob) => void
 }
 
-export function PronunciationRecorder({ disabled = false, sending = false, onSend }: Props) {
+export function PronunciationRecorder({
+  disabled = false,
+  sending = false,
+  maxSeconds = MAX_RECORDING_SECONDS,
+  startLabel = 'Enregistrer ma prononciation',
+  sendLabel = 'Envoyer à l’enseignant',
+  sendingLabel = 'Envoi…',
+  onSend,
+}: Props) {
   const [phase, setPhase] = useState<'idle' | 'recording' | 'recorded'>('idle')
   const [seconds, setSeconds] = useState(0)
   const [blob, setBlob] = useState<Blob | null>(null)
@@ -66,7 +78,7 @@ export function PronunciationRecorder({ disabled = false, sending = false, onSen
       setPhase('recording')
       timerRef.current = setInterval(() => {
         setSeconds(prev => {
-          if (prev + 1 >= MAX_RECORDING_SECONDS) recorderRef.current?.stop()
+          if (prev + 1 >= maxSeconds) recorderRef.current?.stop()
           return prev + 1
         })
       }, 1000)
@@ -93,7 +105,7 @@ export function PronunciationRecorder({ disabled = false, sending = false, onSen
       {phase === 'idle' && (
         <Button type="button" onClick={start} disabled={disabled}>
           <Mic className="w-4 h-4 mr-2" />
-          Enregistrer ma prononciation
+          {startLabel}
         </Button>
       )}
 
@@ -101,7 +113,7 @@ export function PronunciationRecorder({ disabled = false, sending = false, onSen
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-2 text-sm font-medium text-destructive" role="status">
             <span className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
-            Enregistrement… {seconds}s / {MAX_RECORDING_SECONDS}s
+            Enregistrement… {seconds}s / {maxSeconds}s
           </span>
           <Button type="button" variant="outline" onClick={stop}>
             <Square className="w-4 h-4 mr-2" />
@@ -116,7 +128,7 @@ export function PronunciationRecorder({ disabled = false, sending = false, onSen
           <div className="flex flex-wrap gap-3">
             <Button type="button" onClick={() => onSend(blob)} disabled={disabled || sending}>
               <Send className="w-4 h-4 mr-2" />
-              {sending ? 'Envoi…' : 'Envoyer à l’enseignant'}
+              {sending ? sendingLabel : sendLabel}
             </Button>
             <Button type="button" variant="outline" onClick={reset} disabled={sending}>
               <RotateCcw className="w-4 h-4 mr-2" />
