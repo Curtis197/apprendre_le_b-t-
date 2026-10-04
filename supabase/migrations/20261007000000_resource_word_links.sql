@@ -1,4 +1,4 @@
--- supabase/migrations/20261006000000_resource_word_links.sql
+-- supabase/migrations/20261007000000_resource_word_links.sql
 -- Word-by-word reading of resources: a contributor pairs the words of each verse (Bété <-> mot à mot,
 -- many-to-many, words may be apart) and flags grammatical markers. Readers get the pairs through
 -- get_resource_words; only save_resource_verse writes. Nothing in `lexicon` changes.
@@ -9,7 +9,7 @@
 
 -- The n-th non-empty (trimmed) line of a text: same numbering as numberLines in the UI and usage_split.
 create or replace function verse_line(p_text text, p_n int)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public, extensions as $$
   select t.txt
   from (
     select s.txt, row_number() over (order by s.stanza, s.line) as n
@@ -20,12 +20,12 @@ $$;
 
 -- md5 of a verse's Bété and mot à mot lines: changes when either line changes.
 create or replace function verse_hash(p_bete text, p_literal text, p_n int)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public, extensions as $$
   select md5(coalesce(verse_line(p_bete, p_n), '') || E'\n' || coalesce(verse_line(p_literal, p_n), ''))
 $$;
 
 create or replace function word_count(p_line text)
-returns int language sql immutable as $$
+returns int language sql immutable set search_path = public, extensions as $$
   select case
     when btrim(coalesce(p_line, ''), E' \t ') = '' then 0
     else array_length(regexp_split_to_array(btrim(p_line, E' \t '), E'[ \t ]+'), 1)
@@ -34,20 +34,20 @@ $$;
 
 -- The words at 0-based positions p_idx of a line, joined by one space.
 create or replace function block_words(p_line text, p_idx int[])
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public, extensions as $$
   select string_agg(w.word, ' ' order by w.ord)
   from regexp_split_to_table(btrim(coalesce(p_line, ''), E' \t '), E'[ \t ]+') with ordinality as w(word, ord)
   where (w.ord - 1) = any(p_idx)
 $$;
 
 create or replace function block_word_norm(p_line text, p_idx int[])
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public, extensions as $$
   select usage_token_norm(block_words(p_line, p_idx))
 $$;
 
 -- Replaces the n-th non-empty line and leaves every other line, blank lines (stanza breaks) included.
 create or replace function replace_nth_line(p_text text, p_n int, p_line text)
-returns text language plpgsql immutable as $$
+returns text language plpgsql immutable set search_path = public, extensions as $$
 declare
   v_lines text[] := regexp_split_to_array(replace(replace(coalesce(p_text, ''), E'\r\n', E'\n'), E'\r', E'\n'), E'\n');
   v_i int;
@@ -362,8 +362,7 @@ begin
   ) y
   order by y.wn, y.first_idx desc
   on conflict (resource_id, word_norm) do update
-    set word = excluded.word,
-        marker_type = excluded.marker_type,
+    set marker_type = excluded.marker_type,
         marker_meaning = excluded.marker_meaning,
         marker_french = excluded.marker_french,
         updated_at = now();

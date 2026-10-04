@@ -35,7 +35,7 @@ Until then, marker meanings are completed by the resource's contributor only, an
 
 Also out of scope: embeddings on blocks, using blocks to improve `find_usages`, bulk "mark every occurrence", importing existing glosses, French-side display of non-adjacent French words (grouped French words are shown as one block, as in `ne … pas`).
 
-## Data model (one migration: `supabase/migrations/20261006000000_resource_word_links.sql`)
+## Data model (one migration: `supabase/migrations/20261007000000_resource_word_links.sql`)
 
 Additive only. No policy is dropped. Nothing in `lexicon` changes.
 

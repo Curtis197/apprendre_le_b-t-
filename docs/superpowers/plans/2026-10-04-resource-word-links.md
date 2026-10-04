@@ -16,7 +16,7 @@
 - Browser floor: iOS Safari 16.1. No regex look-behind, no `:has()`, no `color-mix()` in new CSS; use the existing Tailwind tokens (`border-border`, `bg-card`, `text-primary`, `text-muted-foreground`).
 - UI copy is French. Error messages from the database are codes; the UI maps them to French.
 - Words are split everywhere on runs of space, tab and U+00A0 (`/[ \t\u00a0]+/`); hyphens and apostrophes stay inside a word. Lines are numbered like `numberLines`: n-th non-empty line, 1-based, `\r\n` and `\r` treated as `\n`.
-- Migrations since `20260930000000` must be re-runnable: every `create policy` is preceded by `drop policy if exists <same name> on <same table>` (`web/__tests__/migrations.test.ts` enforces it). New migration version: `20261006000000` (later than every file in `supabase/migrations/`).
+- Migrations since `20260930000000` must be re-runnable: every `create policy` is preceded by `drop policy if exists <same name> on <same table>` (`web/__tests__/migrations.test.ts` enforces it). New migration version: `20261007000000` (later than every file in `supabase/migrations/`).
 - New SQL functions are exposed to clients by default: explicitly `revoke execute ... from public, anon` (and `authenticated` for internal helpers) and `grant` only what a client needs.
 - `lexicon` and its tables are not touched (separate spec).
 - Work in a git worktree on a feature branch created from `master`; check `git branch --show-current` before every commit (other sessions share the main folder); never switch branches in the shared folder. Commit messages end with: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
@@ -38,7 +38,7 @@ Failure modes the spec implies but a straight reading would not test; each line 
 
 | File | Responsibility |
 |---|---|
-| `supabase/migrations/20261006000000_resource_word_links.sql` | tables, RLS, helper functions, `get_resource_words`, `save_resource_verse`, grants |
+| `supabase/migrations/20261007000000_resource_word_links.sql` | tables, RLS, helper functions, `get_resource_words`, `save_resource_verse`, grants |
 | `web/lib/word-blocks.ts` | pure: word splitting, units, pairing, index remapping, reader tokens, shared types |
 | `web/lib/word-blocks-data.ts` | Supabase calls: `getResourceWords`, `saveVerse`, French error messages |
 | `web/lib/word-link-editor.ts` | pure: editor state for one verse (init, derive, mutations, payload), `readiness`, `buildCells` |
@@ -294,7 +294,7 @@ Create `web/lib/word-blocks.ts`:
 ```ts
 // lib/word-blocks.ts — pure helpers for the word-by-word layer of resources.
 // No React, no Supabase: everything here is unit tested. Words are split exactly like the SQL
-// functions word_count / block_words (migration 20261006000000_resource_word_links.sql):
+// functions word_count / block_words (migration 20261007000000_resource_word_links.sql):
 // on runs of space, tab and U+00A0; hyphens and apostrophes stay inside a word.
 
 export type Side = 'b' | 'g'
@@ -580,7 +580,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ### Task 2: Migration part 1, tables, helpers and the read function
 
 **Files:**
-- Create: `supabase/migrations/20261006000000_resource_word_links.sql`
+- Create: `supabase/migrations/20261007000000_resource_word_links.sql`
 - Test: `web/__tests__/rls/resource-word-links.test.ts`
 
 **Interfaces:**
@@ -734,10 +734,10 @@ Expected: FAIL, e.g. `relation "public.resource_word_blocks" does not exist` / `
 
 - [ ] **Step 3: Write the migration (part 1)**
 
-Create `supabase/migrations/20261006000000_resource_word_links.sql`:
+Create `supabase/migrations/20261007000000_resource_word_links.sql`:
 
 ```sql
--- supabase/migrations/20261006000000_resource_word_links.sql
+-- supabase/migrations/20261007000000_resource_word_links.sql
 -- Word-by-word reading of resources: a contributor pairs the words of each verse (Bété <-> mot à mot,
 -- many-to-many, words may be apart) and flags grammatical markers. Readers get the pairs through
 -- get_resource_words; only save_resource_verse writes. Nothing in `lexicon` changes.
@@ -926,7 +926,7 @@ Expected: PASS (policies are dropped before they are created).
 
 ```bash
 git branch --show-current
-git add supabase/migrations/20261006000000_resource_word_links.sql web/__tests__/rls/resource-word-links.test.ts
+git add supabase/migrations/20261007000000_resource_word_links.sql web/__tests__/rls/resource-word-links.test.ts
 git commit -m "feat(word-links): tables, helpers and get_resource_words
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
@@ -937,7 +937,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ### Task 3: Migration part 2, `save_resource_verse`
 
 **Files:**
-- Modify: `supabase/migrations/20261006000000_resource_word_links.sql` (replace the last comment line with the function)
+- Modify: `supabase/migrations/20261007000000_resource_word_links.sql` (replace the last comment line with the function)
 - Modify: `web/__tests__/rls/resource-word-links.test.ts` (append a `describe`)
 
 **Interfaces:**
@@ -1131,7 +1131,7 @@ Expected: the new `describe` fails with `Could not find the function public.save
 
 - [ ] **Step 3: Add the function to the migration**
 
-Replace the final comment line `-- (save_resource_verse is added in the next task)` of `supabase/migrations/20261006000000_resource_word_links.sql` with:
+Replace the final comment line `-- (save_resource_verse is added in the next task)` of `supabase/migrations/20261007000000_resource_word_links.sql` with:
 
 ```sql
 -- ── 4. writing ───────────────────────────────────────────────────────────────────────────────────
@@ -1345,7 +1345,7 @@ Expected: PASS.
 
 ```bash
 git branch --show-current
-git add supabase/migrations/20261006000000_resource_word_links.sql web/__tests__/rls/resource-word-links.test.ts
+git add supabase/migrations/20261007000000_resource_word_links.sql web/__tests__/rls/resource-word-links.test.ts
 git commit -m "feat(word-links): save_resource_verse with validation and marker sharing
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"

@@ -253,6 +253,17 @@ describe('save_resource_verse', () => {
     expect(data[0].blocks[1]).toMatchObject({ solo: true, is_marker: true, gloss_idx: [], marker: { meaning: 'futur' } })
   })
 
+  it('keeps the spelling first written for a marker and takes the latest meaning', async () => {
+    const id = await resource(alice.id, 'Ye\nye', 'va\nva')
+    const verse = (n: number, line: string, marker: object) =>
+      save(alice, id, { p_verse: n, p_base_bete: line, p_base_literal: 'va', p_blocks: [BLOCK([0], [0], { is_marker: true, marker })] })
+    expect((await verse(1, 'Ye', { type: 'temps', meaning: 'futur', french: 'a' })).error).toBeNull()
+    expect((await verse(2, 'ye', { type: 'aspect', meaning: 'passe', french: 'b' })).error).toBeNull()
+    const markers = must(await admin.from('resource_word_markers').select('*').eq('resource_id', id), 'markers')
+    expect(markers).toHaveLength(1)
+    expect(markers[0]).toMatchObject({ word: 'Ye', marker_type: 'aspect', marker_meaning: 'passe', marker_french: 'b' })
+  })
+
   it('shares one meaning per word across verses and removes markers nothing uses any more', async () => {
     const id = await resource(alice.id, 'en ye\nen ye', 'je va\nje va')
     const marker = { type: 'temps', meaning: 'futur', french: '' }
