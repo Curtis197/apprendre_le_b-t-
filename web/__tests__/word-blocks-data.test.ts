@@ -40,6 +40,19 @@ describe('parseVerse', () => {
     expect(v.blocks[0].lex!.senses).toEqual([{ id: 'S1', french: 'x', context: null }])
     expect(v.blocks[1].lex).toBeNull()
   })
+
+  it('parses the recordings of a linked entry and defaults to none', () => {
+    const lex = (audio: unknown) =>
+      parseVerse({
+        verse_no: 1, stale: false, bete_line: 'a', literal_line: 'x',
+        blocks: [{ position: 1, bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, lex: { id: 'L1', kind: 'word', audio } }],
+      }).blocks[0].lex!
+    expect(lex([{ id: 'A1', path: 'u/e/1.webm', author: 'Awa', created_at: '2026-10-04T10:00:00Z' }]).audio).toEqual([
+      { id: 'A1', path: 'u/e/1.webm', author: 'Awa', createdAt: '2026-10-04T10:00:00Z' },
+    ])
+    expect(lex(undefined).audio).toEqual([])
+    expect(lex([{ id: 5 }, null, 'x']).audio).toEqual([])
+  })
 })
 
 describe('getResourceWords', () => {

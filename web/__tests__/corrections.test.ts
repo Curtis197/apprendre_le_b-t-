@@ -222,4 +222,12 @@ describe('acceptCorrection and rejectCorrection', () => {
     expect((await rejectCorrection(out.client, 'c1')).error).toContain('Connectez-vous')
     expect(out.calls).toHaveLength(0)
   })
+
+  it('knows the pronunciation target', () => {
+    expect(isCorrectableField('pronunciation', 'audio')).toBe(true)
+    expect(fieldLabel('pronunciation', 'audio')).toBe('Enregistrement')
+    expect(correctionHref({ target_type: 'pronunciation', ref_id: 'E1' })).toBe('/lexicon/E1#prononciation')
+    expect(correctionHref({ target_type: 'pronunciation', ref_id: null })).toBeNull()
+  })
 })
+

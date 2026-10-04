@@ -2,7 +2,7 @@
 // No 'server-only' import: the reader page calls getResourceWords on the server, the editor
 // calls saveVerse in the browser.
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { BlockInput, LexSummary, MarkerInfo, VerseWords, WordBlock } from './word-blocks'
+import type { BlockInput, LexAudio, LexSummary, MarkerInfo, VerseWords, WordBlock } from './word-blocks'
 
 export type Result<T> = { data: T; error: null } | { data: null; error: string }
 
@@ -18,6 +18,21 @@ function parseMarker(v: unknown): MarkerInfo | null {
 }
 
 const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+
+function audioList(v: unknown): LexAudio[] {
+  if (!Array.isArray(v)) return []
+  return v.flatMap((a): LexAudio[] => {
+    if (!a || typeof a !== 'object') return []
+    const r = a as Record<string, unknown>
+    if (typeof r.id !== 'string' || typeof r.path !== 'string') return []
+    return [{
+      id: r.id,
+      path: r.path,
+      author: typeof r.author === 'string' && r.author.trim() ? r.author : 'Contributeur',
+      createdAt: typeof r.created_at === 'string' ? r.created_at : '',
+    }]
+  })
+}
 
 /** A lexicon entry summary as the database returns it (see lexicon_summary), or null if it is not one. */
 export function parseLex(v: unknown): LexSummary | null {
@@ -40,6 +55,7 @@ export function parseLex(v: unknown): LexSummary | null {
       .map(s => ({ id: s.id as string, french: s.french as string, context: text(s.context) })),
     senseId: typeof r.sense_id === 'string' ? r.sense_id : null,
     spellings: strs(r.spellings),
+    audio: audioList(r.audio),
   }
 }
 

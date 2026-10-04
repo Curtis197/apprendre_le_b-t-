@@ -33,6 +33,14 @@ export interface LexSense {
   context: string | null
 }
 
+/** One pronunciation recording of an entry (the summary carries the 3 latest). */
+export interface LexAudio {
+  id: string
+  path: string
+  author: string
+  createdAt: string
+}
+
 /** The lexicon entry a block links to, as returned by get_resource_words / find_lexicon_candidates. */
 export interface LexSummary {
   id: string
@@ -48,6 +56,7 @@ export interface LexSummary {
   /** The sense used by the block (null for a candidate or when the sense was deleted). */
   senseId: string | null
   spellings: string[]
+  audio?: LexAudio[]
 }
 
 /** One block as returned by get_resource_words. */

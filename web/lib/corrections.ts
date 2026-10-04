@@ -3,7 +3,7 @@
 // The list of correctable fields is enforced by the database too: correction_column() in
 // supabase/migrations/20261003000005_corrections.sql. Change both together (a test ties them).
 
-export type CorrectionTargetType = 'translation' | 'word' | 'expression' | 'grammar_rule' | 'resource'
+export type CorrectionTargetType = 'translation' | 'word' | 'expression' | 'grammar_rule' | 'resource' | 'pronunciation'
 export type CorrectionKind = 'mistranslation' | 'spelling' | 'other'
 export type CorrectionStatus = 'open' | 'accepted' | 'rejected'
 
@@ -69,6 +69,9 @@ export const CORRECTION_FIELDS: Record<CorrectionTargetType, CorrectableField[]>
     { field: 'content_bete', label: 'Texte en bhété', multiline: true },
     { field: 'content_literal', label: 'Mot à mot', multiline: true },
     { field: 'content_french', label: 'Traduction en français', multiline: true },
+  ],
+  pronunciation: [
+    { field: 'audio', label: 'Enregistrement' },
   ],
 }
 
@@ -158,6 +161,8 @@ export function correctionHref(correction: Pick<Correction, 'target_type' | 'ref
       return '/grammar'
     case 'expression':
       return '/contribute'
+    case 'pronunciation':
+      return correction.ref_id ? `/lexicon/${correction.ref_id}#prononciation` : null
   }
 }
 
@@ -167,4 +172,5 @@ export const TARGET_TYPE_LABELS: Record<CorrectionTargetType, string> = {
   expression: 'Expression',
   grammar_rule: 'Règle de grammaire',
   resource: 'Ressource',
+  pronunciation: 'Prononciation',
 }
