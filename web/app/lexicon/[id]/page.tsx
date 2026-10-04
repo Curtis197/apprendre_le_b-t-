@@ -13,6 +13,7 @@ import { cleanBeteForm, pickDescription, sortTranslations, translationsSummary }
 import { InterlinearGloss } from '@/components/InterlinearGloss'
 import { findUsages } from '@/lib/usages'
 import { UsageCard } from '@/components/UsageCard'
+import { PronunciationSection } from '@/components/lexicon/PronunciationSection'
 import Link from 'next/link'
 
 type Entry = TLexiconEntry & {
@@ -170,6 +171,7 @@ export default async function LexiconEntryPage({
           )}
         </section>
       )}
+      <PronunciationSection lexiconId={entry.id} />
       <LexiconDescription lexiconId={entry.id} initial={descText} />
       {bete && (
         <CorrectionBox
