@@ -22,7 +22,7 @@ function WordDetail({ tk, tokens, onJump }: { tk: ReaderToken; tokens: ReaderTok
   const partners = tokens.map((x, i) => ({ x, i })).filter(({ x }) => x.bid === tk.bid && x !== tk)
   const mk = tk.marker
   return (
-    <div role="dialog" aria-label={tk.whole} className="space-y-1.5 rounded-lg border border-l-4 border-primary/40 border-l-primary bg-card p-3 text-sm font-normal not-italic text-foreground shadow-md">
+    <div role="dialog" aria-label={tk.whole} className="max-w-md space-y-1.5 rounded-lg border border-l-4 border-primary/40 border-l-primary bg-card p-3 text-sm font-normal not-italic text-foreground shadow-md">
       <div className="flex flex-wrap items-baseline gap-2">
         <span className="font-semibold">{tk.whole}</span>
         <span className="text-muted-foreground">→</span>
@@ -104,30 +104,28 @@ export function VerseWords({ verse, mode, initialOpen = null }: Props) {
   }
 
   return (
-    <p className="font-semibold leading-loose text-foreground">
-      {tokens.map((tk, i) => (
-        <span key={i} className="relative">
-          <button
-            type="button"
-            aria-expanded={open === i}
-            data-tied={tied(tk) ? 'true' : undefined}
-            onClick={() => toggle(i)}
-            className={cn(
-              'border-b-2 border-dotted border-primary/60 font-semibold',
-              open === i && 'bg-primary/10',
-              tied(tk) && 'border-solid bg-primary/10',
-              !tk.gloss && !tk.isMarker && 'border-amber-500',
-            )}
-          >
-            {tk.t}
-          </button>{' '}
-          {open === i && (
-            <span className={cn('absolute top-full z-10 mt-1 block w-72 max-w-[80vw]', i < tokens.length / 2 ? 'left-0' : 'right-0')}>
-              <WordDetail tk={tk} tokens={tokens} onJump={setOpen} />
-            </span>
-          )}
-        </span>
-      ))}
-    </p>
+    <div className="space-y-2">
+      <p className="font-semibold leading-loose text-foreground">
+        {tokens.map((tk, i) => (
+          <span key={i}>
+            <button
+              type="button"
+              aria-expanded={open === i}
+              data-tied={tied(tk) ? 'true' : undefined}
+              onClick={() => toggle(i)}
+              className={cn(
+                'border-b-2 border-dotted border-primary/60 font-semibold',
+                open === i && 'bg-primary/10',
+                tied(tk) && 'border-solid bg-primary/10',
+                !tk.gloss && !tk.isMarker && 'border-amber-500',
+              )}
+            >
+              {tk.t}
+            </button>{' '}
+          </span>
+        ))}
+      </p>
+      {open != null && tokens[open] && <WordDetail tk={tokens[open]} tokens={tokens} onJump={setOpen} />}
+    </div>
   )
 }

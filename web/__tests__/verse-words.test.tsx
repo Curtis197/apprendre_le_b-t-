@@ -79,4 +79,12 @@ describe('VerseWords', () => {
     const html = renderToStaticMarkup(<VerseWords verse={{ ...VERSE, blocks: [] }} mode="B" />)
     expect(buttons(html)).toEqual([])
   })
+
+  it('mode B shows the detail panel under the words, not as an absolute popover inside the paragraph', () => {
+    const html = renderToStaticMarkup(<VerseWords verse={VERSE} mode="B" initialOpen={4} />)
+    expect(html).not.toContain('absolute')
+    const para = /<p class="font-semibold[^"]*">[\s\S]*?<\/p>/.exec(html)![0]
+    expect(para).not.toContain('role="dialog"')
+    expect(html).toContain('role="dialog"')
+  })
 })
