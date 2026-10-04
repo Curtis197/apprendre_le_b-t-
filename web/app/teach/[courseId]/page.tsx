@@ -49,7 +49,7 @@ export default async function BuilderPage({ params }: Props) {
 
       <CourseStatusPanel course={course} blocker={publishBlocker(outline)} />
 
-      <CourseStatsPanel stats={stats} />
+      <CourseStatsPanel stats={stats} courseId={course.id} />
 
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">
         <h2 className="font-heading font-bold text-base">Informations</h2>

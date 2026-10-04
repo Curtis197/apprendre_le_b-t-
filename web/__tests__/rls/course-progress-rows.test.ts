@@ -50,6 +50,30 @@ describe('course_progress_rows RPC', () => {
     expect(row?.lesson_id).toBeNull()
   })
 
+  it('reports last_activity_at and bumps it when progress is updated', async () => {
+    const read = async () => {
+      const { data } = await teacher.client.rpc('course_progress_rows', { p_course_id: seed.course.id })
+      const r = (data as { user_id: string; lesson_id: string | null; last_activity_at: string | null }[]).find(
+        x => x.user_id === learner.id && x.lesson_id === seed.preview.id,
+      )
+      return r?.last_activity_at ? Date.parse(r.last_activity_at) : null
+    }
+    const before = await read()
+    expect(before).not.toBeNull()
+    await new Promise(resolve => setTimeout(resolve, 20))
+    must(
+      await learner.client
+        .from('lesson_progress')
+        .update({ progress_percent: 100 })
+        .eq('user_id', learner.id)
+        .eq('lesson_id', seed.preview.id)
+        .select(),
+      'touch progress',
+    )
+    const after = await read()
+    expect(after).toBeGreaterThan(before!)
+  })
+
   it('works for admins', async () => {
     const { error } = await boss.client.rpc('course_progress_rows', { p_course_id: seed.course.id })
     expect(error).toBeNull()

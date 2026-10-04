@@ -1,5 +1,6 @@
 import { DIALECT_KEYS, type DialectKey } from '../dialect'
 import type { CourseLevel, CourseStatus, LessonKind } from './types'
+import type { LearnerStatus } from './stats'
 
 export const LEVELS: CourseLevel[] = ['beginner', 'intermediate', 'advanced']
 
@@ -32,6 +33,20 @@ export const KIND_LABELS: Record<LessonKind, string> = {
   assignment: 'Exercice',
   fill_in_blank: 'Texte à trous',
   pronunciation: 'Prononciation',
+}
+
+export const LEARNER_STATUS_LABELS: Record<LearnerStatus, string> = {
+  not_started: 'Pas commencé',
+  active: 'Actif',
+  inactive: 'Inactif',
+  completed: 'Terminé',
+}
+
+export const LEARNER_STATUS_STYLES: Record<LearnerStatus, string> = {
+  not_started: 'bg-muted text-muted-foreground',
+  active: 'bg-secondary/10 text-secondary',
+  inactive: 'bg-destructive/10 text-destructive',
+  completed: 'bg-primary/10 text-primary',
 }
 
 export function isDialect(value: unknown): value is DialectKey {
