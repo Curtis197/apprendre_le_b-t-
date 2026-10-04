@@ -4,7 +4,7 @@ import {
   readinessMessage, removeWord, setKind, setMarkerDef, setMeta, splitUnit, toSave, unitMeta,
   type VerseDraft,
 } from '../lib/word-link-editor'
-import { labelOf, splitWords, type Unit, type VerseWords } from '../lib/word-blocks'
+import { blockKey, labelOf, splitWords, type Unit, type VerseWords } from '../lib/word-blocks'
 
 const BETE = [
   'A diba Lago ô wu mä ghèhi-wu nikpa wuo ni ghlimani na ngli',
@@ -66,7 +66,24 @@ describe('attach and split keep the notes of the surviving block', () => {
     d = setMeta(d, '2-9', { note: 'verbe' })
     d = splitUnit(d, 'b', 2)
     expect(d.meta['2']?.note).toBe('verbe')
+    expect(d.meta['9']).toBeUndefined()
     expect(derive(d).bu).toHaveLength(19)
+  })
+
+  it('a solo marker on a merged block that is split does not produce two solo blocks', () => {
+    let d = attachUnits(draftOf(3), 'b', 9, 2)
+    d = setKind(d, '2-9', 'marker', true)
+    d = splitUnit(d, 'b', 2)
+    expect(derive(d).pairs.filter(p => p.solo).length).toBeLessThanOrEqual(1)
+  })
+
+  it('removing the head of a linked block leaves no meta key that matches no unit', () => {
+    let d = attachUnits(draftOf(3), 'b', 9, 2)
+    d = attachUnits(d, 'b', 10, 2)
+    d = setMeta(d, '2-9-10', { note: 'ghost' })
+    d = removeWord(d, 'b', 2)
+    const bu = derive(d).bu
+    expect(Object.keys(d.meta).every(k => bu.some(u => blockKey(u) === k))).toBe(true)
   })
 })
 
@@ -200,6 +217,11 @@ describe('toSave / markSaved', () => {
     const flat = (r: ReturnType<typeof derive>) => r.pairs.map(p => [p.b!.idx, p.g!.idx])
     expect(flat(b)).toEqual(flat(a))
     expect(reopened.meta['2-9']?.note).toBe('verbe + particule')
+  })
+
+  it('on an unbalanced verse emits no block with an empty gloss unless solo', () => {
+    const blocks = toSave(initDraft(1, 'a b c', 'x y', undefined, {})).blocks
+    expect(blocks.every(b => b.gloss_idx.length > 0 || b.solo)).toBe(true)
   })
 
   it('ignores saved blocks of a stale verse and starts from the automatic grouping', () => {

@@ -110,11 +110,11 @@ export function derive(d: VerseDraft): Derived {
 
 /** Notes, markers and compositions follow the block that contains their first word. */
 function rekeyMeta(before: Unit[], after: Unit[], meta: Record<string, BlockMeta>): Record<string, BlockMeta> {
-  const oldKeyOfWord = new Map<number, string>()
-  before.forEach(u => u.idx.forEach(i => oldKeyOfWord.set(i, blockKey(u))))
+  // Only the block that keeps an old block's FIRST word inherits its meta (no copy on a split).
+  const firstWordKey = new Map(before.map(u => [u.idx[0], blockKey(u)] as const))
   const out: Record<string, BlockMeta> = {}
   for (const u of after) {
-    const old = oldKeyOfWord.get(u.idx[0])
+    const old = firstWordKey.get(u.idx[0])
     const m = old != null ? meta[old] : undefined
     if (m) out[blockKey(u)] = m
   }
@@ -163,7 +163,13 @@ export function setMarkerDef(d: VerseDraft, words: string, patch: Partial<Marker
 
 function applyTextEdit(d: VerseDraft, side: Side, words: string[], f: IndexMap): VerseDraft {
   if (side === 'b') {
-    return { ...d, bete: words.join(' '), attB: remapAtt(d.attB, f), meta: remapKeys(d.meta, f) }
+    const bete = words.join(' ')
+    const attB = remapAtt(d.attB, f)
+    // Drop meta keys that no longer match a block (e.g. the head word was removed).
+    const keys = new Set(buildUnits(splitWords(bete), attB).map(blockKey))
+    const meta: Record<string, BlockMeta> = {}
+    for (const [k, m] of Object.entries(remapKeys(d.meta, f))) if (keys.has(k)) meta[k] = m
+    return { ...d, bete, attB, meta }
   }
   return { ...d, literal: words.join(' '), attG: remapAtt(d.attG, f) }
 }
