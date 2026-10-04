@@ -1,9 +1,11 @@
 'use client'
 import { useState } from 'react'
+import { Volume2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { setMarkerMeaning } from '@/lib/lexicon-links-data'
+import { publicAudioUrl } from '@/lib/lexicon-audio'
 import { cn } from '@/lib/utils'
-import { readerTokens, type ReaderToken, type VerseWords as VerseData } from '@/lib/word-blocks'
+import { readerTokens, type LexSummary, type ReaderToken, type VerseWords as VerseData } from '@/lib/word-blocks'
 
 /** B: running text, tap a word for a bubble. A: word boxes with the exact gloss under each word. */
 export type WordMode = 'A' | 'B'
@@ -28,6 +30,38 @@ function glossOf(tk: ReaderToken): string {
   return tk.isMarker ? `⟨${markerMeaning || 'à préciser'}⟩` : '+'
 }
 
+/** Plays the most recent recording of the entry. The audio is only created when the button is pressed. */
+function ListenButton({ lex }: { lex: LexSummary }) {
+  const audio = lex.audio ?? []
+  const [playing, setPlaying] = useState(false)
+  if (audio.length === 0) return null
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        aria-label="Écouter la prononciation"
+        aria-pressed={playing}
+        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs hover:bg-muted"
+        onClick={() => {
+          const a = new Audio(publicAudioUrl(audio[0].path))
+          setPlaying(true)
+          a.onended = () => setPlaying(false)
+          a.onerror = () => setPlaying(false)
+          a.play().catch(() => setPlaying(false))
+        }}
+      >
+        <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
+        Écouter
+      </button>
+      {audio.length > 1 && (
+        <a href={`/lexicon/${lex.id}#prononciation`} className="text-xs text-primary underline underline-offset-2">
+          Voir toutes les prononciations
+        </a>
+      )}
+    </span>
+  )
+}
+
 function DictionaryPart({ tk }: { tk: ReaderToken }) {
   const lex = tk.lex
   if (!lex) {
@@ -42,6 +76,7 @@ function DictionaryPart({ tk }: { tk: ReaderToken }) {
         <strong>{lex.spelling}</strong>
         {lex.ipa && <span className="text-muted-foreground">[{lex.ipa}]</span>}
         {lex.pos[0] && <span className="rounded border border-border px-1.5 text-xs">{POS_LABELS[lex.pos[0]] ?? lex.pos[0]}</span>}
+        <ListenButton lex={lex} />
       </p>
       <ul className="list-disc pl-5">
         {senses.map(s => (
@@ -143,6 +178,7 @@ function WordDetail({
       {tk.isMarker && (
         <div className="space-y-1 border-t border-border pt-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">Marqueur grammatical</span>
+          {tk.lex?.kind === 'marker' && <ListenButton lex={tk.lex} />}
           {mk?.meaning ? (
             <>
               <p className="font-medium">

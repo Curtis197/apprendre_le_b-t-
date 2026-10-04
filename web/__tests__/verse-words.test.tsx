@@ -141,5 +141,36 @@ describe('VerseWords', () => {
     )
     expect(html).toContain('sens à préciser')
   })
+
+  it('offers to listen to a word that has a recording, without loading the audio', () => {
+    const rec = (id: string) => ({ id, path: `u/e/${id}.webm`, author: 'Awa', createdAt: '2026-10-04T10:00:00Z' })
+    const html = renderToStaticMarkup(<VerseWords verse={oneBlock(entry({ audio: [rec('1')] })) as never} mode="B" initialOpen={0} />)
+    expect(html).toContain('aria-label="Écouter la prononciation"')
+    expect(html).not.toContain('<audio')
+    expect(html).not.toContain('Voir toutes les prononciations')
+  })
+
+  it('links to all the recordings when there are several', () => {
+    const rec = (id: string) => ({ id, path: `u/e/${id}.webm`, author: 'Awa', createdAt: '2026-10-04T10:00:00Z' })
+    const html = renderToStaticMarkup(<VerseWords verse={oneBlock(entry({ audio: [rec('1'), rec('2')] })) as never} mode="B" initialOpen={0} />)
+    expect(html).toContain('Voir toutes les prononciations')
+    expect(html).toContain('/lexicon/L1#prononciation')
+  })
+
+  it('shows nothing about sound when the entry has no recording or the field is missing', () => {
+    for (const audio of [[], undefined]) {
+      const html = renderToStaticMarkup(<VerseWords verse={oneBlock(entry({ audio })) as never} mode="B" initialOpen={0} />)
+      expect(html).not.toContain('Écouter la prononciation')
+      expect(html).not.toContain('prononciations')
+    }
+  })
+
+  it('offers the play button on a marker entry too', () => {
+    const rec = (id: string) => ({ id, path: `u/e/${id}.webm`, author: 'Awa', createdAt: '2026-10-04T10:00:00Z' })
+    const m = entry({ kind: 'marker', senses: [], senseId: null, audio: [rec('1')], marker: { type: 'temps', meaning: 'futur', french: null } })
+    const html = renderToStaticMarkup(<VerseWords verse={oneBlock(m, { is_marker: true, marker: m.marker }) as never} mode="B" initialOpen={0} />)
+    expect(html).toContain('aria-label="Écouter la prononciation"')
+  })
 })
+
 
