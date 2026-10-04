@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase-server'
 import { getCommunityText, getResourceComments } from '@/lib/community'
 import { extractYouTubeId } from '@/lib/utils'
+import { getResourceWords } from '@/lib/word-blocks-data'
 import { SITE_URL } from '@/lib/site'
 import {
   RESOURCE_TYPES,
@@ -55,9 +56,10 @@ export default async function ResourceDetailPage({
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const [comments, isAdmin] = await Promise.all([
+  const [comments, isAdmin, words] = await Promise.all([
     getResourceComments(supabase, id),
     user ? supabase.rpc('is_admin').then(r => r.data === true) : Promise.resolve(false),
+    getResourceWords(supabase, id),
   ])
   const isOwner = user !== null && text.created_by === user.id
 
@@ -127,7 +129,16 @@ export default async function ResourceDetailPage({
         <h1 className="font-heading text-3xl font-bold">{text.title}</h1>
         <p className="text-sm text-muted-foreground">{meta.join(' · ')}</p>
         {(isOwner || isAdmin) && (
-          <ResourceOwnerActions id={id} canEdit={isOwner} canDelete={isOwner || isAdmin} />
+          <ResourceOwnerActions id={id} canEdit={isOwner} canDelete={isOwner || isAdmin} canLink={isOwner && Boolean(text.content_literal?.trim())} />
+        )}
+        {isOwner && text.content_literal?.trim() && words.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Vous pouvez{' '}
+            <Link href={`/resources/${id}/relier`} className="text-primary underline underline-offset-2">
+              relier les mots
+            </Link>{' '}
+            de ce texte pour que chacun puisse les explorer un à un.
+          </p>
         )}
       </header>
 
@@ -147,6 +158,7 @@ export default async function ResourceDetailPage({
         original={text.content_bete}
         literal={text.content_literal}
         french={text.content_french}
+        words={words}
       />
 
       <CorrectionBox

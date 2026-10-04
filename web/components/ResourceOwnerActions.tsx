@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Link2, Pencil, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { deleteCommunityText } from '@/lib/community-mutations'
 
@@ -12,9 +12,11 @@ interface Props {
   canEdit: boolean
   /** The contributor, or an admin. */
   canDelete: boolean
+  /** The contributor, once the text has a mot à mot to pair with. */
+  canLink?: boolean
 }
 
-export function ResourceOwnerActions({ id, canEdit, canDelete }: Props) {
+export function ResourceOwnerActions({ id, canEdit, canDelete, canLink = false }: Props) {
   const router = useRouter()
   const supabaseRef = useRef(createClient())
   const [deleting, setDeleting] = useState(false)
@@ -36,6 +38,15 @@ export function ResourceOwnerActions({ id, canEdit, canDelete }: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {canLink && (
+        <Link
+          href={`/resources/${id}/relier`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 h-8 text-xs font-medium hover:bg-muted transition-colors"
+        >
+          <Link2 className="w-3.5 h-3.5" />
+          Relier les mots
+        </Link>
+      )}
       {canEdit && (
         <Link
           href={`/resources/${id}/edit`}
