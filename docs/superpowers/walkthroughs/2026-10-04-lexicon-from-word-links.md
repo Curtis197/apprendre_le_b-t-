@@ -56,24 +56,17 @@ Le contributeur d'une ressource peut désormais relier directement les blocs de 
 
 ---
 
-## 4. Instructions de déploiement en production
+## 4. Statut du déploiement en production
 
-Conformément aux règles de sécurité, aucune migration distante ni aucun `git push` n'a été effectué automatiquement.
+1. **Migration SQL distante (Supabase)** :
+   - Appliquée avec succès le 2026-10-04 sur le projet `agdqbzbjcxrzfhkvempe` via `supabase-mcp-server:apply_migration`.
+   - Migration : `lexicon_from_word_links`.
+   - Cache PostgREST rechargé : `NOTIFY pgrst, 'reload schema';`.
+   - Schéma vérifié : table `lexicon_spellings` active, colonnes `entry_kind`, `lexicon_id`, `translation_id` créées, table legacy `resource_word_markers` supprimée, et les 6 procédures stockées publiques (`lexicon_summary`, `get_lexicon_entry`, `create_lexicon_entry`, `add_lexicon_spelling`, `set_marker_meaning`, `find_lexicon_candidates`) opérationnelles.
 
-Pour déployer en production :
-
-1. **Appliquer la migration SQL** :
-   - Ouvrir le tableau de bord Supabase sur le projet `agdqbzbjcxrzfhkvempe`.
-   - Dans le **SQL Editor**, coller et exécuter l'intégralité du fichier :
-     `supabase/migrations/20261008000000_lexicon_from_word_links.sql`
-   - Recharger le cache PostgREST avec la commande :
-     ```sql
-     notify pgrst, 'reload schema';
-     ```
-
-2. **Déployer le code applicatif** :
-   - Pousser la branche `master` vers le dépôt distant :
+2. **Déploiement du code applicatif** :
+   - Pour déployer vers Vercel / GitHub, il suffit d'exécuter :
      ```bash
      git push origin master
      ```
-   - Vercel déclenchera automatiquement le déploiement de la nouvelle version.
+
