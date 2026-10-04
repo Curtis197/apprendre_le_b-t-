@@ -14,6 +14,8 @@ import {
   type Correction,
 } from '@/lib/corrections'
 import { acceptCorrection, rejectCorrection, withdrawCorrection } from '@/lib/corrections-mutations'
+import { deletePronunciation } from '@/lib/lexicon-audio-data'
+import { publicAudioUrl } from '@/lib/lexicon-audio'
 
 interface Props {
   correction: Correction
@@ -38,6 +40,7 @@ export function CorrectionItem({ correction: c, currentValue, userId, isAdmin, s
   const stale = currentValue !== undefined && isStale(c, currentValue)
   const resolver = canResolve(c, userId, isAdmin)
   const isReporter = userId !== null && c.reporter_id === userId
+  const isAudio = c.target_type === 'pronunciation'
   const href = correctionHref(c)
 
   async function run(action: () => Promise<{ error: string | null }>) {
@@ -75,6 +78,8 @@ export function CorrectionItem({ correction: c, currentValue, userId, isAdmin, s
 
       {c.message && <p className="whitespace-pre-wrap leading-relaxed">{c.message}</p>}
 
+      {isAudio && c.original && <audio controls preload="none" src={publicAudioUrl(c.original)} className="w-full" />}
+
       {c.suggestion && (
         <div className="rounded-md bg-muted/50 px-3 py-2 space-y-1.5">
           {c.original && (
@@ -100,7 +105,20 @@ export function CorrectionItem({ correction: c, currentValue, userId, isAdmin, s
         )}
         {resolver && (
           <Button size="sm" variant="outline" disabled={busy} onClick={() => run(() => rejectCorrection(supabaseRef.current, c.id))}>
-            Refuser
+            {isAudio ? 'Ignorer le signalement' : 'Refuser'}
+          </Button>
+        )}
+        {resolver && isAudio && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => {
+              if (!window.confirm('Supprimer cet enregistrement ?')) return
+              run(() => deletePronunciation(supabaseRef.current, c.target_id).then(r => ({ error: r.error })))
+            }}
+          >
+            Supprimer l’enregistrement
           </Button>
         )}
         {isReporter && (
