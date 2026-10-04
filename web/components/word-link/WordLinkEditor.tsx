@@ -11,6 +11,7 @@ import {
   staleVerseNumbers, toSave, unlinkedMarkers, verseStatus, type VerseDraft, type VerseStatus,
 } from '@/lib/word-link-editor'
 import { dialectForRegion } from '@/lib/lexicon-links'
+import { getEntry } from '@/lib/lexicon-links-data'
 import { BlockPanel } from './BlockPanel'
 import { PairStrip, type Focus } from './PairStrip'
 
@@ -107,6 +108,24 @@ export function WordLinkEditor({
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drafts, restored])
+
+  // A draft restored from this browser can link an entry created before a reload: fetch what the cache lacks.
+  const missingKey = [...new Set(drafts.flatMap(d => Object.values(d.meta).map(m => m.lexiconId)))]
+    .filter((id): id is string => Boolean(id) && !entries[id as string])
+    .sort()
+    .join(',')
+  useEffect(() => {
+    if (!missingKey) return
+    let cancelled = false
+    for (const id of missingKey.split(',')) {
+      getEntry(supabase, id).then(e => {
+        if (e && !cancelled) setLocalEntries(m => ({ ...m, [e.id]: e }))
+      })
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [missingKey, supabase])
 
   useEffect(() => {
     const anyDirty = drafts.some((d, i) => dirty(d, i))
