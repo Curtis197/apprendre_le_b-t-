@@ -159,6 +159,7 @@ export default async function ResourceDetailPage({
         literal={text.content_literal}
         french={text.content_french}
         words={words}
+        canEditMarkers={Boolean(user)}
       />
 
       <CorrectionBox

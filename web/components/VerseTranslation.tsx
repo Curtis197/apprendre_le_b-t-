@@ -14,6 +14,7 @@ interface Props {
   defaultShowLiteral?: boolean
   /** Word blocks of the resource (get_resource_words). A verse without usable blocks renders as before. */
   words?: VerseWordsData[]
+  canEditMarkers?: boolean
 }
 
 const MODE_KEY = 'word-reader-mode'
@@ -72,16 +73,18 @@ function VerseRow({
   showLiteral,
   words,
   mode,
+  canEditMarkers,
 }: {
   verse: Verse
   showLiteral: boolean
   words?: VerseWordsData
   mode: WordMode
+  canEditMarkers?: boolean
 }) {
   return (
     <div className="space-y-0.5">
       {words ? (
-        <VerseWords verse={words} mode={mode} />
+        <VerseWords verse={words} mode={mode} canEditMarkers={canEditMarkers} />
       ) : (
         <Lines className="font-semibold text-foreground leading-relaxed">{verse.original}</Lines>
       )}
@@ -103,7 +106,7 @@ function VerseRow({
  * Verses that have word blocks (see lib/word-blocks.ts) show their words tappable; a verse is
  * numbered like the gutter of the entry form (n-th non-empty line), which is what the blocks use.
  */
-export function VerseTranslation({ original, literal, french, defaultShowLiteral = false, words }: Props) {
+export function VerseTranslation({ original, literal, french, defaultShowLiteral = false, words, canEditMarkers = false }: Props) {
   const alignment = useMemo(() => alignVerses(original, literal, french), [original, literal, french])
   const hasLiteral = Boolean(literal?.trim())
   const [showLiteral, setShowLiteral] = useState(defaultShowLiteral)
@@ -134,6 +137,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
           showLiteral={false}
           words={w}
           mode={mode}
+          canEditMarkers={canEditMarkers}
         />
       </section>
     )
@@ -198,6 +202,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
                   showLiteral={showLiteral && !allLinked}
                   words={wordsApply ? wordsFor(no, verse.original) : undefined}
                   mode={mode}
+                  canEditMarkers={canEditMarkers}
                 />
               ))}
             </div>

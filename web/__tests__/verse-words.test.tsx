@@ -87,4 +87,59 @@ describe('VerseWords', () => {
     expect(para).not.toContain('role="dialog"')
     expect(html).toContain('role="dialog"')
   })
+
+  const entry = (over = {}) => ({
+    id: 'L1', kind: 'word' as const, spelling: 'ghèhi-wu', ipa: 'ɡɛ̀hiwu', dialect: 'western', pos: ['noun'],
+    description: 'Le lieu en haut.', synonyms: ['firmament'], marker: { type: null, meaning: null, french: null },
+    senses: [{ id: 'S1', french: 'ciel', context: 'en haut' }, { id: 'S2', french: 'haut', context: null }],
+    senseId: 'S1', spellings: ['ghèhi-wu'], ...over,
+  })
+  const oneBlock = (lex: unknown, extra: Record<string, unknown> = {}) => ({
+    verse_no: 1, stale: false, bete_line: 'ghèhi-wu', literal_line: 'au ciel',
+    blocks: [{ position: 1, bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, note: null, composition: null, marker: null, lex, ...extra }],
+  })
+
+  it('shows the dictionary part of a linked word, the sense used first', () => {
+    const html = renderToStaticMarkup(<VerseWords verse={oneBlock(entry()) as never} mode="B" initialOpen={0} />)
+    expect(html).toContain('Nom')
+    expect(html).toContain('ɡɛ̀hiwu')
+    expect(html).toContain('Le lieu en haut.')
+    expect(html).toContain('firmament')
+    expect(html).toContain('ghèhi-wu')
+    expect(html).toContain('/lexicon/L1')
+    expect(html.indexOf('ciel')).toBeLessThan(html.indexOf('haut</'))
+    expect(html).toContain('data-current-sense')
+  })
+
+  it('says an unlinked word is not in the lexicon yet', () => {
+    expect(renderToStaticMarkup(<VerseWords verse={oneBlock(null) as never} mode="B" initialOpen={0} />)).toContain('Pas encore dans le lexique')
+  })
+
+  it('shows a marker from its entry, and "sens à préciser" when empty', () => {
+    const m = entry({ kind: 'marker', senses: [], senseId: null, marker: { type: 'temps', meaning: 'futur', french: 'aller + verbe' } })
+    const withMeaning = renderToStaticMarkup(
+      <VerseWords verse={oneBlock(m, { is_marker: true, marker: m.marker }) as never} mode="B" initialOpen={0} />,
+    )
+    expect(withMeaning).toContain('Marqueur grammatical')
+    expect(withMeaning).toContain('temps : futur')
+    expect(withMeaning).toContain('aller + verbe')
+    const empty = entry({ kind: 'marker', senses: [], senseId: null })
+    const html = renderToStaticMarkup(
+      <VerseWords verse={oneBlock(empty, { is_marker: true, marker: empty.marker }) as never} mode="B" initialOpen={0} />,
+    )
+    expect(html).toContain('sens à préciser')
+    expect(html).not.toContain('Préciser le sens')
+    const editable = renderToStaticMarkup(
+      <VerseWords verse={oneBlock(empty, { is_marker: true, marker: empty.marker }) as never} mode="B" initialOpen={0} canEditMarkers />,
+    )
+    expect(editable).toContain('Préciser le sens')
+  })
+
+  it('treats a marker block whose entry was deleted as meaning-less', () => {
+    const html = renderToStaticMarkup(
+      <VerseWords verse={oneBlock(null, { is_marker: true, marker: null }) as never} mode="B" initialOpen={0} />,
+    )
+    expect(html).toContain('sens à préciser')
+  })
 })
+
