@@ -62,12 +62,21 @@ export default async function LinkWordsPage({ params }: { params: Promise<{ id: 
               </Link>
             </div>
           )}
-          <WordLinkEditor
-            resourceId={id}
-            beteLines={nonEmptyLines(text.content_bete)}
-            literalLines={nonEmptyLines(text.content_literal ?? '')}
-            saved={saved}
-          />
+          {(() => {
+            const frenchLines = text.content_french ? nonEmptyLines(text.content_french) : null
+            const beteLines = nonEmptyLines(text.content_bete)
+            return (
+              <WordLinkEditor
+                resourceId={id}
+                beteLines={beteLines}
+                literalLines={nonEmptyLines(text.content_literal ?? '')}
+                saved={saved}
+                region={text.region ?? null}
+                frenchLines={frenchLines && frenchLines.length === beteLines.length ? frenchLines : null}
+                signedIn
+              />
+            )
+          })()}
         </>
       ) : (
         <div className="rounded-lg border border-amber-500/50 bg-amber-50 p-4 text-sm dark:bg-amber-950/30">

@@ -1,19 +1,27 @@
 'use client'
 import { useState, type ReactNode } from 'react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { cn } from '@/lib/utils'
-import { blockKey, blockWords, labelOf, normWord, type Side, type Unit } from '@/lib/word-blocks'
+import { blockKey, blockWords, labelOf, type Side, type Unit, type LexSummary } from '@/lib/word-blocks'
 import {
-  addWords, attachUnits, derive, editWords, EMPTY_MARKER, removeWord, setKind, setMeta, splitUnit,
-  type MarkerDef, type VerseDraft,
+  addWords, attachUnits, derive, editWords, EMPTY_META, removeWord, setKind, setLink, setMeta, splitUnit,
+  type VerseDraft,
 } from '@/lib/word-link-editor'
+import type { Dialect } from '@/lib/lexicon-links'
 import type { Focus } from './PairStrip'
+import { LexiconPanel } from './LexiconPanel'
 
 interface Props {
+  client: SupabaseClient
   draft: VerseDraft
   focus: Focus | null
-  /** Marker meanings of the whole editor (shared by every verse), keyed by normWord. */
-  markers: Record<string, MarkerDef>
-  onMarkerChange: (words: string, patch: Partial<MarkerDef>) => void
+  /** Entries the editor has seen (candidates created or linked here, or loaded with the verse), by id. */
+  entries: Record<string, LexSummary>
+  dialect: Dialect
+  /** The verse as an example sentence, or null when the French line is not available. */
+  example: { bete: string; french: string; literal: string } | null
+  signedIn: boolean
+  onEntry: (e: LexSummary) => void
   onChange: (d: VerseDraft) => void
   onFocus: (f: Focus | null) => void
 }
@@ -86,7 +94,9 @@ function WordTools({
   )
 }
 
-export function BlockPanel({ draft, focus, markers, onMarkerChange, onChange, onFocus }: Props) {
+export function BlockPanel({
+  client, draft, focus, entries, dialect, example, signedIn, onEntry, onChange, onFocus,
+}: Props) {
   const r = derive(draft)
   if (!focus) {
     return <p className="text-sm text-muted-foreground">Touchez un bloc pour le regrouper, le corriger, ajouter une note ou le marquer comme marqueur grammatical.</p>
@@ -102,8 +112,6 @@ export function BlockPanel({ draft, focus, markers, onMarkerChange, onChange, on
   const key = b ? blockKey(b) : null
   const meta = key ? draft.meta[key] : undefined
   const bWords = b ? blockWords(r.bw, b.idx) : ''
-  // Markers share one meaning per word: the model keys it by normWord of the block's words.
-  const markerDef = b && meta?.isMarker ? (markers[normWord(bWords)] ?? EMPTY_MARKER) : null
 
   const apply = (next: VerseDraft) => onChange(next)
 
@@ -176,34 +184,32 @@ export function BlockPanel({ draft, focus, markers, onMarkerChange, onChange, on
             </button>
           </div>
 
-          {markerDef && (
-            <div className={cn('space-y-2.5 rounded-md border border-l-4 border-violet-400 p-3', !markerDef.meaning && 'border-dashed')}>
-              <p className="text-xs font-semibold">
-                Marqueur grammatical{!markerDef.meaning && ', sens à préciser'}
-              </p>
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                <Field label="Type (champ libre, ex : temps, aspect, mouvement)">
-                  <input className={inputClass} value={markerDef.type} onChange={e => onMarkerChange(bWords, { type: e.target.value })} maxLength={100} />
-                </Field>
-                <Field label="Ce qu'il indique (ex : futur, en cours)">
-                  <input className={inputClass} value={markerDef.meaning} onChange={e => onMarkerChange(bWords, { meaning: e.target.value })} maxLength={300} />
-                </Field>
-              </div>
-              <Field label="Comment le français le rend (ex : « aller + verbe » : je vais venir)">
-                <input className={inputClass} value={markerDef.french} onChange={e => onMarkerChange(bWords, { french: e.target.value })} maxLength={300} />
-              </Field>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={meta?.solo ?? false}
-                  onChange={e => apply(setMeta(draft, key, { solo: e.target.checked }))}
-                />
-                Aucun mot du mot à mot ne lui correspond
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Le sens saisi ici s’applique à tous les blocs de cette ressource marqués comme marqueur avec ce mot.
-              </p>
-            </div>
+          <LexiconPanel
+            key={`${key}:${meta?.isMarker ? 'm' : 'w'}:${bWords}`}
+            client={client}
+            kind={meta?.isMarker ? 'marker' : 'word'}
+            words={bWords}
+            gloss={pair?.g ? blockWords(r.gw, pair.g.idx) : ''}
+            dialect={dialect}
+            meta={meta ?? EMPTY_META}
+            entry={meta?.lexiconId ? (entries[meta.lexiconId] ?? null) : null}
+            example={example}
+            signedIn={signedIn}
+            onLink={(entry, senseId) => {
+              onEntry(entry)
+              apply(setLink(draft, key, entry.id, senseId))
+            }}
+            onUnlink={() => apply(setLink(draft, key, null, null))}
+          />
+          {meta?.isMarker && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={meta.solo}
+                onChange={e => apply(setMeta(draft, key, { solo: e.target.checked }))}
+              />
+              Aucun mot du mot à mot ne lui correspond
+            </label>
           )}
 
           <Field label="Composition du mot (optionnel), ex : ghèhi (en haut) + wu (lieu)">

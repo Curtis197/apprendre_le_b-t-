@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { cn } from '@/lib/utils'
 import { saveVerse } from '@/lib/word-blocks-data'
-import { type VerseWords } from '@/lib/word-blocks'
+import { type VerseWords, type LexSummary } from '@/lib/word-blocks'
 import {
-  afterSave, collectMarkers, derive, effectiveMarkers, initDraft, markSaved, pruneMarkerEdits, reconcileDraft, setMarkerEdit,
-  staleVerseNumbers, toSave, verseStatus, type MarkerDef, type VerseDraft, type VerseStatus,
+  afterSave, derive, initDraft, markSaved, reconcileDraft,
+  staleVerseNumbers, toSave, unlinkedMarkers, verseStatus, type VerseDraft, type VerseStatus,
 } from '@/lib/word-link-editor'
+import { dialectForRegion } from '@/lib/lexicon-links'
 import { BlockPanel } from './BlockPanel'
 import { PairStrip, type Focus } from './PairStrip'
 
@@ -19,6 +20,9 @@ interface Props {
   beteLines: string[]
   literalLines: string[]
   saved: VerseWords[]
+  region: string | null
+  frenchLines: string[] | null
+  signedIn: boolean
 }
 
 /** Colour code of a verse tab: colour AND a mark, so it never relies on colour alone. */
@@ -41,23 +45,25 @@ function readStored(resourceId: string, verseNo: number): VerseDraft | null {
   }
 }
 
-export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: Props) {
+export function WordLinkEditor({
+  resourceId, beteLines, literalLines, saved, region, frenchLines, signedIn,
+}: Props) {
   const router = useRouter()
-  const supabaseRef = useRef(createClient())
+  const supabase = useMemo(() => createClient(), [])
   const initial = useMemo(
     () => beteLines.map((b, i) => initDraft(i + 1, b, literalLines[i] ?? '', saved.find(v => v.verse_no === i + 1))),
     [beteLines, literalLines, saved],
   )
-  // Marker meanings are ONE map shared by every verse: the server's, overridden by the unsaved edits.
-  const serverMarkers = useMemo(() => collectMarkers(saved), [saved])
-  const [markerEdits, setMarkerEdits] = useState<Record<string, MarkerDef>>({})
-  const [seenServer, setSeenServer] = useState(serverMarkers)
-  if (seenServer !== serverMarkers) {
-    // New props after a save and a refresh: drop the edits the server now holds, keep the others.
-    setSeenServer(serverMarkers)
-    setMarkerEdits(pruneMarkerEdits(serverMarkers, markerEdits))
-  }
-  const markers = effectiveMarkers(serverMarkers, markerEdits)
+
+  // Entries known to the editor (loaded with the saved verses, or created/linked here), by id.
+  const savedEntries = useMemo(() => {
+    const m: Record<string, LexSummary> = {}
+    for (const v of saved) for (const b of v.blocks) if (b.lex) m[b.lex.id] = b.lex
+    return m
+  }, [saved])
+  const [localEntries, setLocalEntries] = useState<Record<string, LexSummary>>({})
+  const entries = { ...savedEntries, ...localEntries }
+
   const staleNos = useMemo(() => staleVerseNumbers(saved), [saved])
   const [savedNos, setSavedNos] = useState<number[]>([])
   const [drafts, setDrafts] = useState<VerseDraft[]>(initial)
@@ -103,13 +109,13 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
   }, [drafts, restored])
 
   useEffect(() => {
-    const anyDirty = drafts.some((d, i) => dirty(d, i)) || Object.keys(markerEdits).length > 0
+    const anyDirty = drafts.some((d, i) => dirty(d, i))
     if (!anyDirty) return
     const warn = (e: BeforeUnloadEvent) => e.preventDefault()
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drafts, markerEdits])
+  }, [drafts])
 
   const derived = drafts.map(derive)
   const draft = drafts[cur]
@@ -117,10 +123,16 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
   const update = (d: VerseDraft) => setDrafts(ds => ds.map((x, i) => (i === cur ? d : x)))
 
   async function save() {
+    const open = unlinkedMarkers(draft)
+    if (open.length) {
+      setStatus(s => ({ ...s, [cur]: `Reliez chaque marqueur grammatical à une entrée du lexique : ${open.join(', ')}.` }))
+      return
+    }
+
     setBusy(true)
     setStatus(s => ({ ...s, [cur]: '' }))
-    const payload = toSave(draft, markers)
-    const res = await saveVerse(supabaseRef.current, {
+    const payload = toSave(draft)
+    const res = await saveVerse(supabase, {
       resourceId,
       verseNo: draft.verseNo,
       baseBete: draft.baseBete,
@@ -158,6 +170,8 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
     })
   const isStale = (d: VerseDraft, i: number) => statusOf(d, i) === 'stale'
   const anySaved = drafts.some((d, i) => statusOf(d, i) === 'saved')
+
+  const unlinked = unlinkedMarkers(draft)
 
   return (
     <div className="space-y-4">
@@ -217,10 +231,14 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
       <PairStrip pairs={r.pairs} bw={r.bw} gw={r.gw} meta={draft.meta} focus={focus} onFocus={setFocus} />
 
       <BlockPanel
+        client={supabase}
         draft={draft}
         focus={focus}
-        markers={markers}
-        onMarkerChange={(words, patch) => setMarkerEdits(e => setMarkerEdit(serverMarkers, e, words, patch))}
+        entries={entries}
+        dialect={dialectForRegion(region)}
+        example={frenchLines ? { bete: draft.bete, french: frenchLines[cur] ?? '', literal: draft.literal } : null}
+        signedIn={signedIn}
+        onEntry={e => setLocalEntries(m => ({ ...m, [e.id]: e }))}
         onChange={update}
         onFocus={setFocus}
       />
@@ -229,12 +247,15 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
         <button
           type="button"
           onClick={save}
-          disabled={busy || !r.balanced}
+          disabled={busy || !r.balanced || unlinked.length > 0}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {busy ? 'Enregistrement…' : 'Enregistrer ce vers'}
         </button>
         {!r.balanced && <span className="text-xs text-muted-foreground">Disponible quand le vers est équilibré.</span>}
+        {r.balanced && unlinked.length > 0 && (
+          <span className="text-xs text-amber-700">Un marqueur n’est pas encore relié au lexique.</span>
+        )}
         {status[cur] && (
           <span role="status" className={cn('text-sm', status[cur].startsWith('Enregistré') ? 'text-primary' : 'text-destructive')}>
             {status[cur]}
