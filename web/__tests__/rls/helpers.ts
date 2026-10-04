@@ -11,7 +11,7 @@ function need(...names: string[]): string {
 
 const URL_ = need('API_URL')
 const ANON_KEY = need('ANON_KEY', 'PUBLISHABLE_KEY')
-const SERVICE_KEY = need('SERVICE_ROLE_KEY', 'SECRET_KEY')
+const SERVICE_KEY = need('SERVICE_ROLE_KEY')
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } }
 
