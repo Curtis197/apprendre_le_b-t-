@@ -1,4 +1,4 @@
-// lib/word-blocks.ts — pure helpers for the word-by-word layer of resources.
+﻿// lib/word-blocks.ts — pure helpers for the word-by-word layer of resources.
 // No React, no Supabase: everything here is unit tested. Words are split exactly like the SQL
 // functions word_count / block_words (migration 20261006000000_resource_word_links.sql):
 // on runs of space, tab and U+00A0; hyphens and apostrophes stay inside a word.
@@ -59,8 +59,8 @@ export interface BlockInput {
   marker?: { type: string; meaning: string; french: string }
 }
 
-const EDGE = /^[ \t ]+|[ \t ]+$/g
-const SEP = /[ \t ]+/
+const EDGE = /^[ \t\u00A0]+|[ \t\u00A0]+$/g
+const SEP = /[ \t\u00A0]+/
 
 export function splitWords(line: string): string[] {
   const t = line.replace(EDGE, '')
@@ -84,7 +84,7 @@ export function normWord(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ''ʼ‑-]/g, '')
+    .replace(/[\u0300-\u036F''ʼ\u2019\u2010-]/g, '')
 }
 
 const ARTICLES = new Set(['le', 'la', 'les', 'un', 'une', 'des', 'au', 'aux', 'du'])

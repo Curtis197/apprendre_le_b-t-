@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 import {
   attachTo, autoGroup, blockKey, blockWords, buildUnits, contiguous, labelOf, mapInsert, mapRemove,
   mapReplace, nonEmptyLines, normWord, pairUnits, readerTokens, remapAtt, remapKeys, splitRuns, splitWords,
@@ -28,6 +28,10 @@ describe('splitWords / nonEmptyLines', () => {
     expect(splitWords('   ')).toEqual([])
   })
 
+  it('splits on non-breaking spaces', () => {
+    expect(splitWords('a\u00A0b')).toEqual(['a', 'b'])
+  })
+
   it('numbers lines like numberLines: non-empty lines only, any line ending', () => {
     expect(nonEmptyLines('a b\r\n\r\n c \rd')).toEqual(['a b', 'c', 'd'])
     expect(nonEmptyLines('')).toEqual([])
@@ -40,6 +44,10 @@ describe('normWord', () => {
     expect(normWord("Na'a")).toBe('naa')
     expect(normWord('ghèhi-wu')).toBe('ghehiwu')
     expect(normWord('ghéhi-wu')).toBe('ghehiwu')
+  })
+
+  it('removes curly apostrophes', () => {
+    expect(normWord('Na\u2019a')).toBe('naa')
   })
 })
 
