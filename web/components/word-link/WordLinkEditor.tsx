@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { cn } from '@/lib/utils'
 import { saveVerse } from '@/lib/word-blocks-data'
 import { type VerseWords } from '@/lib/word-blocks'
-import { collectMarkers, derive, initDraft, markSaved, toSave, type VerseDraft } from '@/lib/word-link-editor'
+import { afterSave, collectMarkers, derive, initDraft, markSaved, reconcileDraft, toSave, type VerseDraft } from '@/lib/word-link-editor'
 import { BlockPanel } from './BlockPanel'
 import { PairStrip, type Focus } from './PairStrip'
 
@@ -19,15 +19,13 @@ interface Props {
 
 const draftKey = (resourceId: string, verseNo: number) => `word-links:${resourceId}:${verseNo}`
 
-/** A draft kept in this browser until the verse is saved; ignored if the text moved meanwhile. */
-function loadStored(resourceId: string, initial: VerseDraft): VerseDraft {
+/** A draft kept in this browser until the verse is saved; null if none or storage is unavailable. */
+function readStored(resourceId: string, verseNo: number): VerseDraft | null {
   try {
-    const raw = localStorage.getItem(draftKey(resourceId, initial.verseNo))
-    if (!raw) return initial
-    const d = JSON.parse(raw) as VerseDraft
-    return d.baseBete === initial.baseBete && d.baseLiteral === initial.baseLiteral ? { ...initial, ...d } : initial
+    const raw = localStorage.getItem(draftKey(resourceId, verseNo))
+    return raw ? (JSON.parse(raw) as VerseDraft) : null
   } catch {
-    return initial
+    return null
   }
 }
 
@@ -49,10 +47,20 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
   const [busy, setBusy] = useState(false)
   const [restored, setRestored] = useState(false)
 
+  const draftsRef = useRef(drafts)
+  const baselineRef = useRef(baseline)
+  useEffect(() => {
+    draftsRef.current = drafts
+    baselineRef.current = baseline
+  })
+
   // Restore the drafts kept in this browser (after hydration, so the first render matches the server).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-hydration read of localStorage
-    setDrafts(initial.map(d => loadStored(resourceId, d)))
+    const next = initial.map((d, i) =>
+      reconcileDraft(d, draftsRef.current[i], baselineRef.current[i], readStored(resourceId, d.verseNo)),
+    )
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration read of localStorage, re-run when the server sends new props
+    setDrafts(next)
     setBaseline(initial.map(d => JSON.stringify(d)))
     setRestored(true)
   }, [initial, resourceId])
@@ -111,7 +119,7 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
       // ignore
     }
     const savedDraft = markSaved(draft)
-    setDrafts(ds => ds.map((x, i) => (i === cur ? savedDraft : x)))
+    setDrafts(ds => ds.map((x, i) => (i === cur ? afterSave(x, draft) : x)))
     setBaseline(b => b.map((x, i) => (i === cur ? JSON.stringify(savedDraft) : x)))
     setStatus(s => ({ ...s, [cur]: 'Enregistré ✓' }))
     router.refresh()

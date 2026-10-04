@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  addWords, attachUnits, buildCells, collectMarkers, derive, editWords, initDraft, markSaved, readiness,
-  readinessMessage, removeWord, setKind, setMarkerDef, setMeta, splitUnit, toSave, unitMeta,
+  addWords, afterSave, attachUnits, buildCells, collectMarkers, derive, editWords, initDraft, markSaved, readiness,
+  readinessMessage, reconcileDraft, removeWord, setKind, setMarkerDef, setMeta, splitUnit, toSave, unitMeta,
   type VerseDraft,
 } from '../lib/word-link-editor'
 import { blockKey, labelOf, splitWords, type Unit, type VerseWords } from '../lib/word-blocks'
@@ -277,5 +277,40 @@ describe('unitMeta', () => {
   it('returns empty meta for a block that has none', () => {
     const d = draftOf(0)
     expect(unitMeta(d, { head: 0, idx: [0] })).toEqual({ isMarker: false, solo: false, note: '', composition: '' })
+  })
+})
+
+describe('afterSave', () => {
+  it('keeps edits typed during the save and rebases on the lines that were sent', () => {
+    const sent = draftOf(0)
+    const current = { ...sent, bete: sent.bete + ' x' }
+    const r = afterSave(current, sent)
+    expect(r.bete).toBe(sent.bete + ' x')
+    expect(r.baseBete).toBe(sent.bete)
+    expect(toSave(r).beteLine).toBe(sent.bete + ' x')
+  })
+})
+
+describe('reconcileDraft', () => {
+  const initial = draftOf(0)
+  const dirty = (d: VerseDraft): VerseDraft => ({ ...d, attB: { 1: 0 } })
+  it('keeps an unsaved in-memory draft built on the same text', () => {
+    const cur = dirty(initial)
+    expect(reconcileDraft(initial, cur, JSON.stringify(initial), null)).toBe(cur)
+  })
+  it('uses a stored draft when the in-memory one is not dirty', () => {
+    const stored = dirty(initial)
+    expect(reconcileDraft(initial, initial, JSON.stringify(initial), stored)).toEqual({ ...initial, ...stored })
+  })
+  it('ignores a stored draft built on text that moved', () => {
+    const stored = { ...dirty(initial), baseBete: 'other' }
+    expect(reconcileDraft(initial, undefined, undefined, stored)).toBe(initial)
+  })
+  it('does not keep a dirty in-memory draft built on text that moved', () => {
+    const cur = { ...dirty(initial), baseLiteral: 'other' }
+    expect(reconcileDraft(initial, cur, JSON.stringify(initial), null)).toBe(initial)
+  })
+  it('returns the server draft when nothing else exists', () => {
+    expect(reconcileDraft(initial, undefined, undefined, null)).toBe(initial)
   })
 })

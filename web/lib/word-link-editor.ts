@@ -248,6 +248,25 @@ export function toSave(d: VerseDraft): SavePayload {
 /** After a successful save the current lines become the base the next save is checked against. */
 export const markSaved = (d: VerseDraft): VerseDraft => ({ ...d, baseBete: d.bete, baseLiteral: d.literal })
 
+/** After a save: the lines that were sent become the base; edits typed meanwhile stay as they are. */
+export function afterSave(current: VerseDraft, sent: VerseDraft): VerseDraft {
+  return { ...current, baseBete: sent.bete, baseLiteral: sent.literal }
+}
+
+/** When the server sends new props: which draft a verse should show. In-memory unsaved edits win,
+ *  then a stored draft built on the same text, else the server's version. */
+export function reconcileDraft(
+  initial: VerseDraft,
+  current: VerseDraft | undefined,
+  currentBaseline: string | undefined,
+  stored: VerseDraft | null,
+): VerseDraft {
+  const sameBase = (d: VerseDraft) => d.baseBete === initial.baseBete && d.baseLiteral === initial.baseLiteral
+  if (current && currentBaseline !== undefined && JSON.stringify(current) !== currentBaseline && sameBase(current)) return current
+  if (stored && sameBase(stored)) return { ...initial, ...stored }
+  return initial
+}
+
 // ── Can this resource be linked? ────────────────────────────────────────────────────────────────
 
 export type Readiness =
