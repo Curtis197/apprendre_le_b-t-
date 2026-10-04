@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   attachTo, autoGroup, blockKey, blockWords, buildUnits, contiguous, labelOf, mapInsert, mapRemove,
   mapReplace, nonEmptyLines, normWord, pairUnits, readerTokens, remapAtt, remapKeys, splitRuns, splitWords,
@@ -48,6 +48,10 @@ describe('normWord', () => {
 
   it('removes curly apostrophes', () => {
     expect(normWord('Na\u2019a')).toBe('naa')
+  })
+
+  it('removes non-breaking hyphens', () => {
+    expect(normWord('ghèhi\u2011wu')).toBe('ghehiwu')
   })
 })
 
