@@ -230,6 +230,8 @@ describe('save_resource_verse', () => {
       p_base_bete: 'a en men c', p_bete_line: 'a enmen c', p_blocks: THREE,
     })
     expect(res.error).toBeNull()
+    const text = must(await admin.from('community_texts').select('content_bete').eq('id', id).single(), 'text')
+    expect(text.content_bete).toBe('a enmen c')
   })
 
   it('stores a marker with no mot à mot counterpart and its shared meaning', async () => {
@@ -295,6 +297,55 @@ describe('save_resource_verse', () => {
     ok(await admin.from('community_texts').delete().eq('id', id), 'delete resource')
     expect(await rows(id)).toHaveLength(0)
     expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(0)
+  })
+
+  const textOf = async (id: string) =>
+    must(await admin.from('community_texts').select('content_bete, content_literal').eq('id', id).single(), 'text')
+
+  it('refuses a blank corrected line and leaves text and blocks alone', async () => {
+    const id = await resource(alice.id, 'a b c\nd e', 'x y z\nw v')
+    expect((await save(alice, id)).error).toBeNull()
+    const res = await save(alice, id, { p_bete_line: ' ' })
+    expect(res.error?.message).toContain('bad_line')
+    expect(await textOf(id)).toEqual({ content_bete: 'a b c\nd e', content_literal: 'x y z\nw v' })
+    expect(await rows(id)).toHaveLength(3)
+  })
+
+  it('refuses a corrected line containing a line break', async () => {
+    const id = await resource(alice.id, 'a b c\nd e', 'x y z\nw v')
+    const res = await save(alice, id, { p_literal_line: 'x y\nz' })
+    expect(res.error?.message).toContain('bad_line')
+    expect(await textOf(id)).toEqual({ content_bete: 'a b c\nd e', content_literal: 'x y z\nw v' })
+    expect(await rows(id)).toHaveLength(0)
+  })
+
+  it('refuses an empty block list on a verse that has words', async () => {
+    const id = await resource(alice.id, 'a b c', 'x y z')
+    const res = await save(alice, id, { p_blocks: [] })
+    expect(res.error?.message).toContain('bete_word_uncovered')
+    expect(await rows(id)).toHaveLength(0)
+  })
+
+  it('leaves the text unchanged when text_changed fires with a correction', async () => {
+    const id = await resource(alice.id, 'a b c', 'x y z')
+    ok(await admin.from('community_texts').update({ content_bete: 'a b d' }).eq('id', id), 'edit elsewhere')
+    const res = await save(alice, id, { p_bete_line: 'a b zz' })
+    expect(res.error?.message).toContain('text_changed')
+    expect((await textOf(id)).content_bete).toBe('a b d')
+  })
+
+  it('keeps the shared meaning when a marker block carries no marker object', async () => {
+    const id = await resource(alice.id, 'en ye\nen ye', 'je va\nje va')
+    const verse = (n: number, marker?: Record<string, unknown>) =>
+      save(alice, id, {
+        p_verse: n, p_base_bete: 'en ye', p_base_literal: 'je va',
+        p_blocks: [BLOCK([0], [0]), BLOCK([1], [1], marker ? { is_marker: true, marker } : { is_marker: true })],
+      })
+    expect((await verse(1, { type: 'temps', meaning: 'futur', french: '' })).error).toBeNull()
+    expect((await verse(2)).error).toBeNull()
+    const m = must(await admin.from('resource_word_markers').select('*').eq('resource_id', id), 'm')
+    expect(m).toHaveLength(1)
+    expect(m[0]).toMatchObject({ word_norm: 'ye', marker_meaning: 'futur', marker_type: 'temps' })
   })
 
   it('is not callable by anonymous clients', async () => {

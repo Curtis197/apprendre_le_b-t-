@@ -238,6 +238,16 @@ begin
     raise exception 'text_changed';
   end if;
 
+  -- A correction is one non-blank line: a blank or multi-line one would delete or renumber verses.
+  if p_bete_line is not null
+     and (btrim(p_bete_line, E' 	 ') = '' or p_bete_line ~ E'[\r\n]') then
+    raise exception 'bad_line';
+  end if;
+  if p_literal_line is not null
+     and (btrim(p_literal_line, E' 	 ') = '' or p_literal_line ~ E'[\r\n]') then
+    raise exception 'bad_line';
+  end if;
+
   -- Apply the corrected lines (blank lines are kept).
   if p_bete_line is not null then
     v_bete := replace_nth_line(v_bete, p_verse, p_bete_line);
@@ -247,6 +257,9 @@ begin
   end if;
   v_bl := verse_line(v_bete, p_verse);
   v_ll := verse_line(v_lit, p_verse);
+  if word_count(v_bl) < 1 or word_count(v_ll) < 1 then
+    raise exception 'bad_line';
+  end if;
   v_nb := word_count(v_bl);
   v_ng := word_count(v_ll);
   v_seen_b := array_fill(false, array[v_nb]);
@@ -345,6 +358,7 @@ begin
       from jsonb_array_elements(p_blocks) e
     ) z
     where coalesce((z.e ->> 'is_marker')::boolean, false)
+      and z.e ? 'marker'
   ) y
   order by y.wn, y.first_idx desc
   on conflict (resource_id, word_norm) do update
