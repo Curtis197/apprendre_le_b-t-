@@ -15,7 +15,7 @@
 - Node/Next specifics: `web/AGENTS.md` says this Next.js has breaking changes: read the relevant guide in `web/node_modules/next/dist/docs/` before writing page or route code, and follow the patterns of `web/app/resources/[id]/edit/page.tsx` (async `params`, `createClient` from `@/lib/supabase-server`).
 - Browser floor: iOS Safari 16.1. No regex look-behind, no `:has()`, no `color-mix()` in new CSS; use the existing Tailwind tokens (`border-border`, `bg-card`, `text-primary`, `text-muted-foreground`).
 - UI copy is French. Error messages from the database are codes; the UI maps them to French.
-- Words are split everywhere on runs of space, tab and U+00A0 (`/[ \t ]+/`); hyphens and apostrophes stay inside a word. Lines are numbered like `numberLines`: n-th non-empty line, 1-based, `\r\n` and `\r` treated as `\n`.
+- Words are split everywhere on runs of space, tab and U+00A0 (`/[ \t\u00a0]+/`); hyphens and apostrophes stay inside a word. Lines are numbered like `numberLines`: n-th non-empty line, 1-based, `\r\n` and `\r` treated as `\n`.
 - Migrations since `20260930000000` must be re-runnable: every `create policy` is preceded by `drop policy if exists <same name> on <same table>` (`web/__tests__/migrations.test.ts` enforces it). New migration version: `20261006000000` (later than every file in `supabase/migrations/`).
 - New SQL functions are exposed to clients by default: explicitly `revoke execute ... from public, anon` (and `authenticated` for internal helpers) and `grant` only what a client needs.
 - `lexicon` and its tables are not touched (separate spec).
@@ -109,9 +109,9 @@ const LIT = [
 
 describe('splitWords / nonEmptyLines', () => {
   it('splits on spaces, tabs and non-breaking spaces and keeps hyphens and apostrophes', () => {
-    expect(splitWords("  Na'a  ghèhi-wu\tô  ")).toEqual(["Na'a", 'ghèhi-wu', 'ô'])
+    expect(splitWords("  Na'a\u00a0 ghèhi-wu\tô  ")).toEqual(["Na'a", 'ghèhi-wu', 'ô'])
     expect(splitWords('')).toEqual([])
-    expect(splitWords('   ')).toEqual([])
+    expect(splitWords(' \u00a0 ')).toEqual([])
   })
 
   it('numbers lines like numberLines: non-empty lines only, any line ending', () => {
@@ -353,8 +353,8 @@ export interface BlockInput {
   marker?: { type: string; meaning: string; french: string }
 }
 
-const EDGE = /^[ \t ]+|[ \t ]+$/g
-const SEP = /[ \t ]+/
+const EDGE = /^[ \t\u00a0]+|[ \t\u00a0]+$/g
+const SEP = /[ \t\u00a0]+/
 
 export function splitWords(line: string): string[] {
   const t = line.replace(EDGE, '')
@@ -378,7 +378,7 @@ export function normWord(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ'’ʼ‑-]/g, '')
+    .replace(/[\u0300-\u036f'\u2019\u02bc\u2011-]/g, '')
 }
 
 const ARTICLES = new Set(['le', 'la', 'les', 'un', 'une', 'des', 'au', 'aux', 'du'])
@@ -698,7 +698,7 @@ describe('resource word links: tables and reading', () => {
   })
 
   it('keeps word counting in step with the browser, including odd whitespace and CRLF', async () => {
-    const lines = ['a  b\tc', 'a b c', '  a b  ', "Na'a ghèhi-wu ô"]
+    const lines = ['a  b\tc', 'a\u00a0b c', '  a b  ', "Na'a ghèhi-wu ô"]
     for (const line of lines) {
       const { data } = await admin.rpc('block_words', { p_line: line, p_idx: splitWords(line).map((_, i) => i) })
       expect(data).toBe(splitWords(line).join(' '))
@@ -766,8 +766,8 @@ $$;
 create or replace function word_count(p_line text)
 returns int language sql immutable as $$
   select case
-    when btrim(coalesce(p_line, ''), E' \t ') = '' then 0
-    else array_length(regexp_split_to_array(btrim(p_line, E' \t '), E'[ \t ]+'), 1)
+    when btrim(coalesce(p_line, ''), E' \t\u00a0') = '' then 0
+    else array_length(regexp_split_to_array(btrim(p_line, E' \t\u00a0'), E'[ \t\u00a0]+'), 1)
   end
 $$;
 
@@ -775,7 +775,7 @@ $$;
 create or replace function block_words(p_line text, p_idx int[])
 returns text language sql immutable as $$
   select string_agg(w.word, ' ' order by w.ord)
-  from regexp_split_to_table(btrim(coalesce(p_line, ''), E' \t '), E'[ \t ]+') with ordinality as w(word, ord)
+  from regexp_split_to_table(btrim(coalesce(p_line, ''), E' \t\u00a0'), E'[ \t\u00a0]+') with ordinality as w(word, ord)
   where (w.ord - 1) = any(p_idx)
 $$;
 
@@ -1086,16 +1086,16 @@ describe('save_resource_verse', () => {
   })
 
   it('counts words like the browser with tabs, non-breaking spaces and Windows line endings', async () => {
-    const id = await resource(alice.id, 'x\r\na b\tc  d', 'p q r s')
+    const id = await resource(alice.id, 'x\r\na\u00a0b\tc  d', 'p q r s')
     const res = await save(alice, id, {
-      p_verse: 2, p_base_bete: 'a b\tc  d', p_base_literal: 'p q r s',
+      p_verse: 2, p_base_bete: 'a\u00a0b\tc  d', p_base_literal: 'p q r s',
       p_blocks: [BLOCK([0], [0]), BLOCK([1], [1]), BLOCK([2], [2]), BLOCK([3], [3])],
     })
     // the literal field has a single line, so verse 2 has no mot à mot
     expect(res.error?.message).toContain('literal_missing')
-    const id2 = await resource(alice.id, 'x\r\na b\tc  d', 'y\r\np q r s')
+    const id2 = await resource(alice.id, 'x\r\na\u00a0b\tc  d', 'y\r\np q r s')
     const ok = await save(alice, id2, {
-      p_verse: 2, p_base_bete: 'a b\tc  d', p_base_literal: 'p q r s',
+      p_verse: 2, p_base_bete: 'a\u00a0b\tc  d', p_base_literal: 'p q r s',
       p_blocks: [BLOCK([0], [0]), BLOCK([1], [1]), BLOCK([2], [2]), BLOCK([3], [3])],
     })
     expect(ok.error).toBeNull()
@@ -3122,7 +3122,7 @@ function WordTools({
   const [value, setValue] = useState(current)
   const [added, setAdded] = useState('')
   const [error, setError] = useState('')
-  const split = (s: string) => s.trim().split(/[ \t ]+/).filter(Boolean)
+  const split = (s: string) => s.trim().split(/[ \t\u00a0]+/).filter(Boolean)
   const add = (pos: number) => {
     const nw = split(added)
     if (nw.length === 0) return setError('Écrivez le mot à ajouter.')
