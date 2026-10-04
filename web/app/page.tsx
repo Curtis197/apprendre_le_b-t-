@@ -9,8 +9,6 @@ import { DonateForm } from '@/components/DonateForm'
 import { JsonLd } from '@/components/JsonLd'
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
 
-export const dynamic = 'force-dynamic'
-
 const HERO_TITLE = 'Construisons ensemble la première plateforme pour apprendre le bhété'
 const HERO_TEXT =
   'Le bhété est une langue vivante de Côte d’Ivoire, mais il n’existe presque aucun outil pour l’apprendre. Ce site est en train d’être construit, et il a besoin de celles et ceux qui parlent la langue.'
