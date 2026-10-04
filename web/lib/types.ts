@@ -17,6 +17,10 @@ export interface LexiconEntry {
   source: 'seed' | 'contributed'
   /** The contributor who added the word; null for words imported from the Bible. */
   created_by?: string | null
+  entry_kind?: 'word' | 'marker'
+  marker_type?: string | null
+  marker_meaning?: string | null
+  marker_french?: string | null
 }
 
 export interface LexiconExample {

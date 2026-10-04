@@ -169,6 +169,8 @@ export default function LexiconPage() {
         .eq('dialect', dialect)
         // Untranslated placeholders (empty bete_phonetic) are not dictionary entries yet.
         .neq('bete_phonetic', '')
+        // A marker appears once someone has said what it indicates.
+        .or('entry_kind.eq.word,marker_meaning.not.is.null')
         .order('bete_phonetic', { ascending: true })
         .range(from, to)
 

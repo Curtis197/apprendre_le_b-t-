@@ -32,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = createPublicClient()
     const [lex, threads, courses, resources] = await Promise.all([
-      supabase.from('lexicon').select('id, bete_word, bete_phonetic').limit(50000),
+      supabase.from('lexicon').select('id, bete_word, bete_phonetic').or('entry_kind.eq.word,marker_meaning.not.is.null').limit(50000),
       supabase.from('forum_threads').select('id, created_at').limit(50000),
       supabase.from('courses').select('slug, updated_at').eq('status', 'published').limit(50000),
       supabase.from('community_texts').select('id, created_at, updated_at').limit(50000),

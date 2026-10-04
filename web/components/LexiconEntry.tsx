@@ -8,7 +8,7 @@ import { cleanBeteForm } from '@/lib/lexicon'
 const POS_LABELS: Record<string, string> = {
   noun: 'Nom', verb: 'Verbe', adj: 'Adj.', adv: 'Adv.',
   name: 'Nom propre', num: 'Num.', interj: 'Interj.',
-  prep: 'Prép.', conj: 'Conj.', pron: 'Pron.',
+  prep: 'Prép.', conj: 'Conj.', pron: 'Pron.', part: 'Particule',
 }
 
 export function LexiconEntry({ entry }: { entry: TLexiconEntry }) {

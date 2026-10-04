@@ -4,7 +4,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { getResourceWords, saveVerse } from '../../lib/word-blocks-data'
 import { readerTokens, splitWords, type Unit } from '../../lib/word-blocks'
-import { attachUnits, derive, editWords, initDraft, toSave, type VerseDraft } from '../../lib/word-link-editor'
+import { attachUnits, derive, editWords, initDraft, setLink, toSave, type VerseDraft } from '../../lib/word-link-editor'
 import { admin, anonClient, createUser, must, type TestUser } from './helpers'
 
 const BETE = [
@@ -69,7 +69,7 @@ describe('resource word links: Notre Père pilot', () => {
     const drafts = buildDrafts()
     for (const d of drafts) {
       expect(derive(d).balanced, `verse ${d.verseNo} balanced`).toBe(true)
-      const p = toSave(d, {})
+      const p = toSave(d)
       const res = await saveVerse(owner.client, {
         resourceId: id, verseNo: d.verseNo, baseBete: d.baseBete, baseLiteral: d.baseLiteral,
         beteLine: p.beteLine, literalLine: p.literalLine, blocks: p.blocks,
@@ -78,10 +78,130 @@ describe('resource word links: Notre Père pilot', () => {
     }
   })
 
+  it('links words to lexicon entries, adds a spelling, and links a marker in another resource', async () => {
+    // 1. Create owner's lexicon entries
+    const cGhehi = await owner.client.rpc('create_lexicon_entry', {
+      p_spelling: 'ghèhi-wu', p_ipa: null, p_dialect: 'western', p_kind: 'word', p_pos: ['noun'],
+      p_description: null, p_notes: null, p_synonyms: null, p_lemma: null,
+      p_senses: [{ french: 'ciel', context: null }, { french: 'haut', context: null }],
+      p_example: null,
+    })
+    expect(cGhehi.error).toBeNull()
+    const ghehiId = (cGhehi.data as { id: string }).id
+    const ghehiSenses = (cGhehi.data as { entry: { senses: { id: string; french: string }[] } }).entry.senses
+    const cielSenseId = ghehiSenses.find(s => s.french === 'ciel')!.id
+
+    const cWu = await owner.client.rpc('create_lexicon_entry', {
+      p_spelling: 'wu', p_ipa: null, p_dialect: 'western', p_kind: 'word', p_pos: ['verb'],
+      p_description: null, p_notes: null, p_synonyms: null, p_lemma: null,
+      p_senses: [{ french: 'est', context: null }, { french: 'lieu', context: null }],
+      p_example: null,
+    })
+    expect(cWu.error).toBeNull()
+    const wuId = (cWu.data as { id: string }).id
+    const wuSenses = (cWu.data as { entry: { senses: { id: string; french: string }[] } }).entry.senses
+    const estSenseId = wuSenses.find(s => s.french === 'est')!.id
+
+    // 2. Save verse 1 again with those blocks carrying lexicon_id and translation_id
+    let d1 = buildDrafts()[0]
+    // In verse 1: "wu" is index 4, "ghèhi-wu" is index 6
+    d1 = setLink(d1, '4', wuId, estSenseId)
+    d1 = setLink(d1, '6', ghehiId, cielSenseId)
+
+    const p1 = toSave(d1)
+    const saveRes = await saveVerse(owner.client, {
+      resourceId: id, verseNo: 1, baseBete: d1.baseBete, baseLiteral: d1.baseLiteral,
+      beteLine: p1.beteLine, literalLine: p1.literalLine, blocks: p1.blocks,
+    })
+    expect(saveRes.error).toBeNull()
+
+    // 3. Add spelling ghéhi-wu
+    const spRes = await owner.client.rpc('add_lexicon_spelling', {
+      p_lexicon_id: ghehiId, p_spelling: 'ghéhi-wu',
+    })
+    if (spRes.error) {
+      expect(spRes.error.message).toContain('spelling_exists')
+    } else {
+      expect(spRes.error).toBeNull()
+    }
+
+    // 4. Assert anonymously: find_lexicon_candidates returns exact / near
+    const exactCand = await anonClient().rpc('find_lexicon_candidates', {
+      p_text: 'ghéhi-wu', p_dialect: null, p_kind: null, p_limit: 25,
+    })
+    expect(exactCand.error).toBeNull()
+    const exactRows = exactCand.data as { match_kind: string; entry: { id: string } }[]
+    expect(exactRows.some(r => r.entry.id === ghehiId && r.match_kind === 'exact')).toBe(true)
+
+    const nearCand = await anonClient().rpc('find_lexicon_candidates', {
+      p_text: 'rhéhi-wu', p_dialect: null, p_kind: null, p_limit: 25,
+    })
+    expect(nearCand.error).toBeNull()
+    const nearRows = nearCand.data as { match_kind: string; entry: { id: string } }[]
+    expect(nearRows.some(r => r.entry.id === ghehiId && r.match_kind === 'near')).toBe(true)
+
+    // get_resource_words returns for the ghèhi-wu block lex.spellings containing ghéhi-wu and lex.sense_id equal to cielSenseId
+    const anonVerses = await getResourceWords(anonClient(), id)
+    const v1 = anonVerses.find(v => v.verse_no === 1)!
+    const bGhehi = v1.blocks.find(b => b.bete_idx.includes(6))!
+    expect(bGhehi.lex).not.toBeNull()
+    expect(bGhehi.lex!.id).toBe(ghehiId)
+    expect(bGhehi.lex!.senseId).toBe(cielSenseId)
+    expect(bGhehi.lex!.spellings).toContain('ghéhi-wu')
+
+    // 5. Flag ye as a marker in a second resource
+    const res2 = must(
+      await admin
+        .from('community_texts')
+        .insert({
+          title: 'Second resource', type: 'story',
+          content_bete: 'en ye yi', content_literal: 'je venir',
+          created_by: owner.id,
+        })
+        .select('id')
+        .single(),
+      'resource 2',
+    ).id as string
+
+    const cMarker = await owner.client.rpc('create_lexicon_entry', {
+      p_spelling: 'ye', p_ipa: null, p_dialect: 'western', p_kind: 'marker', p_pos: null,
+      p_description: null, p_notes: null, p_synonyms: null, p_lemma: null,
+      p_senses: [], p_example: null,
+    })
+    expect(cMarker.error).toBeNull()
+    const markerId = (cMarker.data as { id: string }).id
+
+    // save verse with is_marker: true, solo: true, lexicon_id
+    const saveM = await owner.client.rpc('save_resource_verse', {
+      p_resource: res2, p_verse: 1, p_base_bete: 'en ye yi', p_base_literal: 'je venir',
+      p_bete_line: null, p_literal_line: null,
+      p_blocks: [
+        { bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false },
+        { bete_idx: [1], gloss_idx: [], is_marker: true, solo: true, lexicon_id: markerId },
+        { bete_idx: [2], gloss_idx: [1], is_marker: false, solo: false },
+      ],
+    })
+    expect(saveM.error).toBeNull()
+
+    // call set_marker_meaning as 'other' user (first fill is open to anyone)
+    const setM = await other.client.rpc('set_marker_meaning', {
+      p_lexicon_id: markerId, p_type: 'temps', p_meaning: 'futur', p_french: 'aller + verbe',
+    })
+    expect(setM.error).toBeNull()
+
+    // read back anonymously
+    const v2Words = await getResourceWords(anonClient(), res2)
+    const mBlock = v2Words[0].blocks.find(b => b.is_marker)!
+    expect(mBlock.marker).toEqual({ type: 'temps', meaning: 'futur', french: 'aller + verbe' })
+    expect(mBlock.lex?.kind).toBe('marker')
+  })
+
   it('reads the verses back for an anonymous reader, in the original word order, with the linked particles', async () => {
     const verses = await getResourceWords(anonClient(), id)
     expect(verses).toHaveLength(5)
     expect(verses.every(v => !v.stale)).toBe(true)
+    const totalBlocks = verses.reduce((sum, v) => sum + v.blocks.length, 0)
+    expect(totalBlocks).toBe(84)
 
     const v4 = verses.find(v => v.verse_no === 4)!
     const tokens = readerTokens(v4)
@@ -104,7 +224,7 @@ describe('resource word links: Notre Père pilot', () => {
 
   it('refuses a save from anyone but the contributor', async () => {
     const d = buildDrafts()[0]
-    const p = toSave(d, {})
+    const p = toSave(d)
     const res = await saveVerse(other.client, {
       resourceId: id, verseNo: 1, baseBete: d.baseBete, baseLiteral: d.baseLiteral,
       beteLine: p.beteLine, literalLine: p.literalLine, blocks: p.blocks,

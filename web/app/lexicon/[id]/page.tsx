@@ -54,8 +54,8 @@ export async function generateMetadata({
   const ipa = cleanBeteForm(entry.bete_word)           // IPA / Bible phonetic form
   const bete = western || ipa
 
-  // Not yet translated → keep out of the index (thin content) but still reachable.
-  if (!bete) {
+  // Not yet translated or empty marker → keep out of the index (thin content) but still reachable.
+  if (!bete || (entry.entry_kind === 'marker' && !entry.marker_meaning)) {
     return {
       title: `${french} en bété`,
       description: `« ${french} » dans le lexique bété (bhété) — cette entrée attend sa traduction. Contribuez sur Apprendre le bhété.`,
@@ -141,6 +141,35 @@ export default async function LexiconEntryPage({
     <main className="max-w-2xl mx-auto py-10 px-4 space-y-6">
       <JsonLd data={jsonLd} />
       <LexiconEntry entry={entry} />
+      {entry.entry_kind === 'marker' && (
+        <section className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-800 dark:bg-violet-950/60 dark:text-violet-300">
+              Marqueur grammatical
+            </span>
+          </div>
+          {entry.marker_meaning ? (
+            <div className="space-y-1.5 text-sm">
+              <p>
+                <span className="font-medium text-muted-foreground">Type : </span>
+                {entry.marker_type || '—'}
+              </p>
+              <p>
+                <span className="font-medium text-muted-foreground">Ce qu’il indique : </span>
+                {entry.marker_meaning}
+              </p>
+              {entry.marker_french && (
+                <p>
+                  <span className="font-medium text-muted-foreground">Comment le français le rend : </span>
+                  {entry.marker_french}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Sens à préciser</p>
+          )}
+        </section>
+      )}
       <LexiconDescription lexiconId={entry.id} initial={descText} />
       {bete && (
         <CorrectionBox

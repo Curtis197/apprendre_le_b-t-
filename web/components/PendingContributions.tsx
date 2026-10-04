@@ -23,7 +23,7 @@ type LexiconWord = {
 
 const POS_LABELS: Record<string, string> = {
   noun: 'Nom', verb: 'Verbe', adj: 'Adj.', adv: 'Adv.',
-  pron: 'Pron.', prep: 'Prép.', other: 'Autre',
+  pron: 'Pron.', prep: 'Prép.', part: 'Particule', other: 'Autre',
 }
 
 const EXPRESSION_TYPE_LABELS: Record<string, string> = {
@@ -55,6 +55,7 @@ export function PendingContributions() {
         .order('created_at', { ascending: false }).limit(10),
       client.from('lexicon').select('id,bete_phonetic,bete_word,top_french,pos,description,notes,created_by')
         .eq('validated', false).not('created_by', 'is', null).eq('dialect', dialect)
+        .eq('entry_kind', 'word')
         .order('created_at', { ascending: false }).limit(10),
     ]).then(([rulesRes, exprsRes, wordsRes]) => {
       if (cancelled) return  // a newer dialect/refresh superseded this request
