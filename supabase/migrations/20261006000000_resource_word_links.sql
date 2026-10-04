@@ -171,4 +171,202 @@ $$;
 revoke execute on function get_resource_words(uuid) from public;
 grant execute on function get_resource_words(uuid) to anon, authenticated;
 
--- (save_resource_verse is added in the next task)
+-- ── 4. writing ───────────────────────────────────────────────────────────────────────────────────
+-- Atomic: the text correction (if any), the verse's blocks and the marker meanings succeed or fail
+-- together. Only the contributor of the resource may call it. Errors are codes the UI translates.
+create or replace function save_resource_verse(
+  p_resource uuid,
+  p_verse int,
+  p_base_bete text,      -- the verse's Bété line the editor was built on
+  p_base_literal text,   -- ... and its mot à mot line
+  p_bete_line text,      -- corrected Bété line, or null when unchanged
+  p_literal_line text,   -- corrected mot à mot line, or null when unchanged
+  p_blocks jsonb
+) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid     uuid := auth.uid();
+  v_owner   uuid;
+  v_bete    text;
+  v_lit     text;
+  v_bl      text;
+  v_ll      text;
+  v_nb      int;
+  v_ng      int;
+  v_seen_b  boolean[];
+  v_seen_g  boolean[];
+  r         record;
+  v_idx     int[];
+  v_gidx    int[];
+  v_i       int;
+  v_hash    text;
+  v_saved   int;
+begin
+  if v_uid is null then
+    raise exception 'not_signed_in' using errcode = '42501';
+  end if;
+
+  select ct.created_by, ct.content_bete, ct.content_literal
+    into v_owner, v_bete, v_lit
+  from community_texts ct
+  where ct.id = p_resource
+  for update;
+  if not found then
+    raise exception 'resource_not_found';
+  end if;
+  if v_owner is distinct from v_uid then
+    raise exception 'not_owner' using errcode = '42501';
+  end if;
+  if p_verse is null or p_verse < 1 then
+    raise exception 'bad_verse';
+  end if;
+  if p_blocks is null or jsonb_typeof(p_blocks) <> 'array' then
+    raise exception 'bad_blocks';
+  end if;
+
+  -- The editor was built on these lines: if the text moved since, indices could point at other words.
+  v_bl := verse_line(v_bete, p_verse);
+  v_ll := verse_line(v_lit, p_verse);
+  if v_bl is null then
+    raise exception 'verse_not_found';
+  end if;
+  if v_ll is null then
+    raise exception 'literal_missing';
+  end if;
+  if btrim(coalesce(p_base_bete, ''), E' \t') is distinct from v_bl
+     or btrim(coalesce(p_base_literal, ''), E' \t') is distinct from v_ll then
+    raise exception 'text_changed';
+  end if;
+
+  -- Apply the corrected lines (blank lines are kept).
+  if p_bete_line is not null then
+    v_bete := replace_nth_line(v_bete, p_verse, p_bete_line);
+  end if;
+  if p_literal_line is not null then
+    v_lit := replace_nth_line(v_lit, p_verse, p_literal_line);
+  end if;
+  v_bl := verse_line(v_bete, p_verse);
+  v_ll := verse_line(v_lit, p_verse);
+  v_nb := word_count(v_bl);
+  v_ng := word_count(v_ll);
+  v_seen_b := array_fill(false, array[v_nb]);
+  v_seen_g := array_fill(false, array[v_ng]);
+
+  -- Validate the blocks against the resulting lines.
+  for r in select e as b from jsonb_array_elements(p_blocks) e loop
+    v_idx  := array(select jsonb_array_elements_text(r.b -> 'bete_idx'))::int[];
+    v_gidx := array(select jsonb_array_elements_text(r.b -> 'gloss_idx'))::int[];
+
+    if cardinality(v_idx) = 0 then
+      raise exception 'empty_block';
+    end if;
+    for v_i in 1 .. cardinality(v_idx) loop
+      if v_idx[v_i] < 0 or v_idx[v_i] >= v_nb then
+        raise exception 'bete_index_out_of_range';
+      end if;
+      if v_i > 1 and v_idx[v_i] <= v_idx[v_i - 1] then
+        raise exception 'bete_index_not_increasing';
+      end if;
+      if v_seen_b[v_idx[v_i] + 1] then
+        raise exception 'bete_word_in_two_blocks';
+      end if;
+      v_seen_b[v_idx[v_i] + 1] := true;
+    end loop;
+
+    for v_i in 1 .. coalesce(cardinality(v_gidx), 0) loop
+      if v_gidx[v_i] < 0 or v_gidx[v_i] >= v_ng then
+        raise exception 'gloss_index_out_of_range';
+      end if;
+      if v_i > 1 and v_gidx[v_i] <= v_gidx[v_i - 1] then
+        raise exception 'gloss_index_not_increasing';
+      end if;
+      if v_seen_g[v_gidx[v_i] + 1] then
+        raise exception 'gloss_word_in_two_blocks';
+      end if;
+      v_seen_g[v_gidx[v_i] + 1] := true;
+    end loop;
+
+    if coalesce((r.b ->> 'solo')::boolean, false) then
+      if coalesce(cardinality(v_gidx), 0) > 0 then
+        raise exception 'solo_has_gloss';
+      end if;
+      if not coalesce((r.b ->> 'is_marker')::boolean, false) then
+        raise exception 'solo_not_marker';
+      end if;
+    elsif coalesce(cardinality(v_gidx), 0) = 0 then
+      raise exception 'block_without_gloss';
+    end if;
+  end loop;
+  if false = any(v_seen_b) then
+    raise exception 'bete_word_uncovered';
+  end if;
+  if false = any(v_seen_g) then
+    raise exception 'gloss_word_uncovered';
+  end if;
+
+  -- Text first (the usage_sync trigger rebuilds the usage index), then the blocks.
+  update community_texts
+     set content_bete = v_bete, content_literal = v_lit
+   where id = p_resource
+     and (content_bete is distinct from v_bete or content_literal is distinct from v_lit);
+
+  v_hash := verse_hash(v_bete, v_lit, p_verse);
+
+  delete from resource_word_blocks where resource_id = p_resource and verse_no = p_verse;
+
+  insert into resource_word_blocks
+    (resource_id, verse_no, position, bete_idx, gloss_idx, is_marker, solo, note, composition, verse_hash)
+  select p_resource, p_verse, row_number() over (order by x.bi[1]), x.bi, x.gi,
+         coalesce((x.e ->> 'is_marker')::boolean, false),
+         coalesce((x.e ->> 'solo')::boolean, false),
+         nullif(btrim(x.e ->> 'note'), ''),
+         nullif(btrim(x.e ->> 'composition'), ''),
+         v_hash
+  from (
+    select e,
+           array(select jsonb_array_elements_text(e -> 'bete_idx'))::int[]  as bi,
+           array(select jsonb_array_elements_text(e -> 'gloss_idx'))::int[] as gi
+    from jsonb_array_elements(p_blocks) e
+  ) x;
+  get diagnostics v_saved = row_count;
+
+  -- Marker meanings: keyed by the block's own words (never by the client), last block wins.
+  insert into resource_word_markers (resource_id, word_norm, word, marker_type, marker_meaning, marker_french)
+  select distinct on (y.wn) p_resource, y.wn, y.w, y.mt, y.mm, y.mf
+  from (
+    select block_word_norm(v_bl, z.bi) as wn,
+           block_words(v_bl, z.bi)     as w,
+           nullif(btrim(z.e -> 'marker' ->> 'type'), '')    as mt,
+           nullif(btrim(z.e -> 'marker' ->> 'meaning'), '') as mm,
+           nullif(btrim(z.e -> 'marker' ->> 'french'), '')  as mf,
+           z.bi[1] as first_idx
+    from (
+      select e, array(select jsonb_array_elements_text(e -> 'bete_idx'))::int[] as bi
+      from jsonb_array_elements(p_blocks) e
+    ) z
+    where coalesce((z.e ->> 'is_marker')::boolean, false)
+  ) y
+  order by y.wn, y.first_idx desc
+  on conflict (resource_id, word_norm) do update
+    set word = excluded.word,
+        marker_type = excluded.marker_type,
+        marker_meaning = excluded.marker_meaning,
+        marker_french = excluded.marker_french,
+        updated_at = now();
+
+  -- Remove the markers no marker block of the resource uses any more.
+  delete from resource_word_markers m
+  where m.resource_id = p_resource
+    and not exists (
+      select 1 from resource_word_blocks b
+      where b.resource_id = p_resource
+        and b.is_marker
+        and block_word_norm(verse_line(v_bete, b.verse_no), b.bete_idx) = m.word_norm
+    );
+
+  return jsonb_build_object('saved', v_saved, 'verse_hash', v_hash);
+end;
+$$;
+
+revoke execute on function save_resource_verse(uuid, int, text, text, text, text, jsonb) from public, anon;
+grant execute on function save_resource_verse(uuid, int, text, text, text, text, jsonb) to authenticated;

@@ -6,7 +6,6 @@ import { admin, anonClient, createUser, must, type TestUser } from './helpers'
 const BLOCK = (bete: number[], gloss: number[], over: Record<string, unknown> = {}) => ({
   bete_idx: bete, gloss_idx: gloss, is_marker: false, solo: false, note: null, composition: null, ...over,
 })
-void BLOCK
 
 async function resource(ownerId: string, bete: string, literal: string | null) {
   return must(
@@ -130,5 +129,179 @@ describe('resource word links: tables and reading', () => {
       expect((await anonClient().rpc(fn, args)).error?.code).toBe('42501')
     }
     void bob
+  })
+})
+
+describe('save_resource_verse', () => {
+  let alice: TestUser
+  let bob: TestUser
+
+  beforeAll(async () => {
+    ;[alice, bob] = await Promise.all([createUser('wls-alice'), createUser('wls-bob')])
+  })
+
+  const THREE = [BLOCK([0], [0]), BLOCK([1], [1]), BLOCK([2], [2])]
+
+  const save = (user: TestUser, id: string, over: Record<string, unknown> = {}) =>
+    user.client.rpc('save_resource_verse', {
+      p_resource: id, p_verse: 1, p_base_bete: 'a b c', p_base_literal: 'x y z',
+      p_bete_line: null, p_literal_line: null, p_blocks: THREE, ...over,
+    })
+
+  const rows = async (id: string) =>
+    must(await admin.from('resource_word_blocks').select('*').eq('resource_id', id).order('verse_no').order('position'), 'rows')
+
+  it('saves a balanced verse for the contributor and numbers the blocks by sentence order', async () => {
+    const id = await resource(alice.id, 'a b c\nd e', 'x y z\nw v')
+    const res = await save(alice, id, { p_blocks: [BLOCK([2], [0]), BLOCK([0, 1], [1, 2])] })
+    expect(res.error).toBeNull()
+    expect(res.data.saved).toBe(2)
+    const saved = await rows(id)
+    expect(saved.map(r => [r.position, r.bete_idx, r.gloss_idx])).toEqual([[1, [0, 1], [1, 2]], [2, [2], [0]]])
+    expect(saved[0].verse_hash).toBe(res.data.verse_hash)
+  })
+
+  it('refuses anyone but the contributor, and anonymous callers', async () => {
+    const id = await resource(alice.id, 'a b c', 'x y z')
+    expect((await save(bob, id)).error?.message).toContain('not_owner')
+    expect((await save({ client: anonClient() } as TestUser, id)).error?.code).toBe('42501')
+    expect(await rows(id)).toHaveLength(0)
+  })
+
+  it('refuses a save built on an older text and writes nothing', async () => {
+    const id = await resource(alice.id, 'a b c', 'x y z')
+    ok(await admin.from('community_texts').update({ content_bete: 'a b d' }).eq('id', id), 'edit elsewhere')
+    const res = await save(alice, id)
+    expect(res.error?.message).toContain('text_changed')
+    expect(await rows(id)).toHaveLength(0)
+  })
+
+  it.each([
+    ['empty_block', [BLOCK([], [0])]],
+    ['bete_index_out_of_range', [BLOCK([0], [0]), BLOCK([1], [1]), BLOCK([5], [2])]],
+    ['bete_index_not_increasing', [BLOCK([1, 0], [0]), BLOCK([2], [1, 2])]],
+    ['bete_word_in_two_blocks', [BLOCK([0, 1], [0]), BLOCK([1], [1]), BLOCK([2], [2])]],
+    ['bete_word_uncovered', [BLOCK([0], [0]), BLOCK([1], [1, 2])]],
+    ['gloss_index_out_of_range', [BLOCK([0], [0]), BLOCK([1], [1]), BLOCK([2], [9])]],
+    ['gloss_word_in_two_blocks', [BLOCK([0], [0]), BLOCK([1], [0, 1]), BLOCK([2], [2])]],
+    ['gloss_word_uncovered', [BLOCK([0], [0]), BLOCK([1, 2], [1])]],
+    ['block_without_gloss', [BLOCK([0], [0, 1, 2]), BLOCK([1], []), BLOCK([2], [])]],
+    ['solo_has_gloss', [BLOCK([0], [0]), BLOCK([1], [1], { solo: true, is_marker: true }), BLOCK([2], [2])]],
+    ['solo_not_marker', [BLOCK([0], [0, 1]), BLOCK([1], [], { solo: true }), BLOCK([2], [2])]],
+  ])('rejects %s', async (code, blocks) => {
+    const id = await resource(alice.id, 'a b c', 'x y z')
+    const res = await save(alice, id, { p_blocks: blocks })
+    expect(res.error?.message).toContain(code)
+    expect(await rows(id)).toHaveLength(0)
+  })
+
+  it('replaces the previous blocks of the verse atomically and leaves other verses alone', async () => {
+    const id = await resource(alice.id, 'a b c\nd e', 'x y z\nw v')
+    expect((await save(alice, id)).error).toBeNull()
+    expect((await save(alice, id, { p_verse: 2, p_base_bete: 'd e', p_base_literal: 'w v', p_blocks: [BLOCK([0], [0]), BLOCK([1], [1])] })).error).toBeNull()
+    expect((await save(alice, id, { p_blocks: [BLOCK([0, 1, 2], [0, 1, 2])] })).error).toBeNull()
+    const saved = await rows(id)
+    expect(saved.map(r => [r.verse_no, r.position])).toEqual([[1, 1], [2, 1], [2, 2]])
+    // a failing save leaves the verse as it was
+    expect((await save(alice, id, { p_blocks: [BLOCK([0], [0])] })).error).not.toBeNull()
+    expect((await rows(id)).filter(r => r.verse_no === 1)).toHaveLength(1)
+  })
+
+  it('applies a corrected line to the text and keeps blank lines and the usage index', async () => {
+    const id = await resource(alice.id, 'a b c\n\nd e', 'x y z\n\nw v')
+    const res = await save(alice, id, {
+      p_bete_line: 'a bb c', p_literal_line: 'x yy z',
+      p_blocks: THREE,
+    })
+    expect(res.error).toBeNull()
+    const text = must(await admin.from('community_texts').select('content_bete, content_literal').eq('id', id).single(), 'text')
+    expect(text.content_bete).toBe('a bb c\n\nd e')
+    expect(text.content_literal).toBe('x yy z\n\nw v')
+    const lines = must(await admin.from('usage_lines').select('bete').eq('source_type', 'resource').eq('source_id', id), 'usage')
+    expect(lines.map(l => l.bete)).toContain('a bb c')
+    // the saved verse is not stale after its own correction
+    const { data } = await anonClient().rpc('get_resource_words', { p_resource: id })
+    expect(data[0].stale).toBe(false)
+  })
+
+  it('lets a correction merge two words into one', async () => {
+    const id = await resource(alice.id, 'a en men c', 'x y z')
+    const res = await save(alice, id, {
+      p_base_bete: 'a en men c', p_bete_line: 'a enmen c', p_blocks: THREE,
+    })
+    expect(res.error).toBeNull()
+  })
+
+  it('stores a marker with no mot à mot counterpart and its shared meaning', async () => {
+    const id = await resource(alice.id, 'en ye zigbleh yi', 'je demain venir')
+    const res = await save(alice, id, {
+      p_base_bete: 'en ye zigbleh yi', p_base_literal: 'je demain venir',
+      p_blocks: [
+        BLOCK([0], [0]),
+        BLOCK([1], [], { is_marker: true, solo: true, marker: { type: ' temps ', meaning: 'futur', french: 'aller + verbe' } }),
+        BLOCK([2], [1]),
+        BLOCK([3], [2]),
+      ],
+    })
+    expect(res.error).toBeNull()
+    const markers = must(await admin.from('resource_word_markers').select('*').eq('resource_id', id), 'markers')
+    expect(markers).toHaveLength(1)
+    expect(markers[0]).toMatchObject({ word_norm: 'ye', word: 'ye', marker_type: 'temps', marker_meaning: 'futur', marker_french: 'aller + verbe' })
+    const { data } = await anonClient().rpc('get_resource_words', { p_resource: id })
+    expect(data[0].blocks[1]).toMatchObject({ solo: true, is_marker: true, gloss_idx: [], marker: { meaning: 'futur' } })
+  })
+
+  it('shares one meaning per word across verses and removes markers nothing uses any more', async () => {
+    const id = await resource(alice.id, 'en ye\nen ye', 'je va\nje va')
+    const marker = { type: 'temps', meaning: 'futur', french: '' }
+    const verse = (n: number, withMarker: boolean) =>
+      save(alice, id, {
+        p_verse: n, p_base_bete: 'en ye', p_base_literal: 'je va',
+        p_blocks: [BLOCK([0], [0]), withMarker ? BLOCK([1], [1], { is_marker: true, marker }) : BLOCK([1], [1])],
+      })
+    expect((await verse(1, true)).error).toBeNull()
+    expect((await verse(2, true)).error).toBeNull()
+    expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(1)
+    expect((await verse(1, false)).error).toBeNull()
+    expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(1) // verse 2 still uses it
+    expect((await verse(2, false)).error).toBeNull()
+    expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(0)
+  })
+
+  it('counts words like the browser with tabs, non-breaking spaces and Windows line endings', async () => {
+    const id = await resource(alice.id, 'x\r\na\u00a0b\tc  d', 'p q r s')
+    const res = await save(alice, id, {
+      p_verse: 2, p_base_bete: 'a\u00a0b\tc  d', p_base_literal: 'p q r s',
+      p_blocks: [BLOCK([0], [0]), BLOCK([1], [1]), BLOCK([2], [2]), BLOCK([3], [3])],
+    })
+    // the literal field has a single line, so verse 2 has no mot à mot
+    expect(res.error?.message).toContain('literal_missing')
+    const id2 = await resource(alice.id, 'x\r\na\u00a0b\tc  d', 'y\r\np q r s')
+    const ok = await save(alice, id2, {
+      p_verse: 2, p_base_bete: 'a\u00a0b\tc  d', p_base_literal: 'p q r s',
+      p_blocks: [BLOCK([0], [0]), BLOCK([1], [1]), BLOCK([2], [2]), BLOCK([3], [3])],
+    })
+    expect(ok.error).toBeNull()
+  })
+
+  it('refuses a verse that does not exist', async () => {
+    const id = await resource(alice.id, 'a b c', 'x y z')
+    expect((await save(alice, id, { p_verse: 4 })).error?.message).toContain('verse_not_found')
+  })
+
+  it('deletes the blocks and markers with the resource', async () => {
+    const id = await resource(alice.id, 'a b c', 'x y z')
+    await save(alice, id, { p_blocks: [BLOCK([0], [0]), BLOCK([1], [1], { is_marker: true, marker: { type: '', meaning: '', french: '' } }), BLOCK([2], [2])] })
+    ok(await admin.from('community_texts').delete().eq('id', id), 'delete resource')
+    expect(await rows(id)).toHaveLength(0)
+    expect(must(await admin.from('resource_word_markers').select('id').eq('resource_id', id), 'm')).toHaveLength(0)
+  })
+
+  it('is not callable by anonymous clients', async () => {
+    const res = await anonClient().rpc('save_resource_verse', {
+      p_resource: '00000000-0000-0000-0000-000000000000', p_verse: 1, p_base_bete: '', p_base_literal: '',
+      p_bete_line: null, p_literal_line: null, p_blocks: [],
+    })
+    expect(res.error?.code).toBe('42501')
   })
 })
