@@ -27,6 +27,29 @@ export interface MarkerInfo {
   french: string | null
 }
 
+export interface LexSense {
+  id: string
+  french: string
+  context: string | null
+}
+
+/** The lexicon entry a block links to, as returned by get_resource_words / find_lexicon_candidates. */
+export interface LexSummary {
+  id: string
+  kind: 'word' | 'marker'
+  spelling: string
+  ipa: string | null
+  dialect: string
+  pos: string[]
+  description: string | null
+  synonyms: string[]
+  marker: MarkerInfo
+  senses: LexSense[]
+  /** The sense used by the block (null for a candidate or when the sense was deleted). */
+  senseId: string | null
+  spellings: string[]
+}
+
 /** One block as returned by get_resource_words. */
 export interface WordBlock {
   position: number
@@ -37,6 +60,7 @@ export interface WordBlock {
   note: string | null
   composition: string | null
   marker: MarkerInfo | null
+  lex?: LexSummary | null
 }
 
 /** One verse with its blocks, as returned by get_resource_words. */
@@ -56,7 +80,8 @@ export interface BlockInput {
   solo: boolean
   note: string | null
   composition: string | null
-  marker?: { type: string; meaning: string; french: string }
+  lexicon_id?: string | null
+  translation_id?: string | null
 }
 
 const EDGE = /^[ \t\u00A0]+|[ \t\u00A0]+$/g
@@ -232,6 +257,7 @@ export interface ReaderToken {
   isMarker: boolean
   solo: boolean
   marker: MarkerInfo | null
+  lex: LexSummary | null
 }
 
 /**
@@ -259,6 +285,7 @@ export function readerTokens(verse: VerseWords): ReaderToken[] {
         isMarker: b.is_marker,
         solo: b.solo,
         marker: b.marker,
+        lex: b.lex ?? null,
       }),
     )
   }

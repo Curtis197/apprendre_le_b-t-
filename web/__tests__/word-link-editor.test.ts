@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  addWords, afterSave, attachUnits, buildCells, collectMarkers, derive, editWords, initDraft, markSaved, readiness,
-  effectiveMarkers, pruneMarkerEdits, readerWillShowWords, readinessMessage, reconcileDraft, removeWord, setKind,
-  setMarkerEdit, setMeta, splitUnit, staleVerseNumbers, toSave, unitMeta,
-  type MarkerDef, type VerseDraft,
+  addWords, afterSave, attachUnits, buildCells, derive, editWords, initDraft, markSaved, readiness,
+  readerWillShowWords, readinessMessage, reconcileDraft, removeWord, setKind, setLink,
+  setMeta, splitUnit, staleVerseNumbers, toSave, unitMeta, unlinkedMarkers,
+  type VerseDraft,
 } from '../lib/word-link-editor'
 import { blockKey, labelOf, splitWords, type Unit, type VerseWords } from '../lib/word-blocks'
 
@@ -143,7 +143,7 @@ describe('markers', () => {
     let d = mk()
     expect(derive(d).balanced).toBe(false)
     d = setKind(d, '1', 'marker', true)
-    expect(d.meta['1']).toEqual({ isMarker: true, solo: true, note: '', composition: '' })
+    expect(d.meta['1']).toEqual({ isMarker: true, solo: true, note: '', composition: '', lexiconId: null, translationId: null })
     const r = derive(d)
     expect(r.balanced).toBe(true)
     expect(r.pairs.map(p => [labelOf(r.bw, p.b!.idx), p.g ? labelOf(r.gw, p.g.idx) : null])).toEqual([
@@ -156,98 +156,29 @@ describe('markers', () => {
     expect(d.meta['1']).toMatchObject({ isMarker: false, solo: false })
   })
 
-  it('the meaning of a marker is shared by word, whatever the case or accents', () => {
-    const e1 = setMarkerEdit({}, {}, 'Yé', { meaning: 'futur' })
-    expect(Object.values(e1)).toEqual([{ type: '', meaning: 'futur', french: '' }])
-    const e2 = setMarkerEdit({}, e1, 'ye', { french: 'aller + verbe' })
-    expect(Object.keys(e2)).toEqual(Object.keys(e1))
-    expect(Object.values(e2)).toEqual([{ type: '', meaning: 'futur', french: 'aller + verbe' }])
-  })
-
-  it('an edit starts from the server meaning and does not mutate its inputs', () => {
-    const server = { ye: { type: 'temps', meaning: 'futur', french: '' } }
-    const edits = setMarkerEdit(server, {}, 'ye', { french: 'aller + verbe' })
-    expect(edits.ye).toEqual({ type: 'temps', meaning: 'futur', french: 'aller + verbe' })
-    expect(server.ye.french).toBe('')
-    expect(effectiveMarkers(server, edits).ye.french).toBe('aller + verbe')
-    expect(effectiveMarkers(server, {}).ye).toEqual(server.ye)
-  })
-
-  it('drops an edit the server holds exactly and keeps a different one', () => {
-    const server: Record<string, MarkerDef> = { ye: { type: 'temps', meaning: 'futur', french: '' }, na: { type: '', meaning: 'a', french: '' } }
-    const edits: Record<string, MarkerDef> = {
-      ye: { type: 'temps', meaning: 'futur', french: '' },
-      na: { type: '', meaning: 'b', french: '' },
-      zz: { type: '', meaning: 'new', french: '' },
-    }
-    expect(Object.keys(pruneMarkerEdits(server, edits)).sort()).toEqual(['na', 'zz'])
-  })
-
   it('lists the stale verse numbers', () => {
     const v = (verse_no: number, stale: boolean): VerseWords => ({ verse_no, stale, bete_line: 'a', literal_line: 'b', blocks: [] })
     expect(staleVerseNumbers([v(1, false), v(2, true), v(5, true)])).toEqual([2, 5])
     expect(staleVerseNumbers([])).toEqual([])
-  })
-
-  it('collects the markers already defined in a resource from the saved verses', () => {
-    const saved: VerseWords = {
-      verse_no: 1, stale: false, bete_line: 'en ye', literal_line: 'je va',
-      blocks: [
-        { position: 1, bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, note: null, composition: null, marker: null },
-        { position: 2, bete_idx: [1], gloss_idx: [1], is_marker: true, solo: false, note: null, composition: null, marker: { type: 'temps', meaning: 'futur', french: null } },
-      ],
-    }
-    expect(collectMarkers([saved])).toEqual({ ye: { type: 'temps', meaning: 'futur', french: '' } })
   })
 })
 
 describe('toSave / markSaved', () => {
   it('sends only the lines that were corrected, and the base lines never change until saved', () => {
     const d0 = draftOf(2)
-    expect(toSave(d0, {}).beteLine).toBeNull()
-    expect(toSave(d0, {}).literalLine).toBeNull()
+    expect(toSave(d0).beteLine).toBeNull()
+    expect(toSave(d0).literalLine).toBeNull()
     const d1 = addWords(d0, 'b', 5, ['x'])
-    expect(toSave(d1, {}).beteLine).toBe('Nya anyi ziê a lilê x')
+    expect(toSave(d1).beteLine).toBe('Nya anyi ziê a lilê x')
     expect(d1.baseBete).toBe(BETE[2])
-    expect(toSave(markSaved(d1), {}).beteLine).toBeNull()
-  })
-
-  it('builds one block per pair, marker blocks carrying their meaning and notes trimmed', () => {
-    let d = initDraft(2, 'en ye zigbleh yi', 'je demain venir', undefined)
-    d = setKind(d, '1', 'marker', true)
-    const markers = setMarkerEdit({}, {}, 'ye', { type: 'temps', meaning: 'futur', french: 'aller + verbe' })
-    d = setMeta(d, '0', { note: '  sujet  ' })
-    const blocks = toSave(d, markers).blocks
-    expect(blocks).toHaveLength(4)
-    expect(blocks[0]).toEqual({ bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, note: 'sujet', composition: null })
-    expect(blocks[1]).toEqual({
-      bete_idx: [1], gloss_idx: [], is_marker: true, solo: true, note: null, composition: null,
-      marker: { type: 'temps', meaning: 'futur', french: 'aller + verbe' },
-    })
-  })
-
-  it('a meaning set while editing one verse is carried by the save of another verse with the same word', () => {
-    const verse1 = setKind(initDraft(1, 'en ye', 'je va', undefined), '1', 'marker', false)
-    const verse4 = setKind(initDraft(4, 'ye tchi', 'va x', undefined), '0', 'marker', false)
-    expect(derive(verse1).balanced && derive(verse4).balanced).toBe(true)
-    const edits = setMarkerEdit({}, {}, 'ye', { type: 'temps', meaning: 'futur' })
-    const markers = effectiveMarkers({}, edits)
-    expect(toSave(verse1, markers).blocks[1].marker).toEqual({ type: 'temps', meaning: 'futur', french: '' })
-    expect(toSave(verse4, markers).blocks[0].marker).toEqual({ type: 'temps', meaning: 'futur', french: '' })
-  })
-
-  it('with no edit a marker block sends the server meaning, and with neither an empty marker', () => {
-    const d = setKind(initDraft(4, 'ye tchi', 'va x', undefined), '0', 'marker', false)
-    const server = { ye: { type: 'temps', meaning: 'futur', french: 'aller' } }
-    expect(toSave(d, effectiveMarkers(server, {})).blocks[0].marker).toEqual(server.ye)
-    expect(toSave(d, {}).blocks[0].marker).toEqual({ type: '', meaning: '', french: '' })
+    expect(toSave(markSaved(d1)).beteLine).toBeNull()
   })
 
   it('round-trips: a saved verse reopens as the same pairs, notes and markers', () => {
     let d = attachUnits(draftOf(3), 'b', 9, 2)
     d = attachUnits(d, 'b', 18, 11)
     d = setMeta(d, '2-9', { note: 'verbe + particule' })
-    const blocks = toSave(d, {}).blocks
+    const blocks = toSave(d).blocks
     const saved: VerseWords = {
       verse_no: 4, stale: false, bete_line: d.bete, literal_line: d.literal,
       blocks: blocks.map((b, i) => ({
@@ -264,7 +195,7 @@ describe('toSave / markSaved', () => {
   })
 
   it('on an unbalanced verse emits no block with an empty gloss unless solo', () => {
-    const blocks = toSave(initDraft(1, 'a b c', 'x y', undefined), {}).blocks
+    const blocks = toSave(initDraft(1, 'a b c', 'x y', undefined)).blocks
     expect(blocks.every(b => b.gloss_idx.length > 0 || b.solo)).toBe(true)
   })
 
@@ -354,7 +285,7 @@ describe('buildCells', () => {
 describe('unitMeta', () => {
   it('returns empty meta for a block that has none', () => {
     const d = draftOf(0)
-    expect(unitMeta(d, { head: 0, idx: [0] })).toEqual({ isMarker: false, solo: false, note: '', composition: '' })
+    expect(unitMeta(d, { head: 0, idx: [0] })).toEqual({ isMarker: false, solo: false, note: '', composition: '', lexiconId: null, translationId: null })
   })
 })
 
@@ -365,7 +296,7 @@ describe('afterSave', () => {
     const r = afterSave(current, sent)
     expect(r.bete).toBe(sent.bete + ' x')
     expect(r.baseBete).toBe(sent.bete)
-    expect(toSave(r, {}).beteLine).toBe(sent.bete + ' x')
+    expect(toSave(r).beteLine).toBe(sent.bete + ' x')
   })
 })
 
@@ -390,5 +321,58 @@ describe('reconcileDraft', () => {
   })
   it('returns the server draft when nothing else exists', () => {
     expect(reconcileDraft(initial, undefined, undefined, null)).toBe(initial)
+  })
+})
+
+describe('links in the draft', () => {
+  const draft = () => initDraft(1, 'en ye', 'je va', undefined)
+  const saved: VerseWords = {
+    verse_no: 1, stale: false, bete_line: 'en ye', literal_line: 'je va',
+    blocks: [
+      { position: 1, bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, note: null, composition: null, marker: null,
+        lex: { id: 'L1', kind: 'word', spelling: 'en', ipa: null, dialect: 'western', pos: [], description: null, synonyms: [],
+               marker: { type: null, meaning: null, french: null }, senses: [{ id: 'S1', french: 'je', context: null }], senseId: 'S1', spellings: [] } },
+      { position: 2, bete_idx: [1], gloss_idx: [1], is_marker: true, solo: false, note: null, composition: null, marker: null, lex: null },
+    ],
+  }
+
+  it('restores the entry and sense of saved blocks', () => {
+    const d = initDraft(1, 'en ye', 'je va', saved)
+    expect(d.meta['0']).toMatchObject({ lexiconId: 'L1', translationId: 'S1' })
+    expect(d.meta['1']).toMatchObject({ lexiconId: null, translationId: null, isMarker: true })
+  })
+
+  it('sends the link with each block', () => {
+    let d = setLink(draft(), '0', 'L1', 'S1')
+    const out = toSave(d).blocks
+    expect(out[0]).toMatchObject({ lexicon_id: 'L1', translation_id: 'S1' })
+    expect(out[1]).toMatchObject({ lexicon_id: null, translation_id: null })
+    expect('marker' in out[0]).toBe(false)
+    d = setLink(d, '0', null, null)
+    expect(toSave(d).blocks[0]).toMatchObject({ lexicon_id: null, translation_id: null })
+  })
+
+  it('drops the link when the block changes kind', () => {
+    let d = setLink(draft(), '1', 'L9', null)
+    d = setKind(d, '1', 'marker', false)
+    expect(d.meta['1']).toMatchObject({ isMarker: true, lexiconId: null, translationId: null })
+    d = setLink(d, '1', 'M1', null)
+    d = setKind(d, '1', 'word', false)
+    expect(d.meta['1']).toMatchObject({ isMarker: false, lexiconId: null })
+  })
+
+  it('keeps the link when the marker box is re-selected as marker (no kind change)', () => {
+    let d = setKind(draft(), '1', 'marker', false)
+    d = setLink(d, '1', 'M1', null)
+    d = setKind(d, '1', 'marker', true)
+    expect(d.meta['1']).toMatchObject({ lexiconId: 'M1', solo: true })
+  })
+
+  it('lists the marker blocks that have no entry yet', () => {
+    let d = setKind(draft(), '1', 'marker', false)
+    expect(unlinkedMarkers(d)).toEqual(['ye'])
+    d = setLink(d, '1', 'M1', null)
+    expect(unlinkedMarkers(d)).toEqual([])
+    void derive
   })
 })

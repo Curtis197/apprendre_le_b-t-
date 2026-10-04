@@ -3,26 +3,22 @@
 // (re-keying notes when blocks merge, index remapping after a correction, the save payload) is here.
 import {
   attachTo, autoGroup, blockKey, blockWords, buildUnits, contiguous, mapInsert, mapRemove, mapReplace,
-  nonEmptyLines, normWord, pairUnits, remapAtt, remapKeys, splitRuns, splitWords,
+  nonEmptyLines, pairUnits, remapAtt, remapKeys, splitRuns, splitWords,
   type BlockInput, type IndexMap, type Pair, type Side, type Unit, type VerseWords,
 } from './word-blocks'
 import { alignVerses, numberLines } from './verses'
-
-export interface MarkerDef {
-  type: string
-  meaning: string
-  french: string
-}
 
 export interface BlockMeta {
   isMarker: boolean
   solo: boolean
   note: string
   composition: string
+  /** The lexicon entry and the sense (translation) this block uses. */
+  lexiconId: string | null
+  translationId: string | null
 }
 
-export const EMPTY_META: BlockMeta = { isMarker: false, solo: false, note: '', composition: '' }
-export const EMPTY_MARKER: MarkerDef = { type: '', meaning: '', french: '' }
+export const EMPTY_META: BlockMeta = { isMarker: false, solo: false, note: '', composition: '', lexiconId: null, translationId: null }
 
 export interface VerseDraft {
   verseNo: number
@@ -48,24 +44,6 @@ export interface Derived {
   balanced: boolean
 }
 
-/** Marker meanings already saved in the resource, shared by every verse. */
-export function collectMarkers(verses: VerseWords[]): Record<string, MarkerDef> {
-  const out: Record<string, MarkerDef> = {}
-  for (const v of verses) {
-    if (v.stale) continue
-    const bw = splitWords(v.bete_line)
-    for (const b of v.blocks) {
-      if (!b.is_marker || !b.marker) continue
-      out[normWord(blockWords(bw, b.bete_idx))] = {
-        type: b.marker.type ?? '',
-        meaning: b.marker.meaning ?? '',
-        french: b.marker.french ?? '',
-      }
-    }
-  }
-  return out
-}
-
 /** A draft from a verse's lines and, when the verse was saved and is not stale, its blocks. */
 export function initDraft(
   verseNo: number,
@@ -88,6 +66,8 @@ export function initDraft(
       solo: b.solo,
       note: b.note ?? '',
       composition: b.composition ?? '',
+      lexiconId: b.lex?.id ?? null,
+      translationId: b.lex?.senseId ?? null,
     }
   }
   return { ...base, attB, attG, meta }
@@ -146,46 +126,29 @@ export function setMeta(d: VerseDraft, key: string, patch: Partial<BlockMeta>): 
   return { ...d, meta: { ...d.meta, [key]: { ...(d.meta[key] ?? EMPTY_META), ...patch } } }
 }
 
-/** Word or grammatical marker. A marker may be flagged `solo` (no mot à mot counterpart). */
+/**
+ * Word or grammatical marker. A marker may be flagged `solo` (no mot à mot counterpart).
+ * Changing the kind drops the link: a word entry does not fit a marker block and the reverse.
+ */
 export function setKind(d: VerseDraft, key: string, kind: 'word' | 'marker', solo: boolean): VerseDraft {
-  return setMeta(d, key, kind === 'marker' ? { isMarker: true, solo } : { isMarker: false, solo: false })
-}
-
-// ── Marker meanings: ONE map for the whole editor, keyed by normWord of the block's words ───────
-// They are shared by every verse of the resource, so they do not live in a verse draft: a verse that
-// was never touched must send the meaning set elsewhere, not an empty one that would erase it.
-
-/** What the editor shows and saves: the server's meanings, overridden by the edits made here. */
-export function effectiveMarkers(
-  server: Record<string, MarkerDef>,
-  edits: Record<string, MarkerDef>,
-): Record<string, MarkerDef> {
-  return { ...server, ...edits }
-}
-
-/** The new map of edits after changing the meaning of a marker. `words` is the block's words. */
-export function setMarkerEdit(
-  server: Record<string, MarkerDef>,
-  edits: Record<string, MarkerDef>,
-  words: string,
-  patch: Partial<MarkerDef>,
-): Record<string, MarkerDef> {
-  const key = normWord(words)
-  return { ...edits, [key]: { ...(edits[key] ?? server[key] ?? EMPTY_MARKER), ...patch } }
-}
-
-/** Drops the edits the server now holds exactly (after a save and a refresh). */
-export function pruneMarkerEdits(
-  server: Record<string, MarkerDef>,
-  edits: Record<string, MarkerDef>,
-): Record<string, MarkerDef> {
-  const out: Record<string, MarkerDef> = {}
-  for (const [k, m] of Object.entries(edits)) {
-    const s = server[k]
-    if (s && s.type === m.type && s.meaning === m.meaning && s.french === m.french) continue
-    out[k] = m
+  const cur = d.meta[key] ?? EMPTY_META
+  if (kind === 'marker') {
+    return setMeta(d, key, cur.isMarker ? { solo } : { isMarker: true, solo, lexiconId: null, translationId: null })
   }
-  return out
+  return setMeta(d, key, cur.isMarker ? { isMarker: false, solo: false, lexiconId: null, translationId: null } : { isMarker: false, solo: false })
+}
+
+/** Link (or unlink with nulls) the block `key` to a lexicon entry and one of its senses. */
+export function setLink(d: VerseDraft, key: string, lexiconId: string | null, translationId: string | null): VerseDraft {
+  return setMeta(d, key, { lexiconId, translationId: lexiconId ? translationId : null })
+}
+
+/** The words of the marker blocks that still have no lexicon entry (the database refuses them). */
+export function unlinkedMarkers(d: VerseDraft): string[] {
+  const { bw, bu } = derive(d)
+  return bu
+    .filter(u => d.meta[blockKey(u)]?.isMarker && !d.meta[blockKey(u)]?.lexiconId)
+    .map(u => blockWords(bw, u.idx))
 }
 
 /** Numbers of the verses saved blocks no longer match (their text changed elsewhere). */
@@ -255,23 +218,22 @@ export interface SavePayload {
   blocks: BlockInput[]
 }
 
-/** `markers` is the effective map of the editor (see effectiveMarkers). */
-export function toSave(d: VerseDraft, markers: Record<string, MarkerDef>): SavePayload {
-  const { bw, pairs } = derive(d)
+export function toSave(d: VerseDraft): SavePayload {
+  const { pairs } = derive(d)
   const blocks: BlockInput[] = pairs
     .filter((p): p is Pair & { b: Unit } => p.b != null && (p.g != null || p.solo === true))
     .map(p => {
       const m = d.meta[blockKey(p.b)] ?? EMPTY_META
-      const block: BlockInput = {
+      return {
         bete_idx: p.b.idx,
         gloss_idx: p.g ? p.g.idx : [],
         is_marker: m.isMarker,
         solo: m.solo,
         note: m.note.trim() || null,
         composition: m.composition.trim() || null,
+        lexicon_id: m.lexiconId ?? null,
+        translation_id: m.translationId ?? null,
       }
-      if (m.isMarker) block.marker = markers[normWord(blockWords(bw, p.b.idx))] ?? EMPTY_MARKER
-      return block
     })
   return {
     beteLine: d.bete !== d.baseBete ? d.bete : null,
