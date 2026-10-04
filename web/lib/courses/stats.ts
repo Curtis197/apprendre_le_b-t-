@@ -6,12 +6,30 @@ export interface ProgressRow {
   progress_percent: number | string | null
   score: number | string | null
   completed_at: string | null
+  last_activity_at?: string | null
 }
+
+/** A learner with no activity for this many days is flagged as inactive. */
+export const INACTIVE_AFTER_DAYS = 14
+
+export type LearnerStatus = 'not_started' | 'active' | 'inactive' | 'completed'
+export type LearnerFilter = LearnerStatus | 'all'
+export type LearnerSort = 'progress' | 'activity'
 
 export interface StatsLesson {
   id: string
   title: string
   kind: string
+}
+
+export interface LearnerLessonDetail {
+  lessonId: string
+  title: string
+  kind: string
+  percent: number
+  score: number | null
+  done: boolean
+  at: string | null
 }
 
 export interface LearnerSummary {
@@ -21,6 +39,9 @@ export interface LearnerSummary {
   completedLessons: number
   percent: number
   averageScore: number | null
+  status: LearnerStatus
+  lastActivityAt: string | null
+  lessons: LearnerLessonDetail[]
 }
 
 export interface LessonStat {
@@ -30,6 +51,8 @@ export interface LessonStat {
   completedCount: number
   completionRate: number
   averageScore: number | null
+  /** Completion-rate points lost versus the previous lesson (never negative); null for the first lesson. */
+  dropOffFromPrevious: number | null
 }
 
 export interface CourseStats {
@@ -38,6 +61,8 @@ export interface CourseStats {
   fullyCompletedCount: number
   learners: LearnerSummary[]
   lessons: LessonStat[]
+  /** The lesson with the largest positive drop-off, or null when nobody drops. */
+  biggestDropLessonId: string | null
 }
 
 function num(value: number | string | null): number | null {
@@ -51,7 +76,11 @@ function mean(values: number[]): number | null {
 }
 
 /** Per-learner and per-lesson aggregates from the flat rows of `course_progress_rows`. */
-export function summarizeCourseStats(rows: ProgressRow[], lessons: StatsLesson[]): CourseStats {
+export function summarizeCourseStats(
+  rows: ProgressRow[],
+  lessons: StatsLesson[],
+  now: Date = new Date(),
+): CourseStats {
   const lessonIds = new Set(lessons.map(l => l.id))
 
   const learnersById = new Map<
@@ -59,7 +88,7 @@ export function summarizeCourseStats(rows: ProgressRow[], lessons: StatsLesson[]
     {
       name: string
       enrolledAt: string
-      byLesson: Map<string, { percent: number; score: number | null; done: boolean }>
+      byLesson: Map<string, { percent: number; score: number | null; done: boolean; at: string | null }>
     }
   >()
   for (const r of rows) {
@@ -74,6 +103,7 @@ export function summarizeCourseStats(rows: ProgressRow[], lessons: StatsLesson[]
         percent,
         score: num(r.score),
         done: percent >= 100 || Boolean(r.completed_at),
+        at: r.last_activity_at ?? r.completed_at ?? null,
       })
     }
   }
@@ -81,13 +111,29 @@ export function summarizeCourseStats(rows: ProgressRow[], lessons: StatsLesson[]
   const learners: LearnerSummary[] = [...learnersById.entries()].map(([userId, l]) => {
     const entries = [...l.byLesson.values()]
     const percentSum = entries.reduce((sum, e) => sum + e.percent, 0)
+    const completedLessons = entries.filter(e => e.done).length
+    const lastActivityAt = latest(entries.map(e => e.at))
     return {
       userId,
       name: l.name,
       enrolledAt: l.enrolledAt,
-      completedLessons: entries.filter(e => e.done).length,
+      completedLessons,
       percent: lessons.length === 0 ? 0 : Math.round(percentSum / lessons.length),
       averageScore: mean(entries.flatMap(e => (e.score === null ? [] : [e.score]))),
+      status: learnerStatus(entries.length, completedLessons, lessons.length, lastActivityAt, now),
+      lastActivityAt,
+      lessons: lessons.map(lesson => {
+        const e = l.byLesson.get(lesson.id)
+        return {
+          lessonId: lesson.id,
+          title: lesson.title,
+          kind: lesson.kind,
+          percent: e?.percent ?? 0,
+          score: e?.score ?? null,
+          done: e?.done ?? false,
+          at: e?.at ?? null,
+        }
+      }),
     }
   })
   learners.sort((a, b) => a.percent - b.percent || a.name.localeCompare(b.name, 'fr'))
@@ -106,8 +152,19 @@ export function summarizeCourseStats(rows: ProgressRow[], lessons: StatsLesson[]
       completedCount,
       completionRate: enrolledCount === 0 ? 0 : Math.round((completedCount / enrolledCount) * 100),
       averageScore: mean(entries.flatMap(e => (e.score === null ? [] : [e.score]))),
+      dropOffFromPrevious: null,
     }
   })
+  let biggestDropLessonId: string | null = null
+  let biggestDrop = 0
+  for (let i = 1; i < lessonStats.length; i++) {
+    const drop = Math.max(0, lessonStats[i - 1].completionRate - lessonStats[i].completionRate)
+    lessonStats[i].dropOffFromPrevious = drop
+    if (drop > biggestDrop) {
+      biggestDrop = drop
+      biggestDropLessonId = lessonStats[i].lessonId
+    }
+  }
 
   return {
     enrolledCount,
@@ -117,5 +174,41 @@ export function summarizeCourseStats(rows: ProgressRow[], lessons: StatsLesson[]
       lessons.length === 0 ? 0 : learners.filter(l => l.completedLessons === lessons.length).length,
     learners,
     lessons: lessonStats,
+    biggestDropLessonId,
   }
+}
+
+function latest(dates: (string | null)[]): string | null {
+  let best: string | null = null
+  for (const d of dates) {
+    if (d && (best === null || Date.parse(d) > Date.parse(best))) best = d
+  }
+  return best
+}
+
+function learnerStatus(
+  touchedLessons: number,
+  completedLessons: number,
+  totalLessons: number,
+  lastActivityAt: string | null,
+  now: Date,
+): LearnerStatus {
+  if (totalLessons > 0 && completedLessons === totalLessons) return 'completed'
+  if (touchedLessons === 0) return 'not_started'
+  if (lastActivityAt === null) return 'active'
+  const idleDays = (now.getTime() - Date.parse(lastActivityAt)) / 86_400_000
+  return idleDays > INACTIVE_AFTER_DAYS ? 'inactive' : 'active'
+}
+
+/** Status filter plus sort: 'activity' puts never-active, then longest-idle learners first. */
+export function filterLearners(
+  learners: LearnerSummary[],
+  filter: LearnerFilter,
+  sort: LearnerSort,
+): LearnerSummary[] {
+  const kept = filter === 'all' ? [...learners] : learners.filter(l => l.status === filter)
+  const byName = (a: LearnerSummary, b: LearnerSummary) => a.name.localeCompare(b.name, 'fr')
+  if (sort === 'progress') return kept.sort((a, b) => a.percent - b.percent || byName(a, b))
+  const ts = (l: LearnerSummary) => (l.lastActivityAt ? Date.parse(l.lastActivityAt) : -Infinity)
+  return kept.sort((a, b) => ts(a) - ts(b) || byName(a, b))
 }

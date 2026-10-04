@@ -549,6 +549,25 @@ export async function getPendingReviewsForTeacher(
   })
 }
 
+/** A learner's submissions still waiting for the teacher, within one course. */
+export async function getPendingSubmissionsForLearner(
+  client: SupabaseClient,
+  courseId: string,
+  userId: string,
+): Promise<{ id: string; lessonId: string; createdAt: string }[]> {
+  const { data: lessons } = await client.from('lessons').select('id').eq('course_id', courseId)
+  const lessonIds = (lessons ?? []).map(l => l.id)
+  if (lessonIds.length === 0) return []
+  const { data } = await client
+    .from('submissions')
+    .select('id, lesson_id, created_at')
+    .eq('user_id', userId)
+    .eq('status', 'submitted')
+    .in('lesson_id', lessonIds)
+    .order('created_at', { ascending: false })
+  return (data ?? []).map(s => ({ id: s.id, lessonId: s.lesson_id, createdAt: s.created_at }))
+}
+
 // ── Phase 5: Payment Queries ──────────────────────────────────────────────
 
 /** Fetches paid courses requesting admin approval for sale. */
