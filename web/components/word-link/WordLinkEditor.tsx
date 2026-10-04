@@ -59,7 +59,6 @@ export function WordLinkEditor({ resourceId, beteLines, literalLines, saved }: P
     const next = initial.map((d, i) =>
       reconcileDraft(d, draftsRef.current[i], baselineRef.current[i], readStored(resourceId, d.verseNo)),
     )
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration read of localStorage, re-run when the server sends new props
     setDrafts(next)
     setBaseline(initial.map(d => JSON.stringify(d)))
     setRestored(true)
