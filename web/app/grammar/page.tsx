@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase-server'
 import type { GrammarRule } from '@/lib/types'
 import { DialectSelector } from '@/components/DialectSelector'
 import { CorrectionBox } from '@/components/CorrectionBox'
+import { LessonMarkdown } from '@/components/LessonMarkdown'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -94,7 +95,7 @@ export default async function GrammarPage() {
                   <span className="text-muted-foreground">→</span>
                   <span className="font-mono bg-primary/10 text-primary rounded px-2 py-0.5">{rule.pattern_bete}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{rule.description}</p>
+                <LessonMarkdown source={rule.description} className="text-sm text-muted-foreground" />
                 {(rule.example_french || rule.example_bete) && (
                   <div className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground space-y-0.5">
                     {rule.example_french && <p>FR: <em>{rule.example_french}</em></p>}

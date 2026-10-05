@@ -10,6 +10,7 @@ import { useDialect } from '@/context/DialectContext'
 import { DIALECTS, DIALECT_KEYS, type DialectKey } from '@/lib/dialect'
 import { ContributionPronunciation } from '@/components/ContributionPronunciation'
 import { SimilarWords } from '@/components/SimilarWords'
+import { MarkdownField } from '@/components/MarkdownField'
 import { uploadPronunciation } from '@/lib/lexicon-audio-data'
 import {
   audioFailedMessage,
@@ -339,7 +340,14 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
           </select>
           <Input placeholder="Patron français (ex: verbe + é)" value={patternFr} onChange={e => setPatternFr(e.target.value)} />
           <Input placeholder="Patron bhété correspondant" value={patternBete} onChange={e => setPatternBete(e.target.value)} />
-          <Textarea placeholder="Description de la règle" value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+          <MarkdownField
+            id="rule-description"
+            placeholder="Description de la règle (Markdown possible : **gras**, listes…)"
+            value={description}
+            onChange={setDescription}
+            rows={6}
+            maxLength={5000}
+          />
           <Input placeholder="Exemple français (optionnel)" value={exFr} onChange={e => setExFr(e.target.value)} />
           <Input placeholder="Exemple bhété (optionnel)" value={exBete} onChange={e => setExBete(e.target.value)} />
         </div>
