@@ -102,3 +102,16 @@ export function audioFailedMessage(reason: string | null): string {
   const base = 'Mot enregistré, mais l’enregistrement audio n’a pas pu être envoyé : vous pourrez le refaire depuis la fiche du mot.'
   return reason ? `${base} (${reason})` : base
 }
+
+/** The word form looks for close lexicon entries from this many characters. */
+export function shouldSearchSimilar(text: string): boolean {
+  const t = text.trim()
+  return t.length >= 2 && t.length <= 100
+}
+
+export type SimilarKind = 'same' | 'variant'
+
+/** An exact match is the same word (it already exists); a normalised or near match is a variant spelling. */
+export function similarKind(c: { matchKind: 'exact' | 'norm' | 'near' }): SimilarKind {
+  return c.matchKind === 'exact' ? 'same' : 'variant'
+}

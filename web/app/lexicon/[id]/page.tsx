@@ -14,11 +14,13 @@ import { InterlinearGloss } from '@/components/InterlinearGloss'
 import { findUsages } from '@/lib/usages'
 import { UsageCard } from '@/components/UsageCard'
 import { PronunciationSection } from '@/components/lexicon/PronunciationSection'
+import { SpellingsSection } from '@/components/lexicon/SpellingsSection'
 import Link from 'next/link'
 
 type Entry = TLexiconEntry & {
   lexicon_examples: LexiconExample[]
   lexicon_translations: LexiconTranslation[]
+  lexicon_spellings: { id: string; spelling: string; created_by: string | null; created_at: string }[]
 }
 
 function truncateDescription(text: string, max = 160): string {
@@ -33,7 +35,7 @@ const getEntry = cache(async (id: string): Promise<Entry | null> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('lexicon')
-    .select('*, lexicon_examples(*), lexicon_translations(*)')
+    .select('*, lexicon_examples(*), lexicon_translations(*), lexicon_spellings(id, spelling, created_by, created_at)')
     .eq('id', id)
     .maybeSingle()
   return (data as Entry) ?? null
@@ -171,6 +173,10 @@ export default async function LexiconEntryPage({
           )}
         </section>
       )}
+      <SpellingsSection
+        lexiconId={entry.id}
+        items={[...(entry.lexicon_spellings ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))}
+      />
       <PronunciationSection lexiconId={entry.id} />
       <LexiconDescription lexiconId={entry.id} initial={descText} />
       {bete && (

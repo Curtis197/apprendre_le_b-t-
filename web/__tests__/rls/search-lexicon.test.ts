@@ -102,3 +102,39 @@ describe('search_lexicon', () => {
     expect([...idsOf(first), ...idsOf(rest)]).toEqual(idsOf(all))
   })
 })
+
+describe('search_lexicon and extra spellings', () => {
+  it('finds an entry by one of its extra spellings, ignoring case and accents', async () => {
+    const tag = `zv${uid()}`
+    const entry = must(
+      await admin
+        .from('lexicon')
+        .insert({ bete_word: `ipa-${tag}`, bete_phonetic: `lat-${tag}`, french_candidates: [], top_french: 'ciel', probability: 1, pos: ['noun'] })
+        .select('id')
+        .single(),
+      'entry',
+    ).id as string
+    must(await admin.from('lexicon_spellings').insert({ lexicon_id: entry, spelling: `Rhéhi${tag}` }).select('id').single(), 'spelling')
+
+    const search = async (q: string) =>
+      (must(await anonClient().rpc('search_lexicon', { q }), 'search') as { id: string }[]).map(r => r.id)
+    expect(await search(`rhehi${tag}`)).toContain(entry)
+    expect(await search(`RHÉHI${tag}`)).toContain(entry)
+    expect(await search(`nothing-${tag}`)).not.toContain(entry)
+  })
+
+  it('returns an entry once even when several of its forms match', async () => {
+    const tag = `zw${uid()}`
+    const entry = must(
+      await admin
+        .from('lexicon')
+        .insert({ bete_word: `ipa-${tag}`, bete_phonetic: `lat-${tag}`, french_candidates: [], top_french: 'eau', probability: 1, pos: ['noun'] })
+        .select('id')
+        .single(),
+      'entry',
+    ).id as string
+    must(await admin.from('lexicon_spellings').insert({ lexicon_id: entry, spelling: `alt-${tag}` }).select('id').single(), 'spelling')
+    const rows = must(await anonClient().rpc('search_lexicon', { q: tag }), 'search') as { id: string }[]
+    expect(rows.filter(r => r.id === entry)).toHaveLength(1)
+  })
+})

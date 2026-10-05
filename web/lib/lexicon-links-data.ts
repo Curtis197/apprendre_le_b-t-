@@ -139,3 +139,13 @@ export async function getEntry(client: SupabaseClient, lexiconId: string): Promi
   const { data, error } = await client.rpc('get_lexicon_entry', { p_id: lexiconId })
   return error ? null : parseLex(data)
 }
+
+/** Remove an extra spelling. Row-level security lets only its author or an admin do it. */
+export async function removeSpelling(client: SupabaseClient, spellingId: string): Promise<Result<true>> {
+  const { data, error } = await client.from('lexicon_spellings').delete().eq('id', spellingId).select('id')
+  if (error) return { data: null, error: lexErrorMessage(error.message) }
+  if (!data || data.length === 0) {
+    return { data: null, error: 'Retrait impossible : seul l’auteur de la graphie ou un administrateur peut la retirer.' }
+  }
+  return { data: true, error: null }
+}

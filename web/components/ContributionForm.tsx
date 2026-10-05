@@ -9,6 +9,7 @@ import { useContributeRefresh } from '@/context/ContributeRefreshContext'
 import { useDialect } from '@/context/DialectContext'
 import { DIALECTS, DIALECT_KEYS, type DialectKey } from '@/lib/dialect'
 import { ContributionPronunciation } from '@/components/ContributionPronunciation'
+import { SimilarWords } from '@/components/SimilarWords'
 import { uploadPronunciation } from '@/lib/lexicon-audio-data'
 import {
   audioFailedMessage,
@@ -239,6 +240,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
             value={wordBetePhonetic}
             onChange={e => setWordBetePhonetic(e.target.value)}
           />
+          {!initialId && <SimilarWords text={wordBetePhonetic} dialect={dialect} />}
           <Input
             placeholder="Transcription IPA (optionnel — si vous connaissez)"
             value={wordBeteIPA}
