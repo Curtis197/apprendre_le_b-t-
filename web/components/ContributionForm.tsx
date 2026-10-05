@@ -8,7 +8,11 @@ import { createClient } from '@/lib/supabase-browser'
 import { useContributeRefresh } from '@/context/ContributeRefreshContext'
 import { useDialect } from '@/context/DialectContext'
 import { DIALECTS, DIALECT_KEYS, type DialectKey } from '@/lib/dialect'
+import { ContributionPronunciation } from '@/components/ContributionPronunciation'
+import { uploadPronunciation } from '@/lib/lexicon-audio-data'
 import {
+  audioFailedMessage,
+  audioOutcome,
   buildExampleRow,
   buildWordClaimPayload,
   buildWordPayload,
@@ -50,6 +54,10 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
   const [wordExFrench, setWordExFrench] = useState('')
   // The word saved but its example sentence did not (two separate writes).
   const [exampleSaveFailed, setExampleSaveFailed] = useState(false)
+  // Optional recording kept in the browser until the entry exists, and what happened to it.
+  const [pronunciation, setPronunciation] = useState<Blob | null>(null)
+  const [audioFailedReason, setAudioFailedReason] = useState<string | null | undefined>(undefined) // undefined: no failure
+  const [recorderKey, setRecorderKey] = useState(0)
 
   // Grammar rule fields
   const [category, setCategory] = useState('verb')
@@ -72,6 +80,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
     setLoading(true)
     setSubmitError(null)
     setExampleSaveFailed(false)
+    setAudioFailedReason(undefined)
     const { data: { user } } = await supabaseRef.current.auth.getUser()
     if (!user) {
       setLoading(false)
@@ -126,6 +135,13 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
             }))
           if (exampleError) setExampleSaveFailed(true)
         }
+        if (!error && lexiconId) {
+          const sent = pronunciation
+            ? await uploadPronunciation(supabaseRef.current, { userId: user.id, lexiconId, blob: pronunciation })
+            : null
+          const outcome = audioOutcome({ attempted: pronunciation !== null, error: sent?.error ?? null })
+          if (outcome === 'failed') setAudioFailedReason(sent?.error ?? null)
+        }
       } else if (type === 'grammar_rule') {
         ({ error } = await supabaseRef.current.from('grammar_rules').insert({
           category, pattern_french: patternFr, pattern_bete: patternBete,
@@ -162,12 +178,18 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
           Le mot a bien été enregistré, mais la phrase d&apos;exemple n&apos;a pas pu l&apos;être.
         </p>
       )}
+      {audioFailedReason !== undefined && (
+        <p className="text-sm text-red-600">{audioFailedMessage(audioFailedReason)}</p>
+      )}
       <Button
         variant="outline"
         onClick={() => {
           // A stale sentence would attach itself to the next word.
           setWordExBete('')
           setWordExFrench('')
+          setPronunciation(null)
+          setAudioFailedReason(undefined)
+          setRecorderKey(k => k + 1)
           setSubmitted(false)
         }}
       >
@@ -184,7 +206,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
             key={t}
             variant={type === t ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setType(t)}
+            onClick={() => { setType(t); setPronunciation(null); setRecorderKey(k => k + 1) }}
           >
             {t === 'word' ? 'Mot du lexique' : t === 'expression' ? 'Expression' : 'Règle grammaticale'}
           </Button>
@@ -265,6 +287,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
               </p>
             )}
           </div>
+          <ContributionPronunciation key={recorderKey} blob={pronunciation} onChange={setPronunciation} disabled={loading} />
         </div>
       ) : type === 'expression' ? (
         <div className="space-y-3">

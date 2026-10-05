@@ -88,3 +88,17 @@ export function contributionErrorMessage(error: unknown): string {
   }
   return GENERIC_ERROR
 }
+
+/** What happened to the optional recording that goes with a new word. */
+export type AudioOutcome = 'none' | 'saved' | 'failed'
+
+export function audioOutcome(a: { attempted: boolean; error: string | null }): AudioOutcome {
+  if (!a.attempted) return 'none'
+  return a.error ? 'failed' : 'saved'
+}
+
+/** The word is saved even when its recording is not: say so, and how to redo it. */
+export function audioFailedMessage(reason: string | null): string {
+  const base = 'Mot enregistré, mais l’enregistrement audio n’a pas pu être envoyé : vous pourrez le refaire depuis la fiche du mot.'
+  return reason ? `${base} (${reason})` : base
+}

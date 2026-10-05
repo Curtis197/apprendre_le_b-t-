@@ -3,6 +3,8 @@ import {
   buildExampleRow,
   buildWordClaimPayload,
   buildWordPayload,
+  audioFailedMessage,
+  audioOutcome,
   contributionErrorMessage,
   exampleState,
   WORD_ALREADY_CLAIMED,
@@ -116,5 +118,27 @@ describe('contributionErrorMessage', () => {
     expect(contributionErrorMessage({ code: '42501' })).toBe("Erreur lors de l'envoi. Veuillez réessayer.")
     expect(contributionErrorMessage(null)).toBe("Erreur lors de l'envoi. Veuillez réessayer.")
     expect(contributionErrorMessage(new Error('boom'))).toBe("Erreur lors de l'envoi. Veuillez réessayer.")
+  })
+})
+
+describe('audioOutcome', () => {
+  it('says nothing when no recording was attempted', () => {
+    expect(audioOutcome({ attempted: false, error: null })).toBe('none')
+    expect(audioOutcome({ attempted: false, error: 'x' })).toBe('none')
+  })
+  it('distinguishes a sent recording from a failed one', () => {
+    expect(audioOutcome({ attempted: true, error: null })).toBe('saved')
+    expect(audioOutcome({ attempted: true, error: 'Vous avez déjà 3 enregistrements pour ce mot.' })).toBe('failed')
+  })
+})
+
+describe('audioFailedMessage', () => {
+  it('tells the word is saved and how to redo the recording', () => {
+    const m = audioFailedMessage(null)
+    expect(m).toMatch(/Mot enregistré/)
+    expect(m).toMatch(/fiche du mot/)
+  })
+  it('appends the reason when there is one', () => {
+    expect(audioFailedMessage('Enregistrement trop volumineux (1 Mo maximum).')).toContain('(Enregistrement trop volumineux (1 Mo maximum).)')
   })
 })
