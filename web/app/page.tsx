@@ -1,11 +1,8 @@
 // web/app/page.tsx
 import Link from 'next/link'
 import Image from 'next/image'
-import { Suspense } from 'react'
 import { PenLine, BookOpen, Languages, GraduationCap, Library } from 'lucide-react'
-import { PatternDivider } from '@/components/PatternDivider'
 import { ContributionFormWithParams } from '@/components/ContributionForm'
-import { DonateForm } from '@/components/DonateForm'
 import { JsonLd } from '@/components/JsonLd'
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
 
@@ -208,13 +205,6 @@ export default function HomePage() {
         </p>
         <ContributionFormWithParams />
       </div>
-
-      <PatternDivider />
-
-      {/* Financial contribution */}
-      <Suspense fallback={null}>
-        <DonateForm />
-      </Suspense>
     </div>
   )
 }

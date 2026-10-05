@@ -1,11 +1,9 @@
 ﻿// web/app/contribute/page.tsx
 export const dynamic = 'force-dynamic'
 
-import { Suspense } from 'react'
 import { PenLine, ShieldCheck, CheckCircle2 } from 'lucide-react'
 import { ContributionFormWithParams } from '@/components/ContributionForm'
 import { createClient } from '@/lib/supabase-server'
-import { DonateForm } from '@/components/DonateForm'
 import { ContributeRefreshProvider } from '@/context/ContributeRefreshContext'
 import type { Metadata } from 'next'
 
@@ -152,11 +150,6 @@ export default async function ContributePage() {
       </div>
 
       </ContributeRefreshProvider>
-
-      {/* Financial contribution */}
-      <Suspense fallback={null}>
-        <DonateForm />
-      </Suspense>
     </div>
   )
 }
