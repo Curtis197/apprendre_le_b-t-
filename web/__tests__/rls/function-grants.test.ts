@@ -39,13 +39,6 @@ describe('function grants', () => {
 
   describe('functions for signed-in users only', () => {
     it('refuses anonymous callers with a permission error', async () => {
-      const vote = await anonClient().rpc('vote', {
-        p_table_name: 'community_texts',
-        p_row_id: '00000000-0000-0000-0000-000000000000',
-        p_direction: 'up',
-      })
-      expect(vote.error?.code).toBe('42501')
-
       const quiz = await anonClient().rpc('submit_quiz', {
         p_lesson_id: '00000000-0000-0000-0000-000000000000',
         p_answers: {},

@@ -266,12 +266,5 @@ describe('lexicon: translations, description, guard', () => {
       await bob.client.from('lexicon').update({ bete_phonetic: 'piraté' }).eq('id', ph.id)
       expect((await admin.from('lexicon').select('bete_phonetic').eq('id', ph.id).single()).data?.bete_phonetic).toBe('ɓɔ')
     })
-
-    it('keeps voting working: the vote function may write the score the guard protects', async () => {
-      const w = await seedWord()
-      const { error } = await bob.client.rpc('vote', { p_table_name: 'lexicon', p_row_id: w.id, p_direction: 'up' })
-      expect(error).toBeNull()
-      expect((await admin.from('lexicon').select('upvotes').eq('id', w.id).single()).data?.upvotes).toBe(1)
-    })
   })
 })

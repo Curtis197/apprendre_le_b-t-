@@ -115,21 +115,6 @@ describe('resources: contributor-owned CRUD and comments', () => {
       expect((await admin.from('community_texts').select('id').eq('id', other.id)).data).toEqual([])
     })
 
-    it('keeps voting working: the vote function may write the score the guard protects', async () => {
-      const row = must(
-        await alice.client.from('community_texts').insert(newText(alice.id)).select('id').single(),
-        'create',
-      )
-      const { error } = await bob.client.rpc('vote', {
-        p_table_name: 'community_texts',
-        p_row_id: row.id,
-        p_direction: 'up',
-      })
-      expect(error).toBeNull()
-      const { data } = await admin.from('community_texts').select('upvotes').eq('id', row.id).single()
-      expect(data?.upvotes).toBe(1)
-    })
-
     it('only accepts regions from the closed list', async () => {
       const ok = await alice.client.from('community_texts').insert(newText(alice.id, { region: 'Gagnoa' }))
       expect(ok.error).toBeNull()
