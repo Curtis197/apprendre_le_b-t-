@@ -11,7 +11,13 @@ interface Props {
   startLabel?: string
   sendLabel?: string
   sendingLabel?: string
-  onSend: (blob: Blob) => void
+  /** Hide the send button: the caller reads the recording through onRecorded. */
+  hideSend?: boolean
+  onSend?: (blob: Blob) => void
+  /** The recording when it stops, null when it is discarded or a new one starts. */
+  onRecorded?: (blob: Blob | null) => void
+  /** True while the microphone is recording. */
+  onRecordingChange?: (recording: boolean) => void
 }
 
 export function PronunciationRecorder({
@@ -21,7 +27,10 @@ export function PronunciationRecorder({
   startLabel = 'Enregistrer ma prononciation',
   sendLabel = 'Envoyer à l’enseignant',
   sendingLabel = 'Envoi…',
+  hideSend = false,
   onSend,
+  onRecorded,
+  onRecordingChange,
 }: Props) {
   const [phase, setPhase] = useState<'idle' | 'recording' | 'recorded'>('idle')
   const [seconds, setSeconds] = useState(0)
@@ -38,6 +47,11 @@ export function PronunciationRecorder({
     streamRef.current?.getTracks().forEach(track => track.stop())
     streamRef.current = null
   }
+
+  useEffect(() => {
+    onRecordingChange?.(phase === 'recording')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
 
   useEffect(() => {
     return () => {
@@ -61,6 +75,7 @@ export function PronunciationRecorder({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
       const chunks: Blob[] = []
+      onRecorded?.(null)
       const recorder = new MediaRecorder(stream, { mimeType })
       recorder.ondataavailable = event => {
         if (event.data.size > 0) chunks.push(event.data)
@@ -69,6 +84,7 @@ export function PronunciationRecorder({
         const recorded = new Blob(chunks, { type: mimeType })
         cleanupStream()
         setBlob(recorded)
+        onRecorded?.(recorded)
         setPreviewUrl(URL.createObjectURL(recorded))
         setPhase('recorded')
       }
@@ -96,6 +112,7 @@ export function PronunciationRecorder({
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(null)
     setBlob(null)
+    onRecorded?.(null)
     setSeconds(0)
     setPhase('idle')
   }
@@ -126,10 +143,12 @@ export function PronunciationRecorder({
         <div className="space-y-3">
           <audio controls src={previewUrl} className="w-full" />
           <div className="flex flex-wrap gap-3">
-            <Button type="button" onClick={() => onSend(blob)} disabled={disabled || sending}>
-              <Send className="w-4 h-4 mr-2" />
-              {sending ? sendingLabel : sendLabel}
-            </Button>
+            {!hideSend && (
+              <Button type="button" onClick={() => onSend?.(blob)} disabled={disabled || sending}>
+                <Send className="w-4 h-4 mr-2" />
+                {sending ? sendingLabel : sendLabel}
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={reset} disabled={sending}>
               <RotateCcw className="w-4 h-4 mr-2" />
               Recommencer

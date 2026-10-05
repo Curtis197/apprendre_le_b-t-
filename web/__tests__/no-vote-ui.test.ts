@@ -44,6 +44,8 @@ describe('voting UI is gone', () => {
     const page = read('app/contribute/page.tsx')
     expect(page).not.toMatch(/3 votes|Votez|En attente de validation|Validation communautaire/)
     expect(page).toContain('immédiatement disponibles')
+    expect(page).not.toContain('Correction communautaire')
+    expect(page).not.toMatch(/soutenez la préservation/)
     expect(read('components/ContributionForm.tsx')).not.toContain('après validation par la communauté')
   })
 })

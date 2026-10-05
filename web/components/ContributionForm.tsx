@@ -56,6 +56,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
   const [exampleSaveFailed, setExampleSaveFailed] = useState(false)
   // Optional recording kept in the browser until the entry exists, and what happened to it.
   const [pronunciation, setPronunciation] = useState<Blob | null>(null)
+  const [recording, setRecording] = useState(false)
   const [audioFailedReason, setAudioFailedReason] = useState<string | null | undefined>(undefined) // undefined: no failure
   const [recorderKey, setRecorderKey] = useState(0)
 
@@ -287,7 +288,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
               </p>
             )}
           </div>
-          <ContributionPronunciation key={recorderKey} blob={pronunciation} onChange={setPronunciation} disabled={loading} />
+          <ContributionPronunciation key={recorderKey} blob={pronunciation} onChange={setPronunciation} onRecordingChange={setRecording} disabled={loading} />
         </div>
       ) : type === 'expression' ? (
         <div className="space-y-3">
@@ -346,7 +347,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
 
       <Button
         onClick={handleSubmit}
-        disabled={loading || (
+        disabled={loading || (type === 'word' && recording) || (
           type === 'word' ? !wordBetePhonetic || !wordFrench || exampleIncomplete :
           type === 'expression' ? !frPhrase || !betePhrase || !betePhonetic :
           !patternFr || !patternBete || !description

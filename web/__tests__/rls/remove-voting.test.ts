@@ -35,10 +35,10 @@ describe('voting removed', () => {
 
   it('no longer flips `validated` when the score reaches 3', async () => {
     const e = must(await admin.from('expressions').insert(newExpression(alice.id, { validated: false })).select('id').single(), 'expression')
-    await admin.from('expressions').update({ upvotes: 5 }).eq('id', e.id)
+    expect((await admin.from('expressions').update({ upvotes: 5 }).eq('id', e.id)).error).toBeNull()
     expect(must(await admin.from('expressions').select('validated').eq('id', e.id).single(), 'row').validated).toBe(false)
     const r = must(await admin.from('grammar_rules').insert(newRule(alice.id, { validated: false })).select('id').single(), 'rule')
-    await admin.from('grammar_rules').update({ upvotes: 5 }).eq('id', r.id)
+    expect((await admin.from('grammar_rules').update({ upvotes: 5 }).eq('id', r.id)).error).toBeNull()
     expect(must(await admin.from('grammar_rules').select('validated').eq('id', r.id).single(), 'row').validated).toBe(false)
   })
 

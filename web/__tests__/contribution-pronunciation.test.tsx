@@ -8,6 +8,7 @@ describe('ContributionPronunciation', () => {
     expect(html).toContain('Prononciation (optionnel)')
     expect(html).toContain('Enregistrer la prononciation')
     expect(html).not.toContain('Retirer')
+    expect(html).not.toContain('Garder')
   })
   it('says a recording is ready and lets the contributor remove it', () => {
     const html = renderToStaticMarkup(

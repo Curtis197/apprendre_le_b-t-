@@ -49,6 +49,8 @@ async function findExpression(
     .select('bete_phrase, bete_phonetic, french_literal')
     .eq('french_phrase', phrase.toLowerCase())
     .eq('validated', true)
+    .order('created_at', { ascending: true })
+    .limit(1)
     .maybeSingle()
   if (!data) return null
   // expressions.bete_phrase = western Latin form, expressions.bete_phonetic = IPA form

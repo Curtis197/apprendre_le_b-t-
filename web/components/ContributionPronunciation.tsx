@@ -8,13 +8,14 @@ interface Props {
   blob: Blob | null
   onChange: (blob: Blob | null) => void
   disabled?: boolean
+  onRecordingChange?: (recording: boolean) => void
 }
 
 /**
- * Optional recording of the word being contributed. Nothing is sent from here: the form keeps the
+ * Optional recording of the word being contributed. The latest recording is the one kept. Nothing is sent from here: the form keeps the
  * recording and uploads it once the entry exists (see ContributionForm).
  */
-export function ContributionPronunciation({ blob, onChange, disabled = false }: Props) {
+export function ContributionPronunciation({ blob, onChange, disabled = false, onRecordingChange }: Props) {
   // A new key resets the recorder (its own preview) after the contributor removes the recording.
   const [round, setRound] = useState(0)
   return (
@@ -26,9 +27,10 @@ export function ContributionPronunciation({ blob, onChange, disabled = false }: 
         key={round}
         maxSeconds={MAX_LEXICON_AUDIO_SECONDS}
         startLabel="Enregistrer la prononciation"
-        sendLabel="Garder cet enregistrement"
+        hideSend
         disabled={disabled}
-        onSend={onChange}
+        onRecorded={onChange}
+        onRecordingChange={onRecordingChange}
       />
       {blob && (
         <p className="flex flex-wrap items-center gap-3 text-xs text-primary" role="status">

@@ -164,7 +164,7 @@ describe('resource word links: Notre Père pilot', () => {
     ).id as string
 
     const cMarker = await owner.client.rpc('create_lexicon_entry', {
-      p_spelling: 'ye', p_ipa: null, p_dialect: 'western', p_kind: 'marker', p_pos: null,
+      p_spelling: `ye-${Date.now()}`, p_ipa: null, p_dialect: 'western', p_kind: 'marker', p_pos: null,
       p_description: null, p_notes: null, p_synonyms: null, p_lemma: null,
       p_senses: [], p_example: null,
     })

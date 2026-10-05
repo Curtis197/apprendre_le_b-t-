@@ -4,6 +4,8 @@
 -- Spec: docs/superpowers/specs/2026-10-05-contribute-page-voting-audio-funding-design.md
 -- Re-runnable. Apply by hand in production (it drops triggers, functions and policies).
 
+begin;
+
 -- ── 1. what was waiting for votes is validated ──────────────────────────────────────────────────
 update expressions set validated = true where not validated;
 update grammar_rules set validated = true where not validated;
@@ -28,3 +30,5 @@ drop function if exists increment_upvotes(text, uuid);
 -- editing and lexicon_guard_update rely on it.)
 drop policy if exists "grammar_rules vote" on grammar_rules;
 drop policy if exists "expressions vote" on expressions;
+
+commit;

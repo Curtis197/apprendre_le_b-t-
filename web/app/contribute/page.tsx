@@ -9,7 +9,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Contribuer',
-  description: 'Enrichissez le dictionnaire bété : ajoutez des mots et des traductions, ou soutenez la préservation de la langue bhété.',
+  description: 'Enrichissez le dictionnaire bété : ajoutez des mots et des traductions.',
   alternates: { canonical: '/contribute' },
 }
 
@@ -107,8 +107,8 @@ export default async function ContributePage() {
               <li className="flex gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold">Correction communautaire</p>
-                  <p className="text-xs text-muted-foreground">Chacun peut signaler une erreur ; l&apos;auteur et les administrateurs la corrigent.</p>
+                  <p className="text-sm font-semibold">Amélioration continue</p>
+                  <p className="text-xs text-muted-foreground">Les mots, traductions, règles et ressources peuvent être signalés ; l&apos;auteur et les administrateurs les corrigent.</p>
                 </div>
               </li>
             </ul>
