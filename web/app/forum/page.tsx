@@ -118,9 +118,6 @@ export default async function ForumPage({ searchParams }: Props) {
                     <span className={`text-xs font-semibold rounded-full px-2.5 py-0.5 ${CATEGORY_COLORS[thread.category] ?? 'bg-muted'}`}>
                       {CATEGORIES.find(c => c.value === thread.category)?.label ?? thread.category}
                     </span>
-                    {thread.upvotes > 0 && (
-                      <span className="text-xs text-muted-foreground">▲ {thread.upvotes}</span>
-                    )}
                   </div>
                   <h2 className="font-heading font-semibold text-base group-hover:text-primary transition-colors truncate">
                     {thread.title}

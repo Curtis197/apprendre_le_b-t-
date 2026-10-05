@@ -156,7 +156,7 @@ export function ContributionForm({ initialWord, initialType, initialId }: Contri
   if (submitted) return (
     <div className="p-4 border rounded text-center space-y-2">
       <p className="font-semibold">Contribution envoyée ✓</p>
-      <p className="text-sm text-muted-foreground">Elle sera visible après validation par la communauté.</p>
+      <p className="text-sm text-muted-foreground">Elle est déjà disponible pour la communauté.</p>
       {exampleSaveFailed && (
         <p className="text-sm text-red-600">
           Le mot a bien été enregistré, mais la phrase d&apos;exemple n&apos;a pas pu l&apos;être.

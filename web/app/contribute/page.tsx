@@ -2,11 +2,9 @@
 export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
-import { PenLine, ShieldCheck, CheckCircle2, Clock } from 'lucide-react'
+import { PenLine, ShieldCheck, CheckCircle2 } from 'lucide-react'
 import { ContributionFormWithParams } from '@/components/ContributionForm'
-import { PendingContributions } from '@/components/PendingContributions'
 import { createClient } from '@/lib/supabase-server'
-import { DialectSelector } from '@/components/DialectSelector'
 import { DonateForm } from '@/components/DonateForm'
 import { ContributeRefreshProvider } from '@/context/ContributeRefreshContext'
 import type { Metadata } from 'next'
@@ -64,7 +62,7 @@ export default async function ContributePage() {
           </h1>
           <p className="text-lg opacity-90 max-w-xl leading-relaxed">
             Chaque mot que vous ajoutez renforce la préservation d&apos;une langue vivante.
-            Les contributions avec 3 votes sont intégrées au traducteur.
+            Vos contributions sont immédiatement disponibles.
           </p>
         </div>
       </div>
@@ -111,8 +109,8 @@ export default async function ContributePage() {
               <li className="flex gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold">Validation communautaire</p>
-                  <p className="text-xs text-muted-foreground">3 votes positifs suffisent pour valider une contribution.</p>
+                  <p className="text-sm font-semibold">Correction communautaire</p>
+                  <p className="text-xs text-muted-foreground">Chacun peut signaler une erreur ; l&apos;auteur et les administrateurs la corrigent.</p>
                 </div>
               </li>
             </ul>
@@ -153,21 +151,6 @@ export default async function ContributePage() {
         </div>
       </div>
 
-      {/* Pending Contributions */}
-      <div className="mb-10">
-        <h2 className="font-heading text-2xl font-bold mb-2 flex items-center gap-2">
-          <Clock className="w-6 h-6 text-muted-foreground" />
-          En attente de validation
-        </h2>
-        <p className="text-muted-foreground text-sm mb-4">
-          Votez pour valider les contributions de la communauté.
-        </p>
-        <div className="flex items-center gap-3 flex-wrap mb-6">
-          <DialectSelector />
-          <span className="text-xs text-muted-foreground">Filtre les mots du lexique en attente.</span>
-        </div>
-        <PendingContributions />
-      </div>
       </ContributeRefreshProvider>
 
       {/* Financial contribution */}

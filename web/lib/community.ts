@@ -63,7 +63,6 @@ export async function getCommunityTexts(
   let q = client
     .from('community_texts')
     .select('*')
-    .order('upvotes', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(limit)
 

@@ -53,9 +53,6 @@ function ResourceCard({ text }: { text: CommunityText }) {
               </span>
             )}
           </div>
-          {text.upvotes > 0 && (
-            <span className="text-xs text-muted-foreground">▲ {text.upvotes}</span>
-          )}
         </div>
 
         <h2 className="font-heading font-semibold text-base flex-1">

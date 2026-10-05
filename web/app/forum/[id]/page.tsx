@@ -71,7 +71,6 @@ export default async function ThreadPage({ params }: Props) {
       datePublished: t.created_at,
       author: { '@type': 'Person', name: t.author_name || 'Anonyme' },
       interactionStatistic: [
-        { '@type': 'InteractionCounter', interactionType: 'https://schema.org/LikeAction', userInteractionCount: t.upvotes ?? 0 },
         { '@type': 'InteractionCounter', interactionType: 'https://schema.org/CommentAction', userInteractionCount: replies?.length ?? 0 },
       ],
     },
@@ -103,9 +102,6 @@ export default async function ThreadPage({ params }: Props) {
           <span className="bg-primary/15 text-primary text-xs font-semibold rounded-full px-2.5 py-0.5">
             {CATEGORY_LABELS[t.category] ?? t.category}
           </span>
-          {t.upvotes > 0 && (
-            <span className="text-xs text-muted-foreground">▲ {t.upvotes}</span>
-          )}
         </div>
         <h1 className="font-heading text-2xl font-bold mb-4">{t.title}</h1>
         <p className="text-sm leading-relaxed whitespace-pre-wrap">{t.body}</p>
@@ -145,12 +141,6 @@ export default async function ThreadPage({ params }: Props) {
                     <span>
                       {new Date(post.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
-                    {post.upvotes > 0 && (
-                      <>
-                        <span>·</span>
-                        <span>▲ {post.upvotes}</span>
-                      </>
-                    )}
                   </div>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
                 </div>

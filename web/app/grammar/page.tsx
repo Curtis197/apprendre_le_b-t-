@@ -31,7 +31,7 @@ export default async function GrammarPage() {
     .from('grammar_rules')
     .select('*')
     .eq('validated', true)
-    .order('upvotes', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(20)
   const rules: GrammarRule[] = (data ?? []) as GrammarRule[]
 
@@ -88,9 +88,6 @@ export default async function GrammarPage() {
                   <span className="bg-secondary/20 text-secondary text-xs font-semibold rounded-full px-3 py-1">
                     {CATEGORY_LABELS[rule.category] ?? rule.category}
                   </span>
-                  {rule.upvotes > 0 && (
-                    <span className="text-xs text-muted-foreground">▲ {rule.upvotes}</span>
-                  )}
                 </div>
                 <div className="flex items-center gap-2 mb-2 text-sm">
                   <span className="font-mono bg-muted rounded px-2 py-0.5">{rule.pattern_french}</span>
