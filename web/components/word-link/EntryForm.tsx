@@ -11,6 +11,10 @@ interface Props {
   error: string
   onSubmit: (form: EntryFormValues) => void
   onCancel: () => void
+  submitLabel?: string
+  busyLabel?: string
+  /** Extra fields shown before the buttons (the contribution form's example sentence and recording). */
+  children?: ReactNode
 }
 
 const inputClass = 'w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm'
@@ -26,7 +30,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** The whole lexical sheet of a new entry. Everything is optional except one spelling and (for a word) one sense. */
-export function EntryForm({ kind, initial, canUseExample, busy, error, onSubmit, onCancel }: Props) {
+export function EntryForm({ kind, initial, canUseExample, busy, error, onSubmit, onCancel, submitLabel = 'Créer et lier', busyLabel = 'Création…', children }: Props) {
   const [f, setF] = useState(initial)
   const [local, setLocal] = useState('')
   const set = (patch: Partial<EntryFormValues>) => setF(prev => ({ ...prev, ...patch }))
@@ -111,10 +115,11 @@ export function EntryForm({ kind, initial, canUseExample, busy, error, onSubmit,
         </label>
       )}
 
+      {children}
       {(local || error) && <p className="text-xs text-destructive" role="alert">{local || error}</p>}
       <div className="flex flex-wrap gap-2">
         <button type="button" className={`${btn} bg-primary text-primary-foreground`} disabled={busy} onClick={submit}>
-          {busy ? 'Création…' : 'Créer et lier'}
+          {busy ? busyLabel : submitLabel}
         </button>
         <button type="button" className={btn} onClick={onCancel}>Annuler</button>
       </div>

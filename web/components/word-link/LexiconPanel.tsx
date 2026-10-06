@@ -2,16 +2,16 @@
 import { useEffect, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-  emptyEntryForm, groupCandidates, senseSeed,
+  createOutcome, emptyEntryForm, senseSeed,
   type Candidate, type Dialect, type EntryForm as EntryFormValues,
 } from '@/lib/lexicon-links'
 import {
-  addSense, addSpelling, createEntry, findCandidates, getEntry, setMarkerMeaning,
+  addSense, addSpelling, createEntry, getEntry, setMarkerMeaning,
 } from '@/lib/lexicon-links-data'
 import { cn } from '@/lib/utils'
 import type { LexSummary } from '@/lib/word-blocks'
 import type { BlockMeta } from '@/lib/word-link-editor'
-import { EntryForm } from './EntryForm'
+import { LexiconPicker } from '@/components/lexicon/LexiconPicker'
 
 interface Props {
   client: SupabaseClient
@@ -33,8 +33,7 @@ const btn = 'rounded-md border border-border px-2.5 py-1 text-xs font-medium hov
 export function LexiconPanel({
   client, kind, words, gloss, dialect, meta, entry, example, signedIn, onLink, onUnlink,
 }: Props) {
-  const [candidates, setCandidates] = useState<Candidate[] | null>(null)
-  const [mode, setMode] = useState<'choose' | 'create'>('choose')
+  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
@@ -66,22 +65,6 @@ export function LexiconPanel({
       client.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
     }
   }, [client, signedIn])
-
-  useEffect(() => {
-    if (meta.lexiconId || !signedIn) {
-      return
-    }
-    let cancelled = false
-    findCandidates(client, { text: words, dialect, limit: 7 }).then(res => {
-      if (!cancelled) setCandidates(res)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [client, words, kind, dialect, meta.lexiconId, signedIn])
-
-  // Selected sense for candidates
-  const [candidateSenses, setCandidateSenses] = useState<Record<string, string>>({})
 
   const isLinked = Boolean(meta.lexiconId && entry)
   const isLinkedMissing = Boolean(meta.lexiconId && !entry)
@@ -166,7 +149,7 @@ export function LexiconPanel({
     onLink(cEntry, finalSenseId)
   }
 
-  async function linkVariant(c: Candidate) {
+  async function linkVariant(c: Candidate, sense: string | null) {
     setBusy(true)
     setError('')
     const spellRes = await addSpelling(client, c.entry.id, words)
@@ -178,75 +161,42 @@ export function LexiconPanel({
     }
     const refreshed = await getEntry(client, c.entry.id)
     setBusy(false)
-    const targetEntry = refreshed ?? c.entry
-    const chosen = candidateSenses[targetEntry.id] ?? defaultSense(targetEntry)
-    await linkCandidate(targetEntry, chosen)
+    await linkCandidate(refreshed ?? c.entry, sense)
   }
 
-  function defaultSense(e: LexSummary): string {
-    const seed = senseSeed(gloss).toLowerCase()
-    const match = e.senses.find(s => s.french.toLowerCase() === seed)
-    return match ? match.id : (e.senses[0]?.id ?? 'new')
+  /** One place for what a create answer does here: an error stays on the form, an existing entry is linked with a notice. */
+  function finishCreate(res: Awaited<ReturnType<typeof createEntry>>, createdKind: 'word' | 'marker') {
+    const out = createOutcome(res, createdKind)
+    if (out.type === 'error') {
+      setError(out.message)
+      return
+    }
+    setNotice(out.type === 'existing' ? out.notice : '')
+    onLink(out.entry, out.senseId)
   }
 
   async function handleCreateFast() {
     setBusy(true)
     setError('')
-    const res = await createEntry(client, {
-      form: emptyEntryForm(words, gloss, dialect),
-      kind: 'word',
-    })
+    const res = await createEntry(client, { form: emptyEntryForm(words, gloss, dialect), kind: 'word' })
     setBusy(false)
-    if (res.error) {
-      setError(res.error)
-      return
-    }
-    if (res.data) {
-      if (res.data.existed && res.data.entry.kind !== 'word') {
-        setError(`Cette graphie existe déjà comme marqueur grammatical : ${res.data.entry.spelling}.`)
-        return
-      }
-      onLink(res.data.entry, res.data.entry.senseId ?? res.data.senseIds[0] ?? null)
-    }
+    finishCreate(res, 'word')
   }
 
   async function handleCreateMarkerImmediate() {
     setBusy(true)
     setError('')
-    const res = await createEntry(client, {
-      form: emptyEntryForm(words, '', dialect),
-      kind: 'marker',
-    })
+    const res = await createEntry(client, { form: emptyEntryForm(words, '', dialect), kind: 'marker' })
     setBusy(false)
-    if (res.error) {
-      setError(res.error)
-      return
-    }
-    if (res.data) {
-      onLink(res.data.entry, null)
-    }
+    finishCreate(res, 'marker')
   }
 
   async function handleCustomFormSubmit(form: EntryFormValues) {
     setBusy(true)
     setError('')
-    const res = await createEntry(client, {
-      form,
-      kind,
-      example: form.useExample ? example : null,
-    })
+    const res = await createEntry(client, { form, kind, example: form.useExample ? example : null })
     setBusy(false)
-    if (res.error) {
-      setError(res.error)
-      return
-    }
-    if (res.data) {
-      if (res.data.existed && res.data.entry.kind !== kind) {
-        setError(`Cette graphie existe déjà comme ${res.data.entry.kind === 'marker' ? 'marqueur grammatical' : 'mot'} : ${res.data.entry.spelling}.`)
-        return
-      }
-      onLink(res.data.entry, kind === 'word' ? (res.data.senseIds[0] ?? null) : null)
-    }
+    finishCreate(res, kind)
   }
 
   return (
@@ -290,6 +240,8 @@ export function LexiconPanel({
               Autres graphies : {entry.spellings.join(', ')}
             </p>
           )}
+
+          {notice && <p className="text-xs text-amber-700 dark:text-amber-300" role="status">{notice}</p>}
 
           {entry.kind === 'word' ? (
             <div className="space-y-2">
@@ -357,7 +309,7 @@ export function LexiconPanel({
           {error && <p className="text-xs text-destructive" role="alert">{error}</p>}
 
           <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border">
-            <button type="button" className={btn} onClick={onUnlink}>Délier</button>
+            <button type="button" className={btn} onClick={() => { setNotice(''); onUnlink() }}>Délier</button>
             <button type="button" className={btn} onClick={() => setShowSpelling(!showSpelling)}>
               Ajouter une graphie
             </button>
@@ -409,176 +361,35 @@ export function LexiconPanel({
             </div>
           )}
         </div>
-      ) : mode === 'create' ? (
-        <EntryForm
+      ) : (
+        <LexiconPicker
+          client={client}
           kind={kind}
-          initial={emptyEntryForm(words, gloss, dialect)}
+          spelling={words}
+          gloss={gloss}
+          dialect={dialect}
+          signedIn={signedIn}
           canUseExample={example !== null}
+          chooseSense
+          exactLabel={kind === 'marker' ? 'Lier à ce marqueur' : 'Lier à cette entrée'}
+          variantLabel={`C’est le même mot : ajouter la graphie « ${words} » et lier`}
           busy={busy}
           error={error}
-          onSubmit={handleCustomFormSubmit}
-          onCancel={() => setMode('choose')}
-        />
-      ) : (
-        /* Not linked, mode choose */
-        <div className="space-y-3">
-          {candidates === null && (
-            <p className="text-xs text-muted-foreground">Recherche dans le lexique…</p>
-          )}
-
-          {(() => {
-            const grouped = groupCandidates(candidates ?? [], kind)
-            const seed = senseSeed(gloss)
-            const hasMore = (candidates?.length ?? 0) > 6
-            const shownExact = grouped.exact.slice(0, 6)
-            const shownVariants = grouped.variants.slice(0, Math.max(0, 6 - shownExact.length))
-
-            return (
-              <div className="space-y-3">
-                {shownExact.map(c => {
-                  const sel = candidateSenses[c.entry.id] ?? defaultSense(c.entry)
-                  const hasExactFrench = c.entry.senses.some(s => s.french.toLowerCase() === seed.toLowerCase())
-                  return (
-                    <div key={c.entry.id} className="space-y-2 rounded-md border border-border p-2.5">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-sm font-bold">{c.entry.spelling}</span>
-                        <span className="text-xs text-muted-foreground">({c.entry.dialect})</span>
-                      </div>
-                      {kind === 'word' && (
-                        <div className="space-y-1">
-                          {c.entry.senses.map(s => (
-                            <label key={s.id} className="flex items-center gap-2 text-xs">
-                              <input
-                                type="radio"
-                                name={`cand-sense-${c.entry.id}`}
-                                checked={sel === s.id}
-                                onChange={() => setCandidateSenses(prev => ({ ...prev, [c.entry.id]: s.id }))}
-                              />
-                              <span>{s.french}</span>
-                            </label>
-                          ))}
-                          {seed && !hasExactFrench && (
-                            <label className="flex items-center gap-2 text-xs font-medium">
-                              <input
-                                type="radio"
-                                name={`cand-sense-${c.entry.id}`}
-                                checked={sel === 'new'}
-                                onChange={() => setCandidateSenses(prev => ({ ...prev, [c.entry.id]: 'new' }))}
-                              />
-                              <span>Nouveau sens : « {seed} »</span>
-                            </label>
-                          )}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        className={`${btn} bg-primary text-primary-foreground`}
-                        disabled={busy}
-                        onClick={() => linkCandidate(c.entry, kind === 'word' ? sel : null)}
-                      >
-                        {kind === 'marker' ? 'Lier à ce marqueur' : 'Lier à cette entrée'}
-                      </button>
-                    </div>
-                  )
-                })}
-
-                {shownVariants.map(c => {
-                  const sel = candidateSenses[c.entry.id] ?? defaultSense(c.entry)
-                  const hasExactFrench = c.entry.senses.some(s => s.french.toLowerCase() === seed.toLowerCase())
-                  return (
-                    <div key={c.entry.id} className="space-y-2 rounded-md border border-border p-2.5">
-                      <div className="flex items-baseline justify-between">
-                        <div>
-                          <span className="text-sm font-bold">{c.entry.spelling}</span>
-                          <span className="ml-2 text-xs text-muted-foreground">(variante de « {c.matched} »)</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">({c.entry.dialect})</span>
-                      </div>
-                      {kind === 'word' && (
-                        <div className="space-y-1">
-                          {c.entry.senses.map(s => (
-                            <label key={s.id} className="flex items-center gap-2 text-xs">
-                              <input
-                                type="radio"
-                                name={`var-sense-${c.entry.id}`}
-                                checked={sel === s.id}
-                                onChange={() => setCandidateSenses(prev => ({ ...prev, [c.entry.id]: s.id }))}
-                              />
-                              <span>{s.french}</span>
-                            </label>
-                          ))}
-                          {seed && !hasExactFrench && (
-                            <label className="flex items-center gap-2 text-xs font-medium">
-                              <input
-                                type="radio"
-                                name={`var-sense-${c.entry.id}`}
-                                checked={sel === 'new'}
-                                onChange={() => setCandidateSenses(prev => ({ ...prev, [c.entry.id]: 'new' }))}
-                              />
-                              <span>Nouveau sens : « {seed} »</span>
-                            </label>
-                          )}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        className={`${btn} bg-primary text-primary-foreground`}
-                        disabled={busy}
-                        onClick={() => linkVariant(c)}
-                      >
-                        C’est le même mot : ajouter la graphie « {words} » et lier
-                      </button>
-                    </div>
-                  )
-                })}
-
-                {grouped.otherKind.length > 0 && (
-                  <div className="rounded-md border border-amber-500/40 bg-amber-50/50 p-2 text-xs text-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
-                    {grouped.otherKind.map(c => (
-                      <p key={c.entry.id}>
-                        Cette graphie existe déjà comme {c.entry.kind === 'marker' ? 'marqueur grammatical' : 'mot'} :{' '}
-                        <a href={`/lexicon/${c.entry.id}`} target="_blank" rel="noopener noreferrer" className="font-semibold underline">
-                          {c.entry.spelling}
-                        </a>
-                        . Vérifiez la nature du mot (« Mot » / « Marqueur grammatical ») ou proposez une correction depuis sa fiche.
-                      </p>
-                    ))}
-                  </div>
-                )}
-
-                {hasMore && (
-                  <p className="text-xs text-muted-foreground">
-                    D’autres entrées proches existent ; précisez la graphie pour les voir.
-                  </p>
-                )}
-              </div>
-            )
-          })()}
-
-          {error && <p className="text-xs text-destructive" role="alert">{error}</p>}
-
-          <div className="flex flex-wrap gap-2 pt-1 border-t border-border">
-            {kind === 'word' ? (
-              <>
-                <button type="button" className={btn} onClick={() => setMode('create')}>
-                  Mot différent : créer l’entrée
-                </button>
-                <button type="button" className={btn} disabled={busy} onClick={handleCreateFast}>
-                  Créer vite, avec le mot à mot seul
-                </button>
-              </>
+          onChoose={(c, sense) => linkCandidate(c.entry, sense)}
+          onChooseVariant={linkVariant}
+          onCreate={handleCustomFormSubmit}
+          footer={
+            kind === 'word' ? (
+              <button type="button" className={btn} disabled={busy} onClick={handleCreateFast}>
+                Créer vite, avec le mot à mot seul
+              </button>
             ) : (
-              <button
-                type="button"
-                className={btn}
-                disabled={busy}
-                onClick={handleCreateMarkerImmediate}
-              >
+              <button type="button" className={btn} disabled={busy} onClick={handleCreateMarkerImmediate}>
                 Créer ce marqueur (sens à préciser plus tard)
               </button>
-            )}
-          </div>
-        </div>
+            )
+          }
+        />
       )}
     </div>
   )
