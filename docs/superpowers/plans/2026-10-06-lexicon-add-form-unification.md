@@ -1051,3 +1051,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 - `SimilarWords` / `SimilarWordsList` are no longer used by `ContributionForm`; delete them in a separate change after a repo-wide grep.
 - The contribution page now has two dialect selectors (the page-level one and the one inside the creation form); fold them later.
 - RPC dedupe key (IPA vs Latin spelling), server-side `p_pos` validation, and the dead placeholder clause in `lexicon_guard_update` stay as recorded in the spec.
+- Signed-out visitors on `/contribute` see an editable spelling field and "Connectez-vous pour contribuer." with no login link.
+- After a same-kind collision on `/contribute` the creation form stays open with the outer spelling and dialect hidden; the contributor must cancel before correcting the spelling.
+- The `untranslated` branch in `LexiconEntry.tsx` ("Traduire →") is unreachable now that placeholders are gone.
+- Deferred minors from the task reviews: the picker has no error path for a rejected lookup; `getUser().then` in `ContributionForm` has no `.catch`; `LexiconPanel`'s collision notice has no automated test (the repo has no DOM test environment).

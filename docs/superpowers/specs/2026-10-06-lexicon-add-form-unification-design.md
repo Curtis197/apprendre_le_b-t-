@@ -1,6 +1,6 @@
 # Lexicon add form: one picker for resources and contributions
 
-Date: 2026-10-06. Status: design approved in conversation, awaiting written-spec review.
+Date: 2026-10-06. Status: implemented on master (commits 0b13ada to e494ba4), not pushed. Manual browser check not yet done.
 
 ## Problem
 
