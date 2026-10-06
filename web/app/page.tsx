@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { PenLine, BookOpen, Languages, GraduationCap, Library } from 'lucide-react'
 import { ContributionFormWithParams } from '@/components/ContributionForm'
+import { ContactForm } from '@/components/ContactForm'
 import { JsonLd } from '@/components/JsonLd'
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site'
 
@@ -14,24 +15,28 @@ const BUILDING = [
   {
     icon: BookOpen,
     title: 'Lexique',
+    href: '/lexicon',
     status: 'En construction',
     text: 'Un dictionnaire bhété ↔ français, enrichi mot après mot par la communauté.',
   },
   {
     icon: Languages,
     title: 'Traducteur',
+    href: '/translator',
     status: 'Prévu',
     text: 'Traduire du français vers le bhété, de plus en plus précis à mesure que le lexique grandit.',
   },
   {
     icon: GraduationCap,
     title: 'Cours',
+    href: '/courses',
     status: 'En préparation',
     text: 'Des parcours par niveau et par dialecte, créés par des locuteurs et des enseignants.',
   },
   {
     icon: Library,
     title: 'Ressources',
+    href: '/resources',
     status: 'En préparation',
     text: 'Chants, contes, proverbes et vidéos, pour apprendre aussi par la culture.',
   },
@@ -164,8 +169,12 @@ export default function HomePage() {
         <div>
           <h2 className="font-heading text-2xl mb-4">Ce que nous construisons</h2>
           <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {BUILDING.map(({ icon: Icon, title, status, text }) => (
-              <div key={title} className="bg-card border border-border rounded-xl p-5">
+            {BUILDING.map(({ icon: Icon, title, href, status, text }) => (
+              <Link
+                key={title}
+                href={href}
+                className="bg-card border border-border rounded-xl p-5 transition-all hover:border-primary/50 hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary"
+              >
                 <div className="flex items-center justify-between mb-3">
                   <Icon className="w-6 h-6 text-primary" />
                   <span className="text-xs font-medium rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
@@ -174,7 +183,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="font-heading text-lg font-bold mb-1">{title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{text}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -205,6 +214,11 @@ export default function HomePage() {
         </p>
         <ContributionFormWithParams />
       </div>
+
+      {/* Contact */}
+      <section id="contact" className="scroll-mt-24 border-t border-border pt-10">
+        <ContactForm />
+      </section>
     </div>
   )
 }
