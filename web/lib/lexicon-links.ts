@@ -117,3 +117,32 @@ export function checkEntryForm(f: EntryForm, kind: 'word' | 'marker'): string | 
   }
   return checkDescription(f.description).error
 }
+
+export const EXISTING_ENTRY_NOTICE =
+  "Cette entrée existe déjà, vos informations n'ont pas été ajoutées. Ouvrez sa fiche pour ajouter un sens ou une graphie."
+
+export type CreateOutcome =
+  | { type: 'error'; message: string }
+  | { type: 'created'; entry: LexSummary; senseId: string | null }
+  | { type: 'existing'; entry: LexSummary; senseId: string | null; notice: string }
+
+/**
+ * What an answer of create_lexicon_entry means for the screen. The RPC hands back the existing entry when the
+ * spelling is taken and ignores everything else that was typed: say so, and never treat it as a creation.
+ */
+export function createOutcome(
+  res: { data: { existed: boolean; senseIds: string[]; entry: LexSummary } | null; error: string | null },
+  kind: 'word' | 'marker',
+): CreateOutcome {
+  if (res.error) return { type: 'error', message: res.error }
+  if (!res.data) return { type: 'error', message: 'Une erreur est survenue. Veuillez réessayer.' }
+  const { existed, senseIds, entry } = res.data
+  if (existed && entry.kind !== kind) {
+    const other = entry.kind === 'marker' ? 'marqueur grammatical' : 'mot'
+    return { type: 'error', message: `Cette graphie existe déjà comme ${other} : ${entry.spelling}.` }
+  }
+  const senseId = kind === 'word' ? (senseIds[0] ?? null) : null
+  return existed
+    ? { type: 'existing', entry, senseId, notice: EXISTING_ENTRY_NOTICE }
+    : { type: 'created', entry, senseId }
+}
