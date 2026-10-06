@@ -10,8 +10,11 @@ const entry = (over: Partial<LexSummary> = {}): LexSummary => ({
 const ok = (existed: boolean, e: LexSummary, senseIds: string[]) => ({ data: { existed, senseIds, entry: e }, error: null })
 
 describe('createOutcome', () => {
-  it('EXISTING_ENTRY_NOTICE is the exact French text', () => {
-    expect(EXISTING_ENTRY_NOTICE).toBe("Cette entrée existe déjà, vos informations n'ont pas été ajoutées. Ouvrez sa fiche pour ajouter un sens ou une graphie.")
+  it('EXISTING_ENTRY_NOTICE is the exact French text with curly apostrophes', () => {
+    const expected = 'Cette entrée existe déjà, vos informations n’ont pas été ajoutées. Ouvrez sa fiche pour ajouter un sens ou une graphie.'
+    expect(EXISTING_ENTRY_NOTICE).toBe(expected)
+    expect(EXISTING_ENTRY_NOTICE).toContain('’')
+    expect(EXISTING_ENTRY_NOTICE).not.toContain("'")
   })
   it('reports a new word with its first sense', () => {
     expect(createOutcome(ok(false, entry(), ['S1', 'S2']), 'word')).toEqual({ type: 'created', entry: entry(), senseId: 'S1' })

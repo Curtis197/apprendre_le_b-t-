@@ -119,7 +119,7 @@ export function checkEntryForm(f: EntryForm, kind: 'word' | 'marker'): string | 
 }
 
 export const EXISTING_ENTRY_NOTICE =
-  "Cette entrée existe déjà, vos informations n'ont pas été ajoutées. Ouvrez sa fiche pour ajouter un sens ou une graphie."
+  'Cette entrée existe déjà, vos informations n’ont pas été ajoutées. Ouvrez sa fiche pour ajouter un sens ou une graphie.'
 
 export type CreateOutcome =
   | { type: 'error'; message: string }

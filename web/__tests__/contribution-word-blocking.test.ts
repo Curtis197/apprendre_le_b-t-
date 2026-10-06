@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { wordBlockingProblem } from '@/lib/contribution'
 
 describe('wordBlockingProblem', () => {
-  it('recording-in-progress message is the exact French text', () => {
+  it('recording-in-progress message is the exact French text with curly apostrophes', () => {
     const msg = wordBlockingProblem({ exampleBete: '', exampleFrench: '', recording: true })
-    expect(msg).toBe("Terminez l'enregistrement avant de créer l'entrée.")
+    const expected = 'Terminez l’enregistrement avant de créer l’entrée.'
+    expect(msg).toBe(expected)
+    expect(msg).toContain('’')
+    expect(msg).not.toContain("'")
   })
   it('lets a word without an example through', () => {
     expect(wordBlockingProblem({ exampleBete: '', exampleFrench: '  ', recording: false })).toBeNull()
