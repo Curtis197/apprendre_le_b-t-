@@ -1,6 +1,8 @@
 // Pure helpers for the contribution form, kept out of the component so
 // they can be unit-tested without a DOM.
 
+import { createOutcome } from './lexicon-links'
+
 /** An example sentence is a pair: both sides filled, or neither. */
 export type ExampleState = 'none' | 'complete' | 'incomplete'
 
@@ -56,4 +58,22 @@ export function wordBlockingProblem(a: { exampleBete: string; exampleFrench: str
     return 'Renseignez la phrase et sa traduction, ou laissez les deux champs vides.'
   }
   return null
+}
+
+export type NewWordResult =
+  | { type: 'error'; message: string }
+  | { type: 'existing'; id: string; notice: string }
+  | { type: 'created'; id: string; audioFailedReason: string | null | undefined } // undefined = no audio failure
+
+/** The steps after the contributor submits a new word: create it, and only for a created entry upload the recording. */
+export async function submitNewWord(a: {
+  create: () => Promise<Parameters<typeof createOutcome>[0]>
+  upload: ((entryId: string) => Promise<{ error: string | null }>) | null
+}): Promise<NewWordResult> {
+  const out = createOutcome(await a.create(), 'word')
+  if (out.type === 'error') return { type: 'error', message: out.message }
+  if (out.type === 'existing') return { type: 'existing', id: out.entry.id, notice: out.notice }
+  const sent = a.upload ? await a.upload(out.entry.id) : null
+  const outcome = audioOutcome({ attempted: a.upload !== null, error: sent?.error ?? null })
+  return { type: 'created', id: out.entry.id, audioFailedReason: outcome === 'failed' ? (sent?.error ?? null) : undefined }
 }

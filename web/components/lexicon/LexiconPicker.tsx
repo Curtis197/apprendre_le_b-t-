@@ -103,6 +103,7 @@ interface Props {
   onChoose: (c: Candidate, sense: string | null) => void
   onChooseVariant: (c: Candidate, sense: string | null) => void
   onCreate: (form: EntryFormValues) => void
+  onCreatingChange?: (creating: boolean) => void
   footer?: ReactNode
   formExtra?: ReactNode
 }
@@ -114,7 +115,7 @@ interface Props {
 export function LexiconPicker({
   client, kind, spelling, gloss, dialect, signedIn, debounceMs = 0, canUseExample, chooseSense,
   exactLabel, variantLabel, createLabel = 'Mot différent : créer l’entrée', submitLabel,
-  busy, error, onChoose, onChooseVariant, onCreate, footer, formExtra,
+  busy, error, onChoose, onChooseVariant, onCreate, onCreatingChange, footer, formExtra,
 }: Props) {
   const [creating, setCreating] = useState(false)
   const [picked, setPicked] = useState<Record<string, string>>({})
@@ -149,7 +150,7 @@ export function LexiconPicker({
         error={error}
         submitLabel={submitLabel}
         onSubmit={onCreate}
-        onCancel={() => setCreating(false)}
+        onCancel={() => { setCreating(false); onCreatingChange?.(false) }}
       >
         {formExtra}
       </EntryForm>
@@ -211,8 +212,8 @@ export function LexiconPicker({
       {error && <p className="text-xs text-destructive" role="alert">{error}</p>}
 
       <div className="flex flex-wrap gap-2 pt-1 border-t border-border">
-        {kind === 'word' && (
-          <button type="button" className={btn} onClick={() => setCreating(true)}>
+        {kind === 'word' && text && (
+          <button type="button" className={btn} onClick={() => { setCreating(true); onCreatingChange?.(true) }}>
             {createLabel}
           </button>
         )}

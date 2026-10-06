@@ -14,13 +14,13 @@ import { MarkdownField } from '@/components/MarkdownField'
 import { uploadPronunciation } from '@/lib/lexicon-audio-data'
 import {
   audioFailedMessage,
-  audioOutcome,
   contributionErrorMessage,
   exampleState,
+  submitNewWord,
   wordBlockingProblem,
 } from '@/lib/contribution'
 import { createEntry } from '@/lib/lexicon-links-data'
-import { createOutcome, type EntryForm as EntryFormValues } from '@/lib/lexicon-links'
+import type { EntryForm as EntryFormValues } from '@/lib/lexicon-links'
 
 type ContributionType = 'word' | 'expression' | 'grammar_rule'
 
@@ -54,6 +54,8 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
   const [recording, setRecording] = useState(false)
   const [audioFailedReason, setAudioFailedReason] = useState<string | null | undefined>(undefined) // undefined: no failure
   const [recorderKey, setRecorderKey] = useState(0)
+  // The creation form is open: it owns the spelling and dialect, so the outer fields are hidden.
+  const [creatingWord, setCreatingWord] = useState(false)
 
   // Grammar rule fields
   const [category, setCategory] = useState('verb')
@@ -90,27 +92,31 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
         alert('Connectez-vous pour contribuer.')
         return
       }
-      const res = await createEntry(supabaseRef.current, {
-        form,
-        kind: 'word',
-        example: exampleState(wordExBete, wordExFrench) === 'complete'
-          ? { bete: wordExBete.trim(), french: wordExFrench.trim(), literal: '' }
+      const client = supabaseRef.current
+      const result = await submitNewWord({
+        create: () => createEntry(client, {
+          form,
+          kind: 'word',
+          example: exampleState(wordExBete, wordExFrench) === 'complete'
+            ? { bete: wordExBete.trim(), french: wordExFrench.trim(), literal: '' }
+            : null,
+        }),
+        upload: pronunciation
+          ? async id => {
+              const r = await uploadPronunciation(client, { userId: user.id, lexiconId: id, blob: pronunciation })
+              return { error: r.error }
+            }
           : null,
       })
-      const out = createOutcome(res, 'word')
-      if (out.type === 'error') {
-        setSubmitError(out.message)
+      if (result.type === 'error') {
+        setSubmitError(result.message)
         return
       }
-      if (out.type === 'existing') {
-        setExisting({ id: out.entry.id, notice: out.notice })
+      if (result.type === 'existing') {
+        setExisting({ id: result.id, notice: result.notice })
         return
       }
-      const sent = pronunciation
-        ? await uploadPronunciation(supabaseRef.current, { userId: user.id, lexiconId: out.entry.id, blob: pronunciation })
-        : null
-      const outcome = audioOutcome({ attempted: pronunciation !== null, error: sent?.error ?? null })
-      if (outcome === 'failed') setAudioFailedReason(sent?.error ?? null)
+      if (result.audioFailedReason !== undefined) setAudioFailedReason(result.audioFailedReason)
       setSubmitted(true)
       bumpRefresh()
       router.refresh()
@@ -177,6 +183,7 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
           setPronunciation(null)
           setAudioFailedReason(undefined)
           setRecorderKey(k => k + 1)
+          setCreatingWord(false)
           setSubmitted(false)
         }}
       >
@@ -193,7 +200,7 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
             key={t}
             variant={type === t ? 'default' : 'outline'}
             size="sm"
-            onClick={() => { setType(t); setExisting(null); setPronunciation(null); setRecorderKey(k => k + 1) }}
+            onClick={() => { setType(t); setExisting(null); setSubmitError(null); setCreatingWord(false); setPronunciation(null); setRecorderKey(k => k + 1) }}
           >
             {t === 'word' ? 'Mot du lexique' : t === 'expression' ? 'Expression' : 'Règle grammaticale'}
           </Button>
@@ -202,29 +209,36 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
 
       {type === 'word' ? (
         <div className="space-y-3">
-          <div className="space-y-1">
-            <label
-              htmlFor="contribution-dialect"
-              className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
-            >
-              Dialecte de cette contribution
-            </label>
-            <select
-              id="contribution-dialect"
-              className="w-full border rounded px-3 py-2 text-sm"
-              value={dialect}
-              onChange={e => setDialect(e.target.value as DialectKey)}
-            >
-              {DIALECT_KEYS.map(key => (
-                <option key={key} value={key}>{DIALECTS[key].name}</option>
-              ))}
-            </select>
-          </div>
-          <Input
-            placeholder="Mot en bhété (forme phonétique latine) *"
-            value={wordSpelling}
-            onChange={e => { setWordSpelling(e.target.value); setExisting(null) }}
-          />
+          {!creatingWord && (
+            <>
+            <div className="space-y-1">
+              <label
+                htmlFor="contribution-dialect"
+                className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+              >
+                Dialecte de cette contribution
+              </label>
+              <select
+                id="contribution-dialect"
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={dialect}
+                onChange={e => setDialect(e.target.value as DialectKey)}
+              >
+                {DIALECT_KEYS.map(key => (
+                  <option key={key} value={key}>{DIALECTS[key].name}</option>
+                ))}
+              </select>
+            </div>
+            {initialWord && (
+              <p className="text-xs text-muted-foreground">Mot français : « {initialWord} »</p>
+            )}
+            <Input
+              placeholder="Mot en bhété (forme phonétique latine) *"
+              value={wordSpelling}
+              onChange={e => { setWordSpelling(e.target.value); setExisting(null); setSubmitError(null) }}
+            />
+            </>
+          )}
           {signedIn === false && (
             <p className="text-sm text-muted-foreground">Connectez-vous pour contribuer.</p>
           )}
@@ -241,13 +255,14 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
               chooseSense={false}
               exactLabel="Ouvrir cette fiche"
               variantLabel="Ouvrir cette fiche"
-              createLabel="Ce mot n’existe pas encore : créer l’entrée"
+              createLabel="Mon mot n’est pas dans la liste : créer l’entrée"
               submitLabel="Créer l’entrée"
               busy={loading}
               error={submitError ?? ''}
               onChoose={c => router.push(`/lexicon/${c.entry.id}`)}
               onChooseVariant={c => router.push(`/lexicon/${c.entry.id}`)}
               onCreate={handleCreateWord}
+              onCreatingChange={setCreatingWord}
               formExtra={
                 <>
                   <div className="space-y-2">

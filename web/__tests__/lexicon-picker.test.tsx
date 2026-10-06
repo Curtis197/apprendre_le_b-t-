@@ -30,6 +30,9 @@ describe('LexiconPicker', () => {
     const html = picker({ spelling: '   ' })
     expect(html).not.toContain('Recherche dans le lexique…')
   })
+  it('offers no creation button for a word while the spelling is blank', () => {
+    expect(picker({ spelling: '   ' })).not.toContain('créer l’entrée')
+  })
   it('offers no creation form for a marker, only the parent footer', () => {
     const html = picker({ kind: 'marker', footer: <button>Créer ce marqueur</button> })
     expect(html).not.toContain('créer l’entrée')
