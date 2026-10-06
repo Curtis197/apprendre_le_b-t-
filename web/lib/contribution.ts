@@ -120,7 +120,7 @@ export function similarKind(c: { matchKind: 'exact' | 'norm' | 'near' }): Simila
 export function wordBlockingProblem(a: { exampleBete: string; exampleFrench: string; recording: boolean }): string | null {
   if (a.recording) return "Terminez l'enregistrement avant de créer l'entrée."
   if (exampleState(a.exampleBete, a.exampleFrench) === 'incomplete') {
-    return "Renseignez la phrase et sa traduction, ou laissez les deux champs vides."
+    return 'Renseignez la phrase et sa traduction, ou laissez les deux champs vides.'
   }
   return null
 }
