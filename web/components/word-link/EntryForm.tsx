@@ -1,6 +1,7 @@
 'use client'
 import { useState, type ReactNode } from 'react'
 import { DIALECTS, ENTRY_CATEGORIES, checkEntryForm, type Dialect, type EntryForm as EntryFormValues } from '@/lib/lexicon-links'
+import { FrenchMatches } from '@/components/FrenchMatches'
 
 interface Props {
   kind: 'word' | 'marker'
@@ -76,13 +77,16 @@ export function EntryForm({ kind, initial, canUseExample, busy, error, onSubmit,
         <fieldset className="space-y-2">
           <legend className="text-xs font-semibold">Sens (le premier vient du mot à mot, sans article)</legend>
           {f.senses.map((s, i) => (
-            <div key={i} className="grid gap-2 sm:grid-cols-2">
-              <Field label={i === 0 ? 'Mot en français' : `Sens ${i + 1}`}>
-                <input className={inputClass} value={s.french} maxLength={200} onChange={e => setSense(i, { french: e.target.value })} />
-              </Field>
-              <Field label="Contexte (optionnel)">
-                <input className={inputClass} value={s.context} maxLength={300} onChange={e => setSense(i, { context: e.target.value })} />
-              </Field>
+            <div key={i} className="space-y-2">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Field label={i === 0 ? 'Mot en français' : `Sens ${i + 1}`}>
+                  <input className={inputClass} value={s.french} maxLength={200} onChange={e => setSense(i, { french: e.target.value })} />
+                </Field>
+                <Field label="Contexte (optionnel)">
+                  <input className={inputClass} value={s.context} maxLength={300} onChange={e => setSense(i, { context: e.target.value })} />
+                </Field>
+              </div>
+              <FrenchMatches text={s.french} dialect={f.dialect} spelling={f.spelling} />
             </div>
           ))}
           <button type="button" className={btn} onClick={() => set({ senses: [...f.senses, { french: '', context: '' }] })}>
