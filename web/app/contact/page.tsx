@@ -1,12 +1,13 @@
 // web/app/contact/page.tsx
 'use client'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Mail, Send, ExternalLink, Phone, Check } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase-browser'
+import { CONTACT_LIMITS } from '@/lib/contact'
 
 type Canal = 'whatsapp' | 'tiktok' | 'instagram' | 'facebook'
 type ContactType = 'group' | 'teacher'
@@ -32,11 +33,22 @@ const CANAL_META: Record<Canal, { label: string; icon: string; iconBg: string; b
   facebook:  { label: 'Facebook',  icon: '📘', iconBg: 'bg-blue-100',    badgeColor: 'bg-blue-50 text-blue-700',      ctaColor: 'bg-blue-600 hover:bg-blue-700',     borderColor: 'border-blue-200'  },
 }
 
+/** Profile-supplied links are user input: only http(s) URLs are allowed in an href. */
+function safeHttpUrl(url: string | null): string {
+  if (!url) return '#'
+  try {
+    const u = new URL(url)
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.toString() : '#'
+  } catch {
+    return '#'
+  }
+}
+
 function canalUrl(entry: DirectoryEntry): string {
-  if (entry.canal === 'whatsapp')  return entry.whatsapp_url  ?? '#'
-  if (entry.canal === 'tiktok')    return entry.tiktok_url    ?? '#'
-  if (entry.canal === 'instagram') return entry.instagram_url ?? '#'
-  return entry.facebook_url ?? '#'
+  if (entry.canal === 'whatsapp')  return safeHttpUrl(entry.whatsapp_url)
+  if (entry.canal === 'tiktok')    return safeHttpUrl(entry.tiktok_url)
+  if (entry.canal === 'instagram') return safeHttpUrl(entry.instagram_url)
+  return safeHttpUrl(entry.facebook_url)
 }
 
 const TYPE_OPTIONS = [
@@ -67,7 +79,25 @@ export default function ContactPage() {
   const [email, setEmail] = useState('')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [website, setWebsite] = useState('') // honeypot, must stay empty
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'rate-limited'>('idle')
+  const confirmRef = useRef<HTMLDivElement>(null)
+
+  // Prefill name/email for signed-in visitors (never overwrites what they already typed).
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data.user
+      if (!user) return
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>
+      const fullName = typeof meta.full_name === 'string' ? meta.full_name : typeof meta.name === 'string' ? meta.name : ''
+      setName(prev => prev || fullName)
+      setEmail(prev => prev || user.email || '')
+    }).catch(() => {})
+  }, [supabase])
+
+  useEffect(() => {
+    if (status === 'sent') confirmRef.current?.focus()
+  }, [status])
 
   useEffect(() => {
     supabase
@@ -103,11 +133,12 @@ export default function ContactPage() {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, subject, message }),
+        body: JSON.stringify({ name, email, subject, message, website }),
       })
+      if (res.status === 429) { setStatus('rate-limited'); return }
       if (!res.ok) throw new Error()
       setStatus('sent')
-      setName(''); setEmail(''); setSubject(''); setMessage('')
+      setSubject(''); setMessage('')
     } catch {
       setStatus('error')
     }
@@ -186,8 +217,12 @@ export default function ContactPage() {
                 </span>
                 {entry.contact && (
                   <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(entry.contact!)
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(entry.contact!)
+                      } catch {
+                        return // clipboard unavailable: don't claim it was copied
+                      }
                       setCopiedId(entry.id)
                       setTimeout(() => setCopiedId(null), 2000)
                     }}
@@ -225,7 +260,7 @@ export default function ContactPage() {
           Contacter l&apos;équipe
         </h2>
         {status === 'sent' ? (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
+          <div ref={confirmRef} tabIndex={-1} role="status" className="bg-green-50 border border-green-200 rounded-xl p-8 text-center outline-none">
             <p className="text-2xl mb-3">✓</p>
             <p className="font-semibold text-green-800">Message envoyé !</p>
             <p className="text-sm text-green-700 mt-1">Nous vous répondrons dans les meilleurs délais.</p>
@@ -234,26 +269,32 @@ export default function ContactPage() {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 bg-card border border-border rounded-xl p-6">
+          <form onSubmit={handleSubmit} className="relative space-y-4 bg-card border border-border rounded-xl p-6">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Nom *</label>
-                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Votre nom" required />
+                <label htmlFor="contact-name" className="text-sm font-medium">Nom *</label>
+                <Input id="contact-name" name="name" autoComplete="name" maxLength={CONTACT_LIMITS.name} value={name} onChange={e => setName(e.target.value)} placeholder="Votre nom" required />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Courriel *</label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com" required />
+                <label htmlFor="contact-email" className="text-sm font-medium">Courriel *</label>
+                <Input id="contact-email" name="email" autoComplete="email" maxLength={CONTACT_LIMITS.email} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com" required />
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Sujet</label>
-              <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Ex : Signaler une erreur, Partenariat…" />
+              <label htmlFor="contact-subject" className="text-sm font-medium">Sujet</label>
+              <Input id="contact-subject" name="subject" maxLength={CONTACT_LIMITS.subject} value={subject} onChange={e => setSubject(e.target.value)} placeholder="Ex : Signaler une erreur, Partenariat…" />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Message *</label>
-              <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Votre message…" rows={5} required />
+              <label htmlFor="contact-message" className="text-sm font-medium">Message *</label>
+              <Textarea id="contact-message" name="message" maxLength={CONTACT_LIMITS.message} value={message} onChange={e => setMessage(e.target.value)} placeholder="Votre message…" rows={5} required />
             </div>
-            {status === 'error' && <p className="text-sm text-red-600">Une erreur est survenue. Veuillez réessayer.</p>}
+            {/* Honeypot: hidden from people and assistive tech, bots fill it in */}
+            <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+              <label htmlFor="contact-website">Ne pas remplir</label>
+              <input id="contact-website" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)} />
+            </div>
+            {status === 'error' && <p role="alert" className="text-sm text-red-600">Une erreur est survenue. Veuillez réessayer.</p>}
+            {status === 'rate-limited' && <p role="alert" className="text-sm text-red-600">Trop de messages envoyés aujourd&apos;hui. Veuillez réessayer demain.</p>}
             <Button type="submit" disabled={status === 'sending'} className="w-full gap-2">
               <Send className="w-4 h-4" />
               {status === 'sending' ? 'Envoi…' : 'Envoyer le message'}
