@@ -41,7 +41,7 @@ export function LexiconEntry({ entry }: { entry: TLexiconEntry }) {
           <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 flex items-center justify-between gap-2">
             <span>Ce mot attend sa traduction en bhété.</span>
             <Link
-              href={`/contribute?word=${encodeURIComponent(entry.top_french)}&type=word&id=${entry.id}`}
+              href={`/contribute?word=${encodeURIComponent(entry.top_french)}&type=word`}
               className="shrink-0 font-medium hover:underline"
             >
               Traduire →
