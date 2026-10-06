@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+
+vi.mock('@/lib/supabase-browser', () => ({
+  createClient: () => ({ auth: { getUser: async () => ({ data: { user: null } }) } }),
+}))
 import { BlockPanel } from '../components/word-link/BlockPanel'
 import { PairStrip } from '../components/word-link/PairStrip'
 import { LexiconPanel } from '../components/word-link/LexiconPanel'
