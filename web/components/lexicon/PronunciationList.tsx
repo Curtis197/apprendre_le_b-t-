@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useEditMode } from '@/components/lexicon/EditMode'
 import { publicAudioUrl } from '@/lib/lexicon-audio'
 import type { PronunciationRow } from '@/lib/lexicon-audio-data'
 
@@ -20,6 +21,7 @@ const formatDate = (iso: string) =>
   iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 
 export function PronunciationList({ items, userId, isAdmin, busy, error, notice, onDelete, onReport }: Props) {
+  const editMode = useEditMode()
   const [reporting, setReporting] = useState<string | null>(null)
   const [message, setMessage] = useState('')
 
@@ -38,7 +40,7 @@ export function PronunciationList({ items, userId, isAdmin, busy, error, notice,
       <ul className="space-y-3">
         {items.map(r => {
           const mine = userId !== null && r.createdBy === userId
-          const canDelete = mine || isAdmin
+          const canDelete = editMode && (mine || isAdmin)
           return (
             <li key={r.id} className="space-y-2 rounded-lg border border-border bg-card p-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-muted-foreground">
@@ -59,7 +61,7 @@ export function PronunciationList({ items, userId, isAdmin, busy, error, notice,
                       Supprimer
                     </button>
                   )}
-                  {userId !== null && !mine && (
+                  {editMode && userId !== null && !mine && (
                     <button type="button" className={btn} disabled={busy} onClick={() => setReporting(reporting === r.id ? null : r.id)}>
                       Signaler
                     </button>

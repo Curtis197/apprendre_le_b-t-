@@ -16,6 +16,7 @@ import { UsageCard } from '@/components/UsageCard'
 import { PronunciationSection } from '@/components/lexicon/PronunciationSection'
 import { SpellingsSection } from '@/components/lexicon/SpellingsSection'
 import Link from 'next/link'
+import { EditModeProvider, EditOnly, EditToggle } from '@/components/lexicon/EditMode'
 
 type Entry = TLexiconEntry & {
   lexicon_examples: LexiconExample[]
@@ -141,8 +142,10 @@ export default async function LexiconEntryPage({
   ]
 
   return (
+    <EditModeProvider>
     <main className="max-w-2xl mx-auto py-10 px-4 space-y-6">
       <JsonLd data={jsonLd} />
+      <EditToggle />
       <LexiconEntry entry={entry} />
       {entry.entry_kind === 'marker' && (
         <section className="space-y-3 rounded-lg border border-border bg-card p-4">
@@ -180,6 +183,7 @@ export default async function LexiconEntryPage({
       <PronunciationSection lexiconId={entry.id} />
       <LexiconDescription lexiconId={entry.id} initial={descText} />
       {bete && (
+        <EditOnly>
         <CorrectionBox
           targetType="word"
           targetId={entry.id}
@@ -190,6 +194,7 @@ export default async function LexiconEntryPage({
             { field: 'description', current: entry.description },
           ]}
         />
+        </EditOnly>
       )}
       <LexiconTranslations lexiconId={entry.id} translations={translations} />
       {entry.lexicon_examples?.length > 0 && (
@@ -222,5 +227,6 @@ export default async function LexiconEntryPage({
         </section>
       )}
     </main>
+    </EditModeProvider>
   )
 }

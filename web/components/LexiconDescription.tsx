@@ -6,9 +6,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase-browser'
 import { updateDescription } from '@/lib/lexicon-mutations'
 import { DESCRIPTION_MAX } from '@/lib/lexicon'
+import { useEditMode } from '@/components/lexicon/EditMode'
 
 export function LexiconDescription({ lexiconId, initial }: { lexiconId: string; initial: string }) {
   const router = useRouter()
+  const editMode = useEditMode()
   const supabaseRef = useRef(createClient())
   const [signedIn, setSignedIn] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -36,13 +38,13 @@ export function LexiconDescription({ lexiconId, initial }: { lexiconId: string; 
     router.refresh()
   }
 
-  if (!editing && !initial && !signedIn) return null
+  if (!editing && !initial && !(editMode && signedIn)) return null
 
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-lg font-heading">Description</h2>
-        {signedIn && !editing && (
+        {editMode && signedIn && !editing && (
           <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
             {initial ? 'Modifier' : 'Ajouter une description'}
           </Button>

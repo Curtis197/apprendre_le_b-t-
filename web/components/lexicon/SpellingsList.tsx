@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useEditMode } from '@/components/lexicon/EditMode'
 
 export interface SpellingItem {
   id: string
@@ -26,7 +27,11 @@ const btn = 'rounded-md border border-border px-2.5 py-1 text-xs font-medium hov
 
 /** « Autres graphies » of an entry: the list, and for signed-in users a field to propose one. */
 export function SpellingsList({ items, userId, isAdmin, busy, error, notice, signInHref, onAdd, onRemove }: Props) {
+  const editMode = useEditMode()
   const [value, setValue] = useState('')
+
+  // A reader just reading has nothing to see when no other spelling was proposed.
+  if (!editMode && items.length === 0) return null
 
   return (
     <section id="graphies" className="space-y-3">
@@ -37,7 +42,7 @@ export function SpellingsList({ items, userId, isAdmin, busy, error, notice, sig
       ) : (
         <ul className="flex flex-wrap gap-2">
           {items.map(s => {
-            const canRemove = isAdmin || (userId !== null && s.created_by === userId)
+            const canRemove = editMode && (isAdmin || (userId !== null && s.created_by === userId))
             return (
               <li key={s.id} className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-sm">
                 <span className="font-medium">{s.spelling}</span>
@@ -57,7 +62,7 @@ export function SpellingsList({ items, userId, isAdmin, busy, error, notice, sig
         </ul>
       )}
 
-      {userId ? (
+      {!editMode ? null : userId ? (
         <form
           className="flex flex-wrap items-center gap-2"
           onSubmit={e => {

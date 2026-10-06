@@ -10,6 +10,7 @@ import { addTranslation, deleteTranslation, updateTranslation } from '@/lib/lexi
 import { TRANSLATION_CONTEXT_MAX, TRANSLATION_FRENCH_MAX } from '@/lib/lexicon'
 import type { LexiconTranslation } from '@/lib/types'
 import { CorrectionBox } from '@/components/CorrectionBox'
+import { useEditMode } from '@/components/lexicon/EditMode'
 
 interface Props {
   lexiconId: string
@@ -18,6 +19,7 @@ interface Props {
 
 export function LexiconTranslations({ lexiconId, translations }: Props) {
   const router = useRouter()
+  const editMode = useEditMode()
   const supabaseRef = useRef(createClient())
   const [userId, setUserId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -108,19 +110,21 @@ export function LexiconTranslations({ lexiconId, translations }: Props) {
                   {t.author_name && (
                     <p className="text-xs text-muted-foreground mt-1">ajouté par {t.author_name}</p>
                   )}
-                  <div className="mt-2">
-                    <CorrectionBox
-                      targetType="translation"
-                      targetId={t.id}
-                      ownerId={t.created_by}
-                      fields={[
-                        { field: 'french', current: t.french },
-                        { field: 'context', current: t.context },
-                      ]}
-                    />
-                  </div>
+                  {editMode && (
+                    <div className="mt-2">
+                      <CorrectionBox
+                        targetType="translation"
+                        targetId={t.id}
+                        ownerId={t.created_by}
+                        fields={[
+                          { field: 'french', current: t.french },
+                          { field: 'context', current: t.context },
+                        ]}
+                      />
+                    </div>
+                  )}
                 </div>
-                {userId && t.created_by === userId && (
+                {editMode && userId && t.created_by === userId && (
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="ghost" onClick={() => startEdit(t)} aria-label="Modifier cette traduction">
                       <Pencil className="w-4 h-4" />
@@ -136,7 +140,7 @@ export function LexiconTranslations({ lexiconId, translations }: Props) {
         ))}
       </ul>
 
-      {!editingId && (
+      {editMode && !editingId && (
         userId ? (
           <div className="space-y-2">
             <p className="text-sm font-medium">Ajouter une traduction</p>

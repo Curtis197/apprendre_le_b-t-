@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PronunciationRecorder } from '@/components/courses/PronunciationRecorder'
 import { PronunciationList } from '@/components/lexicon/PronunciationList'
+import { useEditMode } from '@/components/lexicon/EditMode'
 import { createClient } from '@/lib/supabase-browser'
 import { MAX_AUDIO_PER_USER, MAX_LEXICON_AUDIO_SECONDS } from '@/lib/lexicon-audio'
 import {
@@ -13,6 +14,7 @@ import {
 
 /** « Prononciation » of an entry: listen, record (signed in), delete (author or admin), report. */
 export function PronunciationSection({ lexiconId }: { lexiconId: string }) {
+  const editMode = useEditMode()
   const client = useMemo(() => createClient(), [])
   const pathname = usePathname()
   const [items, setItems] = useState<PronunciationRow[] | null>(null)
@@ -57,6 +59,9 @@ export function PronunciationSection({ lexiconId }: { lexiconId: string }) {
     await load()
   }
 
+  // A reader just reading has nothing to see until a pronunciation exists.
+  if (!editMode && items !== null && items.length === 0) return null
+
   return (
     <section id="prononciation" className="space-y-3">
       <h2 className="font-semibold text-lg font-heading">Prononciation</h2>
@@ -75,7 +80,7 @@ export function PronunciationSection({ lexiconId }: { lexiconId: string }) {
         />
       )}
 
-      {userId === null && (
+      {editMode && userId === null && (
         <p className="text-xs text-muted-foreground">
           <Link href={`/auth?next=${encodeURIComponent(pathname)}`} className="text-primary underline underline-offset-2">
             Connectez-vous
@@ -83,12 +88,12 @@ export function PronunciationSection({ lexiconId }: { lexiconId: string }) {
           pour enregistrer la prononciation de ce mot.
         </p>
       )}
-      {userId && mine >= MAX_AUDIO_PER_USER && (
+      {editMode && userId && mine >= MAX_AUDIO_PER_USER && (
         <p className="text-xs text-muted-foreground">
           Vous avez déjà {MAX_AUDIO_PER_USER} enregistrements pour ce mot : supprimez-en un pour en ajouter.
         </p>
       )}
-      {userId && mine < MAX_AUDIO_PER_USER && (
+      {editMode && userId && mine < MAX_AUDIO_PER_USER && (
         <PronunciationRecorder
           key={items?.length ?? 0}
           maxSeconds={MAX_LEXICON_AUDIO_SECONDS}
