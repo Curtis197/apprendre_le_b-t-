@@ -44,6 +44,12 @@ export function shouldSearchSimilar(text: string): boolean {
   return t.length >= 2 && t.length <= 100
 }
 
+/** A French sense is worth looking up from 2 characters; the form field itself stops at 200. */
+export function shouldSearchFrench(text: string): boolean {
+  const t = text.trim()
+  return t.length >= 2 && t.length <= 200
+}
+
 export type SimilarKind = 'same' | 'variant'
 
 /** An exact match is the same word (it already exists); a normalised or near match is a variant spelling. */

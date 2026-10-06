@@ -4,6 +4,7 @@ import {
   audioOutcome,
   contributionErrorMessage,
   exampleState,
+  shouldSearchFrench,
 } from '../lib/contribution'
 
 describe('exampleState', () => {
@@ -54,5 +55,15 @@ describe('audioFailedMessage', () => {
   })
   it('appends the reason when there is one', () => {
     expect(audioFailedMessage('Enregistrement trop volumineux (1 Mo maximum).')).toContain('(Enregistrement trop volumineux (1 Mo maximum).)')
+  })
+})
+
+describe('shouldSearchFrench', () => {
+  it('searches from 2 characters up to 200, ignoring surrounding spaces', () => {
+    expect(shouldSearchFrench('')).toBe(false)
+    expect(shouldSearchFrench(' a ')).toBe(false)
+    expect(shouldSearchFrench('ab')).toBe(true)
+    expect(shouldSearchFrench('x'.repeat(200))).toBe(true)
+    expect(shouldSearchFrench('x'.repeat(201))).toBe(false)
   })
 })

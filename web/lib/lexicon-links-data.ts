@@ -58,6 +58,43 @@ export async function findCandidates(
   return data.map(parseCandidate).filter((c): c is Candidate => c !== null)
 }
 
+/** An existing entry that already has the French meaning being typed. */
+export interface FrenchMatch {
+  /** The stored French that matched (may differ from what was typed by case, accents or an article). */
+  matched: string
+  context: string | null
+  entry: LexSummary
+}
+
+function parseFrenchMatch(raw: unknown): FrenchMatch | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const entry = parseLex(r.entry)
+  if (!entry) return null
+  return {
+    matched: typeof r.matched === 'string' ? r.matched : (entry.senses[0]?.french ?? ''),
+    context: typeof r.context === 'string' && r.context.trim() ? r.context : null,
+    entry,
+  }
+}
+
+/** Entries of `dialect` that already have the French meaning `text` (exact after normalisation). */
+export async function findByFrench(
+  client: SupabaseClient,
+  a: { text: string; dialect: string; kind?: 'word' | 'marker' | null; limit?: number },
+): Promise<FrenchMatch[]> {
+  const text = a.text.trim()
+  if (!text) return []
+  const { data, error } = await client.rpc('find_lexicon_by_french', {
+    p_french: text,
+    p_dialect: a.dialect,
+    p_kind: a.kind === undefined ? 'word' : a.kind,
+    p_limit: a.limit ?? 6,
+  })
+  if (error || !Array.isArray(data)) return []
+  return data.map(parseFrenchMatch).filter((m): m is FrenchMatch => m !== null)
+}
+
 export interface CreatedEntry {
   id: string
   existed: boolean

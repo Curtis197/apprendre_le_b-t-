@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { addSense, addSpelling, createEntry, findCandidates, getEntry, lexErrorMessage, setMarkerMeaning } from '@/lib/lexicon-links-data'
+import { addSense, addSpelling, createEntry, findByFrench, findCandidates, getEntry, lexErrorMessage, setMarkerMeaning } from '@/lib/lexicon-links-data'
 import { emptyEntryForm } from '@/lib/lexicon-links'
 
 const rawEntry = {
@@ -83,5 +83,30 @@ describe('other writes and reads', () => {
   it('lexErrorMessage falls back to a generic message', () => {
     expect(lexErrorMessage('boom')).toMatch(/réessayer/i)
     expect(lexErrorMessage('not_signed_in')).toMatch(/connectez/i)
+  })
+})
+
+describe('findByFrench', () => {
+  it('maps rows and passes the parameters', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ matched: 'ciel', context: 'en haut', entry: rawEntry }], error: null })
+    const out = await findByFrench(fake(rpc), { text: ' le ciel ', dialect: 'western' })
+    expect(rpc).toHaveBeenCalledWith('find_lexicon_by_french', { p_french: 'le ciel', p_dialect: 'western', p_kind: 'word', p_limit: 6 })
+    expect(out).toHaveLength(1)
+    expect(out[0]).toMatchObject({ matched: 'ciel', context: 'en haut' })
+    expect(out[0].entry).toMatchObject({ id: 'L1', spelling: 'ghèhi-wu' })
+  })
+  it('keeps a missing context as null and a missing matched text as the first sense', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ entry: rawEntry }], error: null })
+    const out = await findByFrench(fake(rpc), { text: 'ciel', dialect: 'western', limit: 3 })
+    expect(out[0].context).toBeNull()
+    expect(out[0].matched).toBe('ciel')
+    expect(rpc).toHaveBeenCalledWith('find_lexicon_by_french', expect.objectContaining({ p_limit: 3 }))
+  })
+  it('returns nothing on error, on blank text and on garbage rows', async () => {
+    expect(await findByFrench(fake(vi.fn().mockResolvedValue({ data: null, error: { message: 'x' } })), { text: 'a', dialect: 'western' })).toEqual([])
+    const rpc = vi.fn()
+    expect(await findByFrench(fake(rpc), { text: '   ', dialect: 'western' })).toEqual([])
+    expect(rpc).not.toHaveBeenCalled()
+    expect(await findByFrench(fake(vi.fn().mockResolvedValue({ data: [{ entry: null }, 5], error: null })), { text: 'a', dialect: 'western' })).toEqual([])
   })
 })
