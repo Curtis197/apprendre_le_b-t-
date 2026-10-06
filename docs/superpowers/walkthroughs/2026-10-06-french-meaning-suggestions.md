@@ -61,3 +61,20 @@ This implementation adds suggestions based on the typed French meaning:
    - `npx eslint` on all created and modified components: 0 warnings, 0 errors.
 4. **Manual Browser Verification Note:**
    - Automated component and RLS test suites pass. In headless CLI execution mode, manual browser interaction was not performed.
+
+---
+
+## 4. Production Rollout
+
+1. **Remote Database Migration:**
+   - Applied migration `20261012000000_find_lexicon_by_french` to remote Supabase project `agdqbzbjcxrzfhkvempe` via `apply_migration`.
+   - Verified functionality with read-only RPC invocation:
+     ```sql
+     select matched, context, entry->>'spelling' as spelling
+     from find_lexicon_by_french('le dieu', 'western');
+     ```
+     Result:
+     ```json
+     [{"matched": "Dieu", "context": null, "spelling": "Lago"}]
+     ```
+   - Confirms case normalization and leading article stripping in production environment.
