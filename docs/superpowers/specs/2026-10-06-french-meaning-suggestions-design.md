@@ -1,6 +1,6 @@
 # Suggest existing words from the French meaning
 
-Date: 2026-10-06. Status: spec, not implemented.
+Date: 2026-10-06. Status: implemented on master (see the commits for `find_lexicon_by_french`), not pushed. Prod migration not applied yet.
 
 ## Problem
 
