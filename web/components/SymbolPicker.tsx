@@ -1,8 +1,8 @@
 ﻿'use client'
-import { useId, useState, type RefObject } from 'react'
+import { useEffect, useId, useRef, useState, type RefObject } from 'react'
 import Link from 'next/link'
 import type { DialectKey } from '@/lib/dialect'
-import { insertAtSelection } from '@/lib/phonetic'
+import { insertAtSelection, insertionRange } from '@/lib/phonetic'
 import { trayRows } from '@/lib/phonetic-alphabet'
 
 type Field = HTMLInputElement | HTMLTextAreaElement
@@ -12,9 +12,8 @@ type Field = HTMLInputElement | HTMLTextAreaElement
  * event is dispatched so the form's own React `onChange` runs: callers keep their state untouched.
  * Returns false when the field's maxLength would be exceeded.
  */
-function applyInsert(el: Field, glyph: string): boolean {
-  const start = el.selectionStart ?? el.value.length
-  const end = el.selectionEnd ?? start
+function applyInsert(el: Field, glyph: string, atEnd: boolean): boolean {
+  const { start, end } = insertionRange(el.value, el.selectionStart, el.selectionEnd, !atEnd)
   const result = insertAtSelection(el.value, start, end, glyph, el.maxLength > 0 ? el.maxLength : 0)
   if (!result) return false
   const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
@@ -37,11 +36,22 @@ export function SymbolPicker({ target, dialect, className }: Props) {
   const [full, setFull] = useState(false)
   const trayId = useId()
   const rows = trayRows(dialect)
+  // A field never focused reports a selection at 0: the first symbol must go at the end instead.
+  const everFocused = useRef(false)
+
+  useEffect(() => {
+    const el = target.current
+    if (!el) return
+    if (document.activeElement === el) everFocused.current = true
+    const onFocus = () => { everFocused.current = true }
+    el.addEventListener('focus', onFocus)
+    return () => el.removeEventListener('focus', onFocus)
+  }, [target])
 
   function insert(glyph: string) {
     const el = target.current
     if (!el) return
-    setFull(!applyInsert(el, glyph))
+    setFull(!applyInsert(el, glyph, !everFocused.current))
   }
 
   return (
@@ -84,7 +94,7 @@ export function SymbolPicker({ target, dialect, className }: Props) {
             </div>
           ))}
           {full && <p role="alert" className="text-xs text-destructive">Limite de caractères atteinte pour ce champ.</p>}
-          <Link href="/alphabet" className="inline-block text-xs font-medium text-primary hover:underline">
+          <Link href="/alphabet" target="_blank" rel="noopener noreferrer" className="inline-block text-xs font-medium text-primary hover:underline">
             Tout l’alphabet →
           </Link>
         </div>

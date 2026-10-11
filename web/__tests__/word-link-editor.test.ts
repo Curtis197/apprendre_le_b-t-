@@ -300,6 +300,15 @@ describe('afterSave', () => {
   })
 })
 
+describe('afterSave normalisation', () => {
+  it('keeps the NFC form the server stores as the base', () => {
+    const sent = { ...draftOf(0), bete: 'gö', literal: 'lö' }
+    const r = afterSave(sent, sent)
+    expect(r.baseBete).toBe('gö')
+    expect(r.baseLiteral).toBe('lö')
+  })
+})
+
 describe('reconcileDraft', () => {
   const initial = draftOf(0)
   const dirty = (d: VerseDraft): VerseDraft => ({ ...d, attB: { 1: 0 } })

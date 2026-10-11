@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toStoredForm, insertAtSelection } from '@/lib/phonetic'
+import { toStoredForm, insertAtSelection, insertionRange } from '@/lib/phonetic'
 
 describe('toStoredForm', () => {
   it('composes a letter and a combining diaeresis into one character', () => {
@@ -55,5 +55,20 @@ describe('insertAtSelection', () => {
 
   it('treats a max of 0 as "no limit"', () => {
     expect(insertAtSelection('abc', 3, 3, 'ɛ', 0)?.value).toBe('abcɛ')
+  })
+})
+
+describe('insertionRange', () => {
+  it('goes to the end for a field that was never focused, whatever its selection', () => {
+    expect(insertionRange('abcd', 0, 0, false)).toEqual({ start: 4, end: 4 })
+  })
+  it('uses the selection of a focused field', () => {
+    expect(insertionRange('abcd', 2, 4, true)).toEqual({ start: 2, end: 4 })
+  })
+  it('goes to the end when there is no selection', () => {
+    expect(insertionRange('abcd', null, null, true)).toEqual({ start: 4, end: 4 })
+  })
+  it('defaults the end of the selection to its start', () => {
+    expect(insertionRange('abcd', 1, null, true)).toEqual({ start: 1, end: 1 })
   })
 })

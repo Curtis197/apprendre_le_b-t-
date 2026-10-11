@@ -33,7 +33,7 @@ export const SYMBOL_GROUPS: { id: SymbolGroup; title: string; hint: string }[] =
 const NOTE_E = 'Proche du « è » de mère.'
 const NOTE_O = 'Proche du « o » de note.'
 const NOTE_NG = 'Proche du « ng » de parking. Les autres dialectes l\'écrivent « ng ».'
-const NOTE_APOS = 'Placée devant certains mots. La plus fréquente du texte.'
+const NOTE_APOS = 'Placée devant certains mots.'
 const NOTE_NBH = 'Trait d\'union insécable qui relie un petit mot au mot voisin.'
 const NOTE_HY = 'Trait d\'union ordinaire qui relie un petit mot au mot voisin.'
 

@@ -7,6 +7,17 @@ export function toStoredForm(text: string): string {
   return text.normalize('NFC')
 }
 
+/** Where a symbol goes: the selection of a field that has had focus, else the end of its text. */
+export function insertionRange(
+  value: string,
+  selectionStart: number | null,
+  selectionEnd: number | null,
+  everFocused: boolean,
+): { start: number; end: number } {
+  if (!everFocused || selectionStart == null) return { start: value.length, end: value.length }
+  return { start: selectionStart, end: selectionEnd ?? selectionStart }
+}
+
 /**
  * Inserts `glyph` at the selection of `value`. Returns the new value and where the caret goes, or
  * `null` when `max` (> 0) would be exceeded: a programmatic value change ignores the field's

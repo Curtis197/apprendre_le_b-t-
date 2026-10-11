@@ -7,6 +7,7 @@ import {
   type BlockInput, type IndexMap, type Pair, type Side, type Unit, type VerseWords,
 } from './word-blocks'
 import { alignVerses, numberLines } from './verses'
+import { toStoredForm } from './phonetic'
 
 export interface BlockMeta {
   isMarker: boolean
@@ -245,9 +246,10 @@ export function toSave(d: VerseDraft): SavePayload {
 /** After a successful save the current lines become the base the next save is checked against. */
 export const markSaved = (d: VerseDraft): VerseDraft => ({ ...d, baseBete: d.bete, baseLiteral: d.literal })
 
-/** After a save: the lines that were sent become the base; edits typed meanwhile stay as they are. */
+/** After a save: the lines that were sent become the base, in the NFC form the server stores
+ *  (saveVerse normalises them); edits typed meanwhile stay as they are. */
 export function afterSave(current: VerseDraft, sent: VerseDraft): VerseDraft {
-  return { ...current, baseBete: sent.bete, baseLiteral: sent.literal }
+  return { ...current, baseBete: toStoredForm(sent.bete), baseLiteral: toStoredForm(sent.literal) }
 }
 
 /** When the server sends new props: which draft a verse should show. In-memory unsaved edits win,

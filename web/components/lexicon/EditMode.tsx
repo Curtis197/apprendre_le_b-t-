@@ -45,7 +45,7 @@ export function EditToggle() {
         {editing ? 'Terminer' : 'Modifier ou contribuer'}
       </button>
       {editing && (
-        <Link href="/alphabet" className="text-xs text-primary hover:underline">
+        <Link href="/alphabet" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
           Besoin d’un symbole (ɛ, ɔ, ɩ…) ? Voir l’alphabet →
         </Link>
       )}
