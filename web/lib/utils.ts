@@ -21,12 +21,12 @@ export function extractYouTubeId(url: string): string | null {
   return null
 }
 
-// Strip leading hyphen variants and trailing punctuation from raw Bible phonetic forms
-// (e.g. "‑bɔgʋ," → "bɔgʋ"). Leading apostrophes are kept: they are tone marks ("'bɔgʋ," → "'bɔgʋ").
+// Strip surrounding spaces and trailing punctuation from raw Bible phonetic forms ("bɔgʋ," → "bɔgʋ").
+// A leading apostrophe (high tone) or hyphen (low tone) is kept: in this orthography they are tone marks
+// written before the word ("‑bɔgʋ," → "‑bɔgʋ").
 export function cleanBeteWord(word: string): string {
   return word
     .trim()
-    .replace(/^[‑‐‒]+/, '')
     .replace(/[.,;:!?]+$/, '')
     .trim()
 }

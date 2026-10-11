@@ -6,10 +6,10 @@ describe('cleanBeteWord', () => {
     expect(cleanBeteWord("'gwɛlenya")).toBe("'gwɛlenya")
   })
 
-  it('still strips a leading hyphen that only links the word to the previous one', () => {
-    expect(cleanBeteWord('\u2011mä')).toBe('mä')
-    expect(cleanBeteWord('\u2010mä')).toBe('mä')
-    expect(cleanBeteWord('\u2012mä')).toBe('mä')
+  it('keeps a leading hyphen: it is the low-tone mark written before the word', () => {
+    expect(cleanBeteWord('‑mä')).toBe('‑mä')
+    expect(cleanBeteWord('-mä')).toBe('-mä')
+    expect(cleanBeteWord(" '‑mä, ")).toBe("'‑mä")
   })
 
   it('still strips trailing punctuation and surrounding spaces', () => {

@@ -39,12 +39,15 @@ function SymbolCard({ sym, max, onCopy }: { sym: PhoneticSymbol; max: number; on
         {sym.codePoint ? <span className="font-mono">{sym.codePoint}</span> : 'groupe de lettres'}
       </p>
       {sym.note ? (
-        <p className="text-sm">
-          {sym.note}{' '}
-          {sym.noteNeedsReview && (
-            <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[11px] font-semibold text-accent">à valider</span>
-          )}
-        </p>
+        <div className="space-y-1">
+          <p className="text-sm">
+            {sym.note}{' '}
+            {sym.noteNeedsReview && (
+              <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[11px] font-semibold text-accent">à valider</span>
+            )}
+          </p>
+          {sym.noteSource && <p className="text-[11px] text-muted-foreground">Source : {sym.noteSource}</p>}
+        </div>
       ) : (
         <p className="text-sm italic text-muted-foreground">Note à venir</p>
       )}

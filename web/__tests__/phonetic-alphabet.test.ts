@@ -71,6 +71,44 @@ describe('ALPHABET inventories', () => {
   })
 })
 
+describe('notes', () => {
+  const note = (d: (typeof DIALECT_KEYS)[number], glyph: string) => ALPHABET[d].find(s => s.glyph === glyph)
+
+  it('every note is flagged for review and says where it comes from', () => {
+    for (const d of DIALECT_KEYS) {
+      for (const s of ALPHABET[d]) {
+        if (!s.note) continue
+        expect(s.noteNeedsReview, `${d} ${s.glyph}`).toBe(true)
+        expect(s.noteSource, `${d} ${s.glyph}`).toBeTruthy()
+      }
+    }
+  })
+
+  it('describes the tréma vowels as central vowels, in every dialect that has them', () => {
+    for (const [d, glyphs] of [['western', ['ä', 'ë', 'ö', 'ï']], ['eastern', ['ë', 'ö', 'ï']]] as const) {
+      for (const g of glyphs) expect(note(d, g)?.note, `${d} ${g}`).toMatch(/centrale/)
+    }
+  })
+
+  it('describes the hyphen and the apostrophe as tone marks, not as a link between words', () => {
+    expect(note('western', "'")?.note).toMatch(/Ton haut/)
+    expect(note('western', '‑')?.note).toMatch(/Ton bas/)
+    expect(note('eastern', '-')?.note).toMatch(/Ton bas/)
+    expect(note('northern', '-')?.note).toMatch(/Ton bas/)
+    for (const d of DIALECT_KEYS) for (const s of ALPHABET[d]) expect(s.note ?? '').not.toMatch(/relie un petit mot/)
+  })
+
+  it('describes bh as the bilabial implosive and leaves unknown symbols without a note', () => {
+    expect(note('western', 'bh')?.note).toMatch(/implosive/)
+    expect(note('western', 'gl')?.note).toBeNull()
+    expect(note('northern', '"')?.note).toBeNull()
+  })
+
+  it('keeps the apostrophe note free of any claim about frequency', () => {
+    for (const d of DIALECT_KEYS) expect(note(d, "'")?.note).not.toMatch(/fréquente/)
+  })
+})
+
 describe('groupedSymbols', () => {
   it('omits empty groups and keeps the declared order', () => {
     const north = groupedSymbols('northern').map(g => g.id)
