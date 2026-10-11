@@ -71,6 +71,43 @@ describe('ALPHABET inventories', () => {
   })
 })
 
+describe('gh, gw and kw', () => {
+  const sym = (d: (typeof DIALECT_KEYS)[number], g: string) => ALPHABET[d].find(s => s.glyph === g)
+
+  it('are listed where the corpus uses them, with its counts, as typed letter groups', () => {
+    expect(sym('western', 'gh')?.frequency).toBe(1939)
+    expect(sym('western', 'gw')?.frequency).toBe(982)
+    expect(sym('western', 'kw')?.frequency).toBe(1993)
+    expect(sym('eastern', 'gh')?.frequency).toBe(1347)
+    expect(sym('eastern', 'gw')?.frequency).toBe(3599)
+    expect(sym('eastern', 'kw')?.frequency).toBe(1282)
+    expect(sym('northern', 'gw')?.frequency).toBe(731)
+    expect(sym('northern', 'kw')?.frequency).toBe(1808)
+    for (const d of DIALECT_KEYS) for (const g of ['gh', 'gw', 'kw']) if (sym(d, g)) expect(sym(d, g)?.typable).toBe(true)
+  })
+
+  it('does not list gh in the northern dialect, which does not use it', () => {
+    expect(sym('northern', 'gh')).toBeUndefined()
+  })
+
+  it('are never offered by the picker (they are typed with the keyboard)', () => {
+    for (const d of DIALECT_KEYS) {
+      const glyphs = trayRows(d).flatMap(r => r.glyphs)
+      for (const g of ['gh', 'gw', 'kw']) expect(glyphs).not.toContain(g)
+    }
+  })
+
+  it('have a sourced note flagged for review', () => {
+    for (const d of DIALECT_KEYS) for (const g of ['gh', 'gw', 'kw']) {
+      const s = sym(d, g)
+      if (!s) continue
+      expect(s.note, `${d} ${g}`).toBeTruthy()
+      expect(s.noteNeedsReview).toBe(true)
+      expect(s.noteSource).toBeTruthy()
+    }
+  })
+})
+
 describe('notes', () => {
   const note = (d: (typeof DIALECT_KEYS)[number], glyph: string) => ALPHABET[d].find(s => s.glyph === glyph)
 

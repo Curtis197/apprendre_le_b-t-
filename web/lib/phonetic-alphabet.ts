@@ -49,7 +49,10 @@ const NOTE_I_T = 'Probablement la voyelle centrale non arrondie, haute et tendue
 const NOTE_NG = 'Proche du « ng » de parking. Les autres dialectes l’écrivent « ng ».'
 const NOTE_BH = 'Consonne implosive bilabiale [ɓ] : un « b » prononcé en aspirant l’air vers l’intérieur. Elle se comporte comme une sonante.'
 const NOTE_NY = 'Consonne nasale palatale : comme « gn » dans montagne.'
-const NOTE_KP = 'Un « k » et un « p » prononcés en même temps.'
+const NOTE_GH = 'Consonne sonante vélaire (une approximante, produite au fond de la bouche, sans friction forte). Valeur exacte à confirmer.'
+const NOTE_KW = 'Un « k » prononcé en arrondissant les lèvres, comme dans « coin ».'
+const NOTE_GW = 'Un « g » prononcé en arrondissant les lèvres, comme dans « goût ».'
+const NOTE_KP ='Un « k » et un « p » prononcés en même temps.'
 const NOTE_GB = 'Un « g » et un « b » prononcés en même temps.'
 const NOTE_HIGH = 'Ton haut, écrit devant le mot. Le ton moyen n’est pas noté.'
 const NOTE_LOW = 'Ton bas, écrit devant le mot (et non un simple trait d’union). Le ton moyen n’est pas noté.'
@@ -86,6 +89,9 @@ export const ALPHABET: Record<DialectKey, PhoneticSymbol[]> = {
     s('kp', 'consonnes', 'kp', 6140, draft(NOTE_KP, SRC_IA)),
     s('gb', 'consonnes', 'gb', 4342, draft(NOTE_GB, SRC_IA)),
     s('gl', 'consonnes', 'gl', 5534),
+    s('gh', 'consonnes', 'gh', 1939, draft(NOTE_GH, SRC_GODIE)),
+    s('gw', 'consonnes', 'gw', 982, draft(NOTE_GW, SRC_GODIE)),
+    s('kw', 'consonnes', 'kw', 1993, draft(NOTE_KW, SRC_GODIE)),
     s('apos', 'marques', "'", 78623, draft(NOTE_HIGH, SRC_GODIE)),
     s('nbh', 'marques', '‑', 52175, draft(NOTE_LOW_NBH, SRC_GODIE)),
   ],
@@ -102,6 +108,9 @@ export const ALPHABET: Record<DialectKey, PhoneticSymbol[]> = {
     s('kp', 'consonnes', 'kp', 5453, draft(NOTE_KP, SRC_IA)),
     s('gb', 'consonnes', 'gb', 5933, draft(NOTE_GB, SRC_IA)),
     s('gl', 'consonnes', 'gl', 5078),
+    s('gh', 'consonnes', 'gh', 1347, draft(NOTE_GH, SRC_GODIE)),
+    s('gw', 'consonnes', 'gw', 3599, draft(NOTE_GW, SRC_GODIE)),
+    s('kw', 'consonnes', 'kw', 1282, draft(NOTE_KW, SRC_GODIE)),
     s('apos', 'marques', "'", 62855, draft(NOTE_HIGH, SRC_GODIE)),
     s('hy', 'marques', '-', 80307, draft(NOTE_LOW, SRC_GODIE)),
   ],
@@ -114,6 +123,8 @@ export const ALPHABET: Record<DialectKey, PhoneticSymbol[]> = {
     s('kp', 'consonnes', 'kp', 4981, draft(NOTE_KP, SRC_IA)),
     s('gb', 'consonnes', 'gb', 6304, draft(NOTE_GB, SRC_IA)),
     s('gl', 'consonnes', 'gl', 2190),
+    s('gw', 'consonnes', 'gw', 731, draft(NOTE_GW, SRC_GODIE)),
+    s('kw', 'consonnes', 'kw', 1808, draft(NOTE_KW, SRC_GODIE)),
     s('apos', 'marques', "'", 73404, draft(NOTE_HIGH, SRC_GODIE)),
     s('hy', 'marques', '-', 70921, draft(NOTE_LOW, SRC_GODIE)),
     s('dq', 'marques', '"', 37415),
