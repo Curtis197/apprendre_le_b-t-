@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useId, useState, type RefObject } from 'react'
 import Link from 'next/link'
 import type { DialectKey } from '@/lib/dialect'
@@ -49,7 +49,10 @@ export function SymbolPicker({ target, dialect, className }: Props) {
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => setOpen(o => !o)}
+          onClick={() => {
+            setOpen(o => !o)
+            setFull(false)
+          }}
           aria-expanded={open}
           aria-controls={trayId}
           className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -82,10 +85,12 @@ export function SymbolPicker({ target, dialect, className }: Props) {
           ))}
           {full && <p role="alert" className="text-xs text-destructive">Limite de caractères atteinte pour ce champ.</p>}
           <Link href="/alphabet" className="inline-block text-xs font-medium text-primary hover:underline">
-            Tout l'alphabet →
+            Tout l’alphabet →
           </Link>
         </div>
       )}
     </div>
   )
 }
+
+
