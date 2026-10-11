@@ -12,6 +12,8 @@ interface Props {
   'aria-label'?: string
   /** Typography of the text itself (font family, italics…). Size and line height are fixed. */
   className?: string
+  /** Lets a symbol picker write into the field. */
+  textareaRef?: React.Ref<HTMLTextAreaElement>
 }
 
 /** Line height is shared by the gutter and the textarea: the numbers only line up if it is identical. */
@@ -32,6 +34,7 @@ export function NumberedTextarea({
   id,
   'aria-label': ariaLabel,
   className,
+  textareaRef,
 }: Props) {
   const gutterRef = useRef<HTMLDivElement>(null)
   const numbers = useMemo(() => numberLines(value), [value])
@@ -53,6 +56,7 @@ export function NumberedTextarea({
         <div style={{ height: '1rem' }} />
       </div>
       <textarea
+        ref={textareaRef}
         id={id}
         aria-label={ariaLabel}
         wrap="off"
