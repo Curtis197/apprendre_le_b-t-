@@ -10,7 +10,7 @@ const inter  = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: ['400', '600', '700'] })
 // Bhété text needs ɛ ɔ ɩ ʋ ŋ and their capitals: Inter/Lexend ship the `latin` subset only, so those letters
 // would fall back to an arbitrary system font. Noto Sans covers them through `latin-ext`.
-const phonetic = Noto_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-phonetic', weight: ['400', '600'], display: 'swap' })
+const phonetic = Noto_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-phonetic', weight: ['400', '600', '700'], display: 'swap' })
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

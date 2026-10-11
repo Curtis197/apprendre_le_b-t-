@@ -204,10 +204,12 @@
   }
 }
 
+/* Unlayered on purpose: it must beat font-heading and the h1-h6 rule in @layer base whatever the source order. */
+.phonetic {
+  font-family: var(--font-phonetic), var(--font-sans), sans-serif;
+}
+
 @layer utilities {
-  .phonetic {
-    font-family: var(--font-phonetic), var(--font-sans), sans-serif;
-  }
   .pattern-bg {
     background-image: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 6%, transparent) 0.5px, transparent 0.5px);
     background-size: 24px 24px;

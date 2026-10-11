@@ -143,7 +143,7 @@ export function InterlinearGloss({
                   <span className="font-semibold text-xs text-foreground">{tok.original}</span>
                   <span className="text-[11px] text-primary/90 font-medium italic mt-0.5">{tok.gloss}</span>
                   {tok.phonetic && (
-                    <span className="text-[10px] font-mono text-muted-foreground">{tok.phonetic}</span>
+                    <span className="text-[10px] phonetic text-muted-foreground">{tok.phonetic}</span>
                   )}
                 </div>
               ))}
