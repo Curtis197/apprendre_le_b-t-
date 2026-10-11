@@ -3,6 +3,7 @@
 // Pass a SupabaseClient created with createClient() from supabase-browser.
 import { SupabaseClient } from '@supabase/supabase-js'
 import { isResourceRegion } from './regions'
+import { toStoredForm } from '@/lib/phonetic'
 import type {
   CreateThreadInput,
   CreatePostInput,
@@ -102,8 +103,8 @@ function resourceColumns(input: CreateCommunityTextInput, region: string | null)
   return {
     title:           input.title.trim(),
     type:            input.type,
-    content_bete:    input.content_bete.trim(),
-    content_literal: input.content_literal?.trim() || null,
+    content_bete:    toStoredForm(input.content_bete.trim()),
+    content_literal: input.content_literal?.trim() ? toStoredForm(input.content_literal.trim()) : null,
     content_french:  input.content_french?.trim() || null,
     video_url:       input.video_url?.trim() || null,
     region,

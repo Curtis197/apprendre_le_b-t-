@@ -2,6 +2,7 @@
 // No 'server-only' import: the reader page calls getResourceWords on the server, the editor
 // calls saveVerse in the browser.
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { toStoredForm } from '@/lib/phonetic'
 import type { BlockInput, LexAudio, LexSummary, MarkerInfo, VerseWords, WordBlock } from './word-blocks'
 
 export type Result<T> = { data: T; error: null } | { data: null; error: string }
@@ -151,8 +152,8 @@ export async function saveVerse(
     p_verse: a.verseNo,
     p_base_bete: a.baseBete,
     p_base_literal: a.baseLiteral,
-    p_bete_line: a.beteLine,
-    p_literal_line: a.literalLine,
+    p_bete_line: a.beteLine === null ? null : toStoredForm(a.beteLine),
+    p_literal_line: a.literalLine === null ? null : toStoredForm(a.literalLine),
     p_blocks: a.blocks,
   })
   if (error) return { data: null, error: saveErrorMessage(error.message) }

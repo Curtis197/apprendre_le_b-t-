@@ -3,6 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { splitList, type Candidate, type EntryForm } from './lexicon-links'
 import { checkTranslationInput } from './lexicon'
+import { toStoredForm } from '@/lib/phonetic'
 import { parseLex, type Result } from './word-blocks-data'
 import type { LexSummary } from './word-blocks'
 
@@ -111,19 +112,19 @@ export async function createEntry(
     a.kind === 'word'
       ? f.senses.filter(s => s.french.trim() !== '').map(s => ({ french: s.french.trim(), context: s.context.trim() || null }))
       : []
-  const synonyms = splitList(f.synonyms)
+  const synonyms = splitList(f.synonyms).map(toStoredForm)
   const { data, error } = await client.rpc('create_lexicon_entry', {
-    p_spelling: f.spelling.trim(),
-    p_ipa: f.ipa.trim() || null,
+    p_spelling: toStoredForm(f.spelling.trim()),
+    p_ipa: toStoredForm(f.ipa.trim()) || null,
     p_dialect: f.dialect,
     p_kind: a.kind,
     p_pos: f.category && a.kind === 'word' ? [f.category] : null,
     p_description: f.description.trim() || null,
     p_notes: f.notes.trim() || null,
     p_synonyms: synonyms.length ? synonyms : null,
-    p_lemma: f.lemma.trim() || null,
+    p_lemma: toStoredForm(f.lemma.trim()) || null,
     p_senses: senses,
-    p_example: a.example ?? null,
+    p_example: a.example ? { ...a.example, bete: toStoredForm(a.example.bete), literal: toStoredForm(a.example.literal) } : null,
   })
   if (error) return { data: null, error: lexErrorMessage(error.message) }
   const d = data as { id: string; existed: boolean; sense_ids: string[]; entry: unknown }
@@ -133,7 +134,7 @@ export async function createEntry(
 }
 
 export async function addSpelling(client: SupabaseClient, lexiconId: string, spelling: string): Promise<Result<true>> {
-  const { error } = await client.rpc('add_lexicon_spelling', { p_lexicon_id: lexiconId, p_spelling: spelling.trim() })
+  const { error } = await client.rpc('add_lexicon_spelling', { p_lexicon_id: lexiconId, p_spelling: toStoredForm(spelling.trim()) })
   return error ? { data: null, error: lexErrorMessage(error.message) } : { data: true, error: null }
 }
 

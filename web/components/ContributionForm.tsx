@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { toStoredForm } from '@/lib/phonetic'
 import { createClient } from '@/lib/supabase-browser'
 import { useContributeRefresh } from '@/context/ContributeRefreshContext'
 import { useDialect } from '@/context/DialectContext'
@@ -140,16 +141,16 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
       let error
       if (type === 'grammar_rule') {
         ({ error } = await supabaseRef.current.from('grammar_rules').insert({
-          category, pattern_french: patternFr, pattern_bete: patternBete,
-          description, example_french: exFr || null, example_bete: exBete || null,
+          category, pattern_french: patternFr, pattern_bete: toStoredForm(patternBete),
+          description, example_french: exFr || null, example_bete: exBete ? toStoredForm(exBete) : null,
           created_by: user.id,
         }))
       } else {
         ({ error } = await supabaseRef.current.from('expressions').insert({
           french_phrase: frPhrase,
           french_literal: frLiteral.trim() || null,
-          bete_phrase: betePhrase,
-          bete_phonetic: betePhonetic,
+          bete_phrase: toStoredForm(betePhrase),
+          bete_phonetic: toStoredForm(betePhonetic),
           type: exprType,
           created_by: user.id,
         }))
