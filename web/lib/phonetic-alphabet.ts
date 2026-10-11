@@ -37,12 +37,26 @@ export const SYMBOL_GROUPS: { id: SymbolGroup; title: string; hint: string }[] =
 const SRC_GODIE = 'Orthographe du godié, langue voisine (Egner 2015), et Zogbo 2019'
 const SRC_KRU = 'Zogbo 2019 (voyelles des langues kru)'
 const SRC_IA = 'Brouillon rédigé par une IA, non vérifié'
+const SRC_CLV = 'Zogbo 2019 et Sande 2017 (langues kru voisines)'
+const SRC_GODIE_CORPUS = `${SRC_GODIE} ; décompte sur le texte du Nouveau Testament`
+
+/** Which central vowels each dialect's reference text writes, and what the studies say about the dialect. */
+export const DIALECT_NOTES: Record<DialectKey, string> = {
+  western:
+    'Le texte occidental écrit quatre voyelles à tréma (ä ë ö ï). Les études décrivent pour le bhété de Guibéroua quatre voyelles centrales en plus de a (Zogbo 2019).',
+  eastern:
+    'Le texte oriental écrit trois voyelles à tréma (ë ö ï) et pas de ä. Les études décrivent pour le bhété de Daloa trois voyelles centrales, sans la basse relâchée (Zogbo 2019).',
+  northern:
+    'Le texte septentrional n’écrit aucune voyelle à tréma, alors que certaines études décrivent deux voyelles centrales hautes à Gagnoa : le texte de référence ne les note pas (Zogbo 2019).',
+}
 
 const NOTE_E = 'Voyelle mi-ouverte antérieure, relâchée (−ATR) : proche du « è » de père.'
 const NOTE_O = 'Voyelle mi-ouverte postérieure arrondie, relâchée (−ATR) : proche du « o » de porte.'
 const NOTE_I = 'Voyelle haute antérieure, relâchée (−ATR) : un « i » plus détendu, comme le « i » de l’anglais bit.'
 const NOTE_U = 'Voyelle haute postérieure arrondie, relâchée (−ATR) : un « ou » plus détendu, comme le « u » de l’anglais put.'
-const NOTE_A_T = 'Voyelle centrale non arrondie, mi-ouverte, relâchée (−ATR).'
+const NOTE_A_T = 'Voyelle centrale non arrondie, mi-ouverte, relâchée (−ATR). Dans le texte, un mot qui se termine par ä a presque toujours (95 % des cas observables) une voyelle relâchée juste avant : ɩ ʋ ɛ ɔ ö ou ä.'
+const NOTE_GL = 'Un « g » suivi de « l ». Entre les deux, on entend souvent une voyelle très brève : g(ə)l. En parole lente, on peut même entendre deux syllabes.'
+const NOTE_O_T_EAST = 'Voyelle centrale non arrondie, haute. Pour le bhété oriental, les études décrivent trois voyelles centrales : leur degré de tension (tendue ou relâchée) est à confirmer.'
 const NOTE_E_T = 'Voyelle centrale non arrondie, moyenne, tendue (+ATR).'
 const NOTE_O_T = 'Voyelle centrale non arrondie, haute, relâchée (−ATR).'
 const NOTE_I_T = 'Probablement la voyelle centrale non arrondie, haute et tendue (+ATR), que le godié note « ü ».'
@@ -80,7 +94,7 @@ export const ALPHABET: Record<DialectKey, PhoneticSymbol[]> = {
     s('o-open', 'voyelles', 'ɔ', 36797, { upper: 'Ɔ', upperFrequency: 1403, ...draft(NOTE_O, SRC_KRU) }),
     s('i-lax', 'voyelles', 'ɩ', 68529, draft(NOTE_I, SRC_KRU)),
     s('u-lax', 'voyelles', 'ʋ', 31665, draft(NOTE_U, SRC_KRU)),
-    s('a-t', 'trema', 'ä', 35385, draft(NOTE_A_T, SRC_GODIE)),
+    s('a-t', 'trema', 'ä', 35385, draft(NOTE_A_T, SRC_GODIE_CORPUS)),
     s('e-t', 'trema', 'ë', 11131, draft(NOTE_E_T, SRC_GODIE)),
     s('o-t', 'trema', 'ö', 23993, draft(NOTE_O_T, SRC_GODIE)),
     s('i-t', 'trema', 'ï', 3501, draft(NOTE_I_T, SRC_GODIE)),
@@ -88,7 +102,7 @@ export const ALPHABET: Record<DialectKey, PhoneticSymbol[]> = {
     s('ny', 'consonnes', 'ny', 11443, draft(NOTE_NY, SRC_GODIE)),
     s('kp', 'consonnes', 'kp', 6140, draft(NOTE_KP, SRC_IA)),
     s('gb', 'consonnes', 'gb', 4342, draft(NOTE_GB, SRC_IA)),
-    s('gl', 'consonnes', 'gl', 5534),
+    s('gl', 'consonnes', 'gl', 5534, draft(NOTE_GL, SRC_CLV)),
     s('gh', 'consonnes', 'gh', 1939, draft(NOTE_GH, SRC_GODIE)),
     s('gw', 'consonnes', 'gw', 982, draft(NOTE_GW, SRC_GODIE)),
     s('kw', 'consonnes', 'kw', 1993, draft(NOTE_KW, SRC_GODIE)),
@@ -101,13 +115,13 @@ export const ALPHABET: Record<DialectKey, PhoneticSymbol[]> = {
     s('i-lax', 'voyelles', 'ɩ', 52092, { upper: 'Ɩ', upperFrequency: 715, ...draft(NOTE_I, SRC_KRU) }),
     s('u-lax', 'voyelles', 'ʋ', 32596, { upper: 'Ʋ', upperFrequency: 70, ...draft(NOTE_U, SRC_KRU) }),
     s('e-t', 'trema', 'ë', 4375, draft(NOTE_E_T, SRC_GODIE)),
-    s('o-t', 'trema', 'ö', 17876, draft(NOTE_O_T, SRC_GODIE)),
+    s('o-t', 'trema', 'ö', 17876, draft(NOTE_O_T_EAST, SRC_GODIE)),
     s('i-t', 'trema', 'ï', 1945, draft(NOTE_I_T, SRC_GODIE)),
     s('bh', 'consonnes', 'bh', 21545, draft(NOTE_BH, SRC_GODIE)),
     s('ny', 'consonnes', 'ny', 8285, draft(NOTE_NY, SRC_GODIE)),
     s('kp', 'consonnes', 'kp', 5453, draft(NOTE_KP, SRC_IA)),
     s('gb', 'consonnes', 'gb', 5933, draft(NOTE_GB, SRC_IA)),
-    s('gl', 'consonnes', 'gl', 5078),
+    s('gl', 'consonnes', 'gl', 5078, draft(NOTE_GL, SRC_CLV)),
     s('gh', 'consonnes', 'gh', 1347, draft(NOTE_GH, SRC_GODIE)),
     s('gw', 'consonnes', 'gw', 3599, draft(NOTE_GW, SRC_GODIE)),
     s('kw', 'consonnes', 'kw', 1282, draft(NOTE_KW, SRC_GODIE)),
@@ -122,7 +136,7 @@ export const ALPHABET: Record<DialectKey, PhoneticSymbol[]> = {
     s('ny', 'consonnes', 'ny', 15685, draft(NOTE_NY, SRC_GODIE)),
     s('kp', 'consonnes', 'kp', 4981, draft(NOTE_KP, SRC_IA)),
     s('gb', 'consonnes', 'gb', 6304, draft(NOTE_GB, SRC_IA)),
-    s('gl', 'consonnes', 'gl', 2190),
+    s('gl', 'consonnes', 'gl', 2190, draft(NOTE_GL, SRC_CLV)),
     s('gw', 'consonnes', 'gw', 731, draft(NOTE_GW, SRC_GODIE)),
     s('kw', 'consonnes', 'kw', 1808, draft(NOTE_KW, SRC_GODIE)),
     s('apos', 'marques', "'", 73404, draft(NOTE_HIGH, SRC_GODIE)),

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useDialect } from '@/context/DialectContext'
 import { DIALECTS, DIALECT_KEYS, type DialectKey } from '@/lib/dialect'
-import { groupedSymbols, type PhoneticSymbol } from '@/lib/phonetic-alphabet'
+import { DIALECT_NOTES, groupedSymbols, type PhoneticSymbol } from '@/lib/phonetic-alphabet'
 
 const SHORT: Record<DialectKey, string> = { western: 'Occidental', eastern: 'Oriental', northern: 'Septentrional' }
 const fmt = (n: number) => n.toLocaleString('fr-FR')
@@ -103,6 +103,7 @@ export function AlphabetReference() {
           ))}
         </div>
         <p className="font-heading text-sm font-semibold text-primary">{DIALECTS[dialect].name}</p>
+        <p className="max-w-prose text-sm text-muted-foreground">{DIALECT_NOTES[dialect]}</p>
       </div>
 
       {groups.map(g => (

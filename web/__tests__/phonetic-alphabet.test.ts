@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { DIALECT_KEYS } from '@/lib/dialect'
-import { ALPHABET, groupedSymbols, trayRows } from '@/lib/phonetic-alphabet'
+import { ALPHABET, DIALECT_NOTES, groupedSymbols, trayRows } from '@/lib/phonetic-alphabet'
 
 const hex = (s: string) => 'U+' + s.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')
 
@@ -135,14 +135,44 @@ describe('notes', () => {
     for (const d of DIALECT_KEYS) for (const s of ALPHABET[d]) expect(s.note ?? '').not.toMatch(/relie un petit mot/)
   })
 
-  it('describes bh as the bilabial implosive and leaves unknown symbols without a note', () => {
+  it('describes bh as the bilabial implosive and leaves the northern quote mark without a note', () => {
     expect(note('western', 'bh')?.note).toMatch(/implosive/)
-    expect(note('western', 'gl')?.note).toBeNull()
     expect(note('northern', '"')?.note).toBeNull()
+  })
+
+  it('describes gl as a g followed by l with a very short vowel in between, in every dialect', () => {
+    for (const d of DIALECT_KEYS) expect(note(d, 'gl')?.note, d).toMatch(/voyelle très brève/)
+  })
+
+  it('does not claim a relaxed (−ATR) value for the eastern ö, which the studies do not establish', () => {
+    expect(note('eastern', 'ö')?.note).toMatch(/à confirmer/)
+    expect(note('eastern', 'ö')?.note).not.toMatch(/\(−ATR\)/)
+    expect(note('western', 'ö')?.note).toMatch(/−ATR/)
+  })
+
+  it('backs the western ä harmony claim with the corpus as a source', () => {
+    expect(note('western', 'ä')?.note).toMatch(/95 %/)
+    expect(note('western', 'ä')?.noteSource).toMatch(/décompte sur le texte/)
   })
 
   it('keeps the apostrophe note free of any claim about frequency', () => {
     for (const d of DIALECT_KEYS) expect(note(d, "'")?.note).not.toMatch(/fréquente/)
+  })
+})
+
+describe('DIALECT_NOTES', () => {
+  it('has an introduction for every dialect, matching which tréma vowels its text writes', () => {
+    for (const d of DIALECT_KEYS) expect(DIALECT_NOTES[d].length).toBeGreaterThan(40)
+    expect(DIALECT_NOTES.western).toMatch(/quatre voyelles à tréma \(ä ë ö ï\)/)
+    expect(DIALECT_NOTES.eastern).toMatch(/trois voyelles à tréma \(ë ö ï\)/)
+    expect(DIALECT_NOTES.northern).toMatch(/aucune voyelle à tréma/)
+  })
+
+  it('agrees with the inventories: tréma letters present exactly where the introduction says', () => {
+    const trema = (d: (typeof DIALECT_KEYS)[number]) => ALPHABET[d].filter(s => s.group === 'trema').map(s => s.glyph).join('')
+    expect(trema('western')).toBe('äëöï')
+    expect(trema('eastern')).toBe('ëöï')
+    expect(trema('northern')).toBe('')
   })
 })
 
