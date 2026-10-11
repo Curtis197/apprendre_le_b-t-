@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { Pencil, Check } from 'lucide-react'
+import Link from 'next/link'
 
 /**
  * Edit mode of the lexicon entry page: the forms and contribution controls stay hidden
@@ -33,7 +34,7 @@ export function EditOnly({ children }: { children: ReactNode }) {
 export function EditToggle() {
   const { editing, toggle } = useContext(EditModeContext)
   return (
-    <div className="flex justify-end">
+    <div className="flex flex-col items-end gap-1.5">
       <button
         type="button"
         onClick={toggle}
@@ -43,6 +44,11 @@ export function EditToggle() {
         {editing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
         {editing ? 'Terminer' : 'Modifier ou contribuer'}
       </button>
+      {editing && (
+        <Link href="/alphabet" className="text-xs text-primary hover:underline">
+          Besoin d’un symbole (ɛ, ɔ, ɩ…) ? Voir l’alphabet →
+        </Link>
+      )}
     </div>
   )
 }

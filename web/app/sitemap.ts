@@ -17,6 +17,7 @@ const STATIC_ROUTES: { path: string; changeFrequency: ChangeFreq; priority: numb
   { path: '/forum',      changeFrequency: 'daily',   priority: 0.7 },
   { path: '/resources',  changeFrequency: 'weekly',  priority: 0.7 },
   { path: '/contribute', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/alphabet',   changeFrequency: 'monthly', priority: 0.5 },
   { path: '/contact',    changeFrequency: 'yearly',  priority: 0.3 },
 ]
 
