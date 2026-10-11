@@ -9,6 +9,8 @@ import { RESOURCE_REGIONS } from '@/lib/regions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberedTextarea } from '@/components/NumberedTextarea'
+import { SymbolPicker } from '@/components/SymbolPicker'
+import { useDialect } from '@/context/DialectContext'
 import { postSaveDestination, type PostSaveIntent } from '@/lib/word-link-editor'
 import type { CommunityText, ContentType } from '@/lib/types'
 
@@ -27,6 +29,9 @@ const TYPES: { value: ContentType; label: string }[] = [
 export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
   const router = useRouter()
   const supabaseRef = useRef(createClient())
+  const { dialect } = useDialect()
+  const beteRef = useRef<HTMLTextAreaElement>(null)
+  const literalRef = useRef<HTMLTextAreaElement>(null)
   const [title, setTitle]               = useState(resource?.title ?? '')
   const [type, setType]                 = useState<ContentType>(resource?.type ?? 'proverb')
   const [contentBete, setContentBete]   = useState(resource?.content_bete ?? '')
@@ -110,7 +115,9 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
           onChange={setContentBete}
           rows={6}
           className="phonetic"
+          textareaRef={beteRef}
         />
+        <SymbolPicker target={beteRef} dialect={dialect} />
         <p className="text-xs text-muted-foreground">
           Pour un texte long (chanson, poème, conte) : une ligne par vers, une ligne vide entre les couplets,
           et le même nombre de lignes dans chaque champ ci-dessous. Les numéros à gauche comptent les vers :
@@ -126,7 +133,9 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
           onChange={setContentLiteral}
           rows={3}
           className="phonetic italic"
+          textareaRef={literalRef}
         />
+        <SymbolPicker target={literalRef} dialect={dialect} />
         <p className="text-xs text-muted-foreground">
           La traduction littérale, mot par mot, qui montre la structure du bhété.
         </p>

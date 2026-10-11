@@ -12,6 +12,7 @@ import { DIALECTS, DIALECT_KEYS, type DialectKey } from '@/lib/dialect'
 import { ContributionPronunciation } from '@/components/ContributionPronunciation'
 import { LexiconPicker } from '@/components/lexicon/LexiconPicker'
 import { MarkdownField } from '@/components/MarkdownField'
+import { SymbolPicker } from '@/components/SymbolPicker'
 import { uploadPronunciation } from '@/lib/lexicon-audio-data'
 import {
   audioFailedMessage,
@@ -41,6 +42,12 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
   const { bumpRefresh } = useContributeRefresh()
   // Same source of truth as the page-level DialectSelector, so the two never disagree.
   const { dialect, setDialect } = useDialect()
+  const wordSpellingRef = useRef<HTMLInputElement>(null)
+  const wordExBeteRef = useRef<HTMLInputElement>(null)
+  const betePhraseRef = useRef<HTMLInputElement>(null)
+  const betePhoneticRef = useRef<HTMLInputElement>(null)
+  const patternBeteRef = useRef<HTMLInputElement>(null)
+  const exBeteRef = useRef<HTMLInputElement>(null)
 
   // Word fields: the spelling drives the lexicon search; everything else lives in the shared creation form.
   const [wordSpelling, setWordSpelling] = useState('')
@@ -234,10 +241,12 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
               <p className="text-xs text-muted-foreground">Mot français : « {initialWord} »</p>
             )}
             <Input
+              ref={wordSpellingRef}
               placeholder="Mot en bhété (forme phonétique latine) *"
               value={wordSpelling}
               onChange={e => { setWordSpelling(e.target.value); setExisting(null); setSubmitError(null) }}
             />
+            <SymbolPicker target={wordSpellingRef} dialect={dialect} />
             </>
           )}
           {signedIn === false && (
@@ -271,10 +280,12 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
                       Phrase d&apos;exemple (optionnel)
                     </p>
                     <Input
+                      ref={wordExBeteRef}
                       placeholder="Phrase en bhété utilisant ce mot"
                       value={wordExBete}
                       onChange={e => setWordExBete(e.target.value)}
                     />
+                    <SymbolPicker target={wordExBeteRef} dialect={dialect} />
                     <Input
                       placeholder="Traduction française de la phrase"
                       value={wordExFrench}
@@ -296,15 +307,19 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
       ) : type === 'expression' ? (
         <div className="space-y-3">
           <Input
+            ref={betePhraseRef}
             placeholder="Phrase en bhété (standard) *"
             value={betePhrase}
             onChange={e => setBetePhrase(e.target.value)}
           />
+          <SymbolPicker target={betePhraseRef} dialect={dialect} />
           <Input
+            ref={betePhoneticRef}
             placeholder="Forme phonétique *"
             value={betePhonetic}
             onChange={e => setBetePhonetic(e.target.value)}
           />
+          <SymbolPicker target={betePhoneticRef} dialect={dialect} />
           <Input
             placeholder="Traduction littérale mot par mot (ex : la pluie me bat)"
             value={frLiteral}
@@ -339,7 +354,8 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
             <option value="other">Autre</option>
           </select>
           <Input placeholder="Patron français (ex: verbe + é)" value={patternFr} onChange={e => setPatternFr(e.target.value)} />
-          <Input placeholder="Patron bhété correspondant" value={patternBete} onChange={e => setPatternBete(e.target.value)} />
+          <Input ref={patternBeteRef} placeholder="Patron bhété correspondant" value={patternBete} onChange={e => setPatternBete(e.target.value)} />
+          <SymbolPicker target={patternBeteRef} dialect={dialect} />
           <MarkdownField
             id="rule-description"
             placeholder="Description de la règle (Markdown possible : **gras**, listes…)"
@@ -349,7 +365,8 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
             maxLength={5000}
           />
           <Input placeholder="Exemple français (optionnel)" value={exFr} onChange={e => setExFr(e.target.value)} />
-          <Input placeholder="Exemple bhété (optionnel)" value={exBete} onChange={e => setExBete(e.target.value)} />
+          <Input ref={exBeteRef} placeholder="Exemple bhété (optionnel)" value={exBete} onChange={e => setExBete(e.target.value)} />
+          <SymbolPicker target={exBeteRef} dialect={dialect} />
         </div>
       )}
 

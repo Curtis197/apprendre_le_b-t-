@@ -1,7 +1,8 @@
 'use client'
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { DIALECTS, ENTRY_CATEGORIES, checkEntryForm, type Dialect, type EntryForm as EntryFormValues } from '@/lib/lexicon-links'
 import { FrenchMatches } from '@/components/FrenchMatches'
+import { SymbolPicker } from '@/components/SymbolPicker'
 
 interface Props {
   kind: 'word' | 'marker'
@@ -33,6 +34,8 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 /** The whole lexical sheet of a new entry. Everything is optional except one spelling and (for a word) one sense. */
 export function EntryForm({ kind, initial, canUseExample, busy, error, onSubmit, onCancel, submitLabel = 'Créer et lier', busyLabel = 'Création…', children }: Props) {
   const [f, setF] = useState(initial)
+  const spellingRef = useRef<HTMLInputElement>(null)
+  const ipaRef = useRef<HTMLInputElement>(null)
   const [local, setLocal] = useState('')
   const set = (patch: Partial<EntryFormValues>) => setF(prev => ({ ...prev, ...patch }))
   const setSense = (i: number, patch: Partial<{ french: string; context: string }>) =>
@@ -49,10 +52,12 @@ export function EntryForm({ kind, initial, canUseExample, busy, error, onSubmit,
       <p className="text-sm font-semibold">{kind === 'word' ? 'Nouvelle entrée du lexique' : 'Nouveau marqueur grammatical'}</p>
       <div className="grid gap-2.5 sm:grid-cols-2">
         <Field label="Graphie (alphabet latin)">
-          <input className={inputClass} value={f.spelling} maxLength={100} onChange={e => set({ spelling: e.target.value })} />
+          <input ref={spellingRef} className={inputClass} value={f.spelling} maxLength={100} onChange={e => set({ spelling: e.target.value })} />
+          <SymbolPicker target={spellingRef} dialect={f.dialect} />
         </Field>
         <Field label="Transcription (API / forme de la Bible, optionnel)">
-          <input className={inputClass} value={f.ipa} maxLength={100} onChange={e => set({ ipa: e.target.value })} />
+          <input ref={ipaRef} className={inputClass} value={f.ipa} maxLength={100} onChange={e => set({ ipa: e.target.value })} />
+          <SymbolPicker target={ipaRef} dialect={f.dialect} />
         </Field>
         <Field label="Dialecte">
           <select className={inputClass} value={f.dialect} onChange={e => set({ dialect: e.target.value as Dialect })}>
