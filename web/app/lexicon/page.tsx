@@ -65,10 +65,10 @@ function ListRow({
         {primaryLabel(entry.pos)}
       </span>
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className="font-heading font-bold transition-colors text-foreground group-hover:text-primary">
+        <span className="phonetic font-bold transition-colors text-foreground group-hover:text-primary">
           {entry.bete_phonetic}
         </span>
-        <span className="text-xs font-mono text-muted-foreground">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
+        <span className="text-xs phonetic text-muted-foreground">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
       </div>
       <div className="flex items-center gap-2 shrink-0 max-w-[260px]">
         <span className="text-sm text-muted-foreground italic truncate">

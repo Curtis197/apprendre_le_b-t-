@@ -1,6 +1,6 @@
 // web/app/layout.tsx
 import type { Metadata } from 'next'
-import { Inter, Lexend } from 'next/font/google'
+import { Inter, Lexend, Noto_Sans } from 'next/font/google'
 import './globals.css'
 import { Navbar } from '@/components/Navbar'
 import { DialectProvider } from '@/context/DialectContext'
@@ -8,6 +8,9 @@ import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, SITE_KEYWORDS, SIT
 
 const inter  = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', weight: ['400', '600', '700'] })
+// Bhété text needs ɛ ɔ ɩ ʋ ŋ and their capitals: Inter/Lexend ship the `latin` subset only, so those letters
+// would fall back to an arbitrary system font. Noto Sans covers them through `latin-ext`.
+const phonetic = Noto_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-phonetic', weight: ['400', '600'], display: 'swap' })
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -44,7 +47,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body className={`${inter.variable} ${lexend.variable}`}>
+      <body className={`${inter.variable} ${lexend.variable} ${phonetic.variable}`}>
         <Navbar />
         <DialectProvider>
           <main>{children}</main>

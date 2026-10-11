@@ -205,6 +205,9 @@
 }
 
 @layer utilities {
+  .phonetic {
+    font-family: var(--font-phonetic), var(--font-sans), sans-serif;
+  }
   .pattern-bg {
     background-image: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 6%, transparent) 0.5px, transparent 0.5px);
     background-size: 24px 24px;

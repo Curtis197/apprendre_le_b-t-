@@ -24,10 +24,10 @@ export function LexiconEntry({ entry }: { entry: TLexiconEntry }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             {/* Latin alphabet form as primary display */}
-            <CardTitle className="text-2xl font-heading">{western || ipa || entry.top_french}</CardTitle>
+            <CardTitle className="text-2xl phonetic font-semibold">{western || ipa || entry.top_french}</CardTitle>
             {/* Original Bible phonetic notation in brackets */}
             {western && ipa && ipa !== western && (
-              <p className="text-sm text-muted-foreground font-mono">[{cleanBeteWord(ipa)}]</p>
+              <p className="text-sm text-muted-foreground phonetic">[{cleanBeteWord(ipa)}]</p>
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">

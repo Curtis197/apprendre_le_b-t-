@@ -79,7 +79,7 @@ export function WordCard({ entry, extraMeanings, matchedFrench, className }: Pro
         )}
       </div>
       <div className="border-t border-border pt-3 flex items-center justify-between opacity-60 group-hover:opacity-100 transition-opacity">
-        <span className="text-xs text-muted-foreground font-mono">
+        <span className="text-xs text-muted-foreground phonetic">
           [{cleanBeteWord(entry.bete_word)}]
         </span>
         {entry.validated

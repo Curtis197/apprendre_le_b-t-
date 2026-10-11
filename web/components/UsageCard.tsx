@@ -36,7 +36,7 @@ export function UsageCard({ row, side }: { row: UsageRow; side: UsageSide }) {
         )}
       </div>
 
-      <p className="font-heading text-lg leading-snug break-words">
+      <p className="phonetic text-lg font-semibold leading-snug break-words">
         {side === 'bete' ? <Highlighted text={row.bete} tokens={tokens} side="bete" /> : row.bete}
       </p>
       {row.literal && <p className="text-sm text-muted-foreground italic break-words">{row.literal}</p>}

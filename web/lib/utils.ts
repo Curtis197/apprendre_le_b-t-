@@ -25,7 +25,8 @@ export function extractYouTubeId(url: string): string | null {
 // raw Bible phonetic forms (e.g. "'bɔgʋ," → "bɔgʋ")
 export function cleanBeteWord(word: string): string {
   return word
-    .replace(/^['''ʼ‑‐‒]+/, '')
+    .trim()
+    .replace(/^[‑‐‒]+/, '')
     .replace(/[.,;:!?]+$/, '')
     .trim()
 }

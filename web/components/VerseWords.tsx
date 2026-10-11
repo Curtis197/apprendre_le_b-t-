@@ -73,8 +73,8 @@ function DictionaryPart({ tk }: { tk: ReaderToken }) {
     <div className="space-y-1 border-t border-border pt-1.5">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">Dans le lexique</span>
       <p className="flex flex-wrap items-baseline gap-x-2">
-        <strong>{lex.spelling}</strong>
-        {lex.ipa && <span className="text-muted-foreground">[{lex.ipa}]</span>}
+        <strong className="phonetic">{lex.spelling}</strong>
+        {lex.ipa && <span className="phonetic text-muted-foreground">[{lex.ipa}]</span>}
         {lex.pos[0] && <span className="rounded border border-border px-1.5 text-xs">{POS_LABELS[lex.pos[0]] ?? lex.pos[0]}</span>}
         <ListenButton lex={lex} />
       </p>
@@ -152,7 +152,7 @@ function WordDetail({
   return (
     <div role="dialog" aria-label={tk.whole} className="max-w-md space-y-1.5 rounded-lg border border-l-4 border-primary/40 border-l-primary bg-card p-3 text-sm font-normal not-italic text-foreground shadow-md">
       <div className="flex flex-wrap items-baseline gap-2">
-        <span className="font-semibold">{tk.whole}</span>
+        <span className="phonetic font-semibold">{tk.whole}</span>
         <span className="text-muted-foreground">→</span>
         <strong>{tk.gloss ?? (tk.isMarker ? `⟨${mk?.meaning || 'à préciser'}⟩` : 'sens à préciser')}</strong>
       </div>
@@ -232,7 +232,7 @@ export function VerseWords({ verse, mode, initialOpen = null, canEditMarkers }: 
                 tk.isMarker && 'border-dashed',
               )}
             >
-              <span className="text-sm font-semibold text-foreground">{tk.t}</span>
+              <span className="phonetic text-sm font-semibold text-foreground">{tk.t}</span>
               <span className="text-xs italic text-primary">{tk.k > 0 ? `↔ ${tk.runs[0]}` : glossOf(tk)}</span>
               {tk.k === 0 && tk.runs.length > 1 && (
                 <span className="text-[10px] text-muted-foreground">↔ {tk.runs.slice(1).join(', ')}</span>

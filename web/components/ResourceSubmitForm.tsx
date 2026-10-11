@@ -109,7 +109,7 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
           value={contentBete}
           onChange={setContentBete}
           rows={6}
-          className="font-mono"
+          className="phonetic"
         />
         <p className="text-xs text-muted-foreground">
           Pour un texte long (chanson, poème, conte) : une ligne par vers, une ligne vide entre les couplets,
@@ -125,7 +125,7 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
           value={contentLiteral}
           onChange={setContentLiteral}
           rows={3}
-          className="italic"
+          className="phonetic italic"
         />
         <p className="text-xs text-muted-foreground">
           La traduction littérale, mot par mot, qui montre la structure du bhété.
