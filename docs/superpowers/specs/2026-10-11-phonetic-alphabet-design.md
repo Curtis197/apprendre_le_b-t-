@@ -76,7 +76,10 @@ export const ALPHABET: Record<DialectKey, PhoneticSymbol[]>
 
 ### 3. Plateau — `components/SymbolPicker.tsx`
 
-- Bouton `ɛ` à droite du champ ; plateau fermé par défaut ; symboles du dialecte choisi, voyelles puis autres.
+- Bouton « Symboles ɛ » placé sous le champ, aligné à droite (les champs sont dans des mises en page très
+  différentes) ; plateau fermé par défaut ; symboles du dialecte choisi, voyelles puis autres.
+- Le plateau se branche sur un champ existant par une `ref` et écrit avec le setter natif suivi d'un événement
+  `input` : les formulaires gardent leur propre `onChange`. Il refuse d'insérer au-delà de `maxLength`.
 - Insertion à la position du curseur ou en remplacement de la sélection ; le curseur reste après le symbole ;
   le texte est mis en NFC.
 - Fonction pure `insertAtSelection(value, start, end, glyph)` testée à part du composant.
