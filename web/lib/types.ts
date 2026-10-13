@@ -18,6 +18,11 @@ export interface LexiconEntry {
   /** The contributor who added the word; null for words imported from the Bible. */
   created_by?: string | null
   entry_kind?: 'word' | 'marker'
+  dialect?: string
+  /** Synonyms typed in the contribution form (comma separated there). */
+  french_synonyms?: string[] | null
+  /** Base form (infinitive, singular…). */
+  lemma?: string | null
   marker_type?: string | null
   marker_meaning?: string | null
   marker_french?: string | null

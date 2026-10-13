@@ -2,6 +2,7 @@ import { cache } from 'react'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase-server'
 import { LexiconEntry } from '@/components/LexiconEntry'
+import { EntryDetails } from '@/components/lexicon/EntryDetails'
 import { LexiconTranslations } from '@/components/LexiconTranslations'
 import { LexiconDescription } from '@/components/LexiconDescription'
 import { CorrectionBox } from '@/components/CorrectionBox'
@@ -147,6 +148,7 @@ export default async function LexiconEntryPage({
       <JsonLd data={jsonLd} />
       <EditToggle />
       <LexiconEntry entry={entry} />
+      <EntryDetails entry={entry} />
       {entry.entry_kind === 'marker' && (
         <section className="space-y-3 rounded-lg border border-border bg-card p-4">
           <div className="flex items-center gap-2">
