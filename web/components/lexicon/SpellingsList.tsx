@@ -1,9 +1,7 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useEditMode } from '@/components/lexicon/EditMode'
-import { SymbolPicker } from '@/components/SymbolPicker'
-import { useDialect } from '@/context/DialectContext'
 
 export interface SpellingItem {
   id: string
@@ -31,8 +29,6 @@ const btn = 'rounded-md border border-border px-2.5 py-1 text-xs font-medium hov
 export function SpellingsList({ items, userId, isAdmin, busy, error, notice, signInHref, onAdd, onRemove }: Props) {
   const editMode = useEditMode()
   const [value, setValue] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-  const { dialect } = useDialect()
 
   // A reader just reading has nothing to see when no other spelling was proposed.
   if (!editMode && items.length === 0) return null
@@ -79,7 +75,6 @@ export function SpellingsList({ items, userId, isAdmin, busy, error, notice, sig
           }}
         >
           <input
-            ref={inputRef}
             className="min-w-[12rem] flex-1 rounded-md border border-input bg-background px-2.5 py-1.5 text-sm"
             placeholder="Proposer une autre graphie"
             aria-label="Proposer une autre graphie"
@@ -91,7 +86,6 @@ export function SpellingsList({ items, userId, isAdmin, busy, error, notice, sig
             Ajouter
           </button>
         </form>
-        <SymbolPicker target={inputRef} dialect={dialect} />
         </>
       ) : (
         <p className="text-xs text-muted-foreground">

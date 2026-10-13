@@ -34,7 +34,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 /** The whole lexical sheet of a new entry. Everything is optional except one spelling and (for a word) one sense. */
 export function EntryForm({ kind, initial, canUseExample, busy, error, onSubmit, onCancel, submitLabel = 'Créer et lier', busyLabel = 'Création…', children }: Props) {
   const [f, setF] = useState(initial)
-  const spellingRef = useRef<HTMLInputElement>(null)
   const ipaRef = useRef<HTMLInputElement>(null)
   const [local, setLocal] = useState('')
   const set = (patch: Partial<EntryFormValues>) => setF(prev => ({ ...prev, ...patch }))
@@ -52,8 +51,7 @@ export function EntryForm({ kind, initial, canUseExample, busy, error, onSubmit,
       <p className="text-sm font-semibold">{kind === 'word' ? 'Nouvelle entrée du lexique' : 'Nouveau marqueur grammatical'}</p>
       <div className="grid gap-2.5 sm:grid-cols-2">
         <Field label="Graphie (alphabet latin)">
-          <input ref={spellingRef} className={inputClass} value={f.spelling} maxLength={100} onChange={e => set({ spelling: e.target.value })} />
-          <SymbolPicker target={spellingRef} dialect={f.dialect} />
+          <input className={inputClass} value={f.spelling} maxLength={100} onChange={e => set({ spelling: e.target.value })} />
         </Field>
         <Field label="Transcription (API / forme de la Bible, optionnel)">
           <input ref={ipaRef} className={inputClass} value={f.ipa} maxLength={100} onChange={e => set({ ipa: e.target.value })} />

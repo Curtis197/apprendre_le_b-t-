@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   createOutcome, emptyEntryForm, senseSeed,
@@ -12,8 +12,6 @@ import { cn } from '@/lib/utils'
 import type { LexSummary } from '@/lib/word-blocks'
 import type { BlockMeta } from '@/lib/word-link-editor'
 import { LexiconPicker } from '@/components/lexicon/LexiconPicker'
-import { SymbolPicker } from '@/components/SymbolPicker'
-import { DIALECT_KEYS, DEFAULT_DIALECT, type DialectKey } from '@/lib/dialect'
 
 interface Props {
   client: SupabaseClient
@@ -43,7 +41,6 @@ export function LexiconPanel({
   // Sub-inputs for linked entry
   const [showSpelling, setShowSpelling] = useState(false)
   const [spellingInput, setSpellingInput] = useState('')
-  const spellingInputRef = useRef<HTMLInputElement>(null)
   const [showSense, setShowSense] = useState(false)
   const [senseFrench, setSenseFrench] = useState('')
   const [senseContext, setSenseContext] = useState('')
@@ -327,7 +324,6 @@ export function LexiconPanel({
             <div className="rounded-md border border-border p-2">
               <div className="flex items-center gap-2">
                 <input
-                  ref={spellingInputRef}
                   className={inputClass}
                   placeholder="Nouvelle graphie"
                   value={spellingInput}
@@ -339,11 +335,6 @@ export function LexiconPanel({
                 </button>
                 <button type="button" className={btn} onClick={() => setShowSpelling(false)}>Annuler</button>
               </div>
-              <SymbolPicker
-                target={spellingInputRef}
-                dialect={(DIALECT_KEYS.includes(entry.dialect as DialectKey) ? entry.dialect : DEFAULT_DIALECT) as DialectKey}
-                className="mt-1.5"
-              />
             </div>
           )}
 

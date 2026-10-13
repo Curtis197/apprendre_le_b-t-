@@ -42,9 +42,7 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
   const { bumpRefresh } = useContributeRefresh()
   // Same source of truth as the page-level DialectSelector, so the two never disagree.
   const { dialect, setDialect } = useDialect()
-  const wordSpellingRef = useRef<HTMLInputElement>(null)
   const wordExBeteRef = useRef<HTMLInputElement>(null)
-  const betePhraseRef = useRef<HTMLInputElement>(null)
   const betePhoneticRef = useRef<HTMLInputElement>(null)
   const patternBeteRef = useRef<HTMLInputElement>(null)
   const exBeteRef = useRef<HTMLInputElement>(null)
@@ -241,12 +239,10 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
               <p className="text-xs text-muted-foreground">Mot français : « {initialWord} »</p>
             )}
             <Input
-              ref={wordSpellingRef}
               placeholder="Mot en bhété (forme phonétique latine) *"
               value={wordSpelling}
               onChange={e => { setWordSpelling(e.target.value); setExisting(null); setSubmitError(null) }}
             />
-            <SymbolPicker target={wordSpellingRef} dialect={dialect} />
             </>
           )}
           {signedIn === false && (
@@ -307,12 +303,10 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
       ) : type === 'expression' ? (
         <div className="space-y-3">
           <Input
-            ref={betePhraseRef}
             placeholder="Phrase en bhété (standard) *"
             value={betePhrase}
             onChange={e => setBetePhrase(e.target.value)}
           />
-          <SymbolPicker target={betePhraseRef} dialect={dialect} />
           <Input
             ref={betePhoneticRef}
             placeholder="Forme phonétique *"
