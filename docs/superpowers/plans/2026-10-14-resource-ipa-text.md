@@ -460,7 +460,7 @@ describe('VerseWords in the IPA script', () => {
     const html = renderToStaticMarkup(<VerseWords verse={VERSE} mode="B" script="ipa" ipaWords={ipa} initialOpen={2} />)
     expect(decode(html)).toContain('tatini')
     expect(decode(html)).toContain('API')
-    expect(decode(html)).toContain('tatɩnɩ yɩɩ')
+    expect(decode(html)).toContain('tatɩnɩ … yɩɩ')   // words that are apart are joined by " … " (labelOf)
   })
 })
 ```
