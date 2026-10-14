@@ -56,7 +56,9 @@ export async function findCandidates(
     p_limit: a.limit ?? 7,
   })
   if (error || !Array.isArray(data)) return []
-  return data.map(parseCandidate).filter((c): c is Candidate => c !== null)
+  // "near" matches (a word a letter or two away) are different words more often than not: offering them as
+  // « le même mot » led to unrelated words being added as spellings of an entry.
+  return data.map(parseCandidate).filter((c): c is Candidate => c !== null && c.matchKind !== 'near')
 }
 
 /** An existing entry that already has the French meaning being typed. */

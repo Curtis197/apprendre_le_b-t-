@@ -12,12 +12,26 @@ const fake = (rpc: ReturnType<typeof vi.fn>, from?: unknown) => ({ rpc, from }) 
 
 describe('findCandidates', () => {
   it('maps rows and passes the parameters', async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: [{ match_kind: 'near', matched: 'ghéhi-wu', distance: 1, entry: rawEntry }], error: null })
+    const rpc = vi.fn().mockResolvedValue({ data: [{ match_kind: 'norm', matched: 'ghéhi-wu', distance: 1, entry: rawEntry }], error: null })
     const out = await findCandidates(fake(rpc), { text: ' ghehi-wu ', dialect: 'western' })
     expect(rpc).toHaveBeenCalledWith('find_lexicon_candidates', { p_text: 'ghehi-wu', p_dialect: 'western', p_kind: null, p_limit: 7 })
     expect(out).toHaveLength(1)
-    expect(out[0]).toMatchObject({ matchKind: 'near', matched: 'ghéhi-wu', distance: 1 })
+    expect(out[0]).toMatchObject({ matchKind: 'norm', matched: 'ghéhi-wu', distance: 1 })
     expect(out[0].entry).toMatchObject({ id: 'L1', kind: 'word', senseId: 'S1', spellings: ['ghéhi-wu'], pos: ['noun'] })
+  })
+  it('drops the "near" candidates: a word one letter away is not offered as the same word', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [
+        { match_kind: 'exact', matched: 'ghéhi-wu', distance: 0, entry: rawEntry },
+        { match_kind: 'norm', matched: 'ghehi-wu', distance: 0, entry: { ...rawEntry, id: 'L2' } },
+        { match_kind: 'near', matched: 'ghéhi-wi', distance: 1, entry: { ...rawEntry, id: 'L3' } },
+        { match_kind: 'something-new', matched: 'x', distance: 2, entry: { ...rawEntry, id: 'L4' } },
+      ],
+      error: null,
+    })
+    const out = await findCandidates(fake(rpc), { text: 'ghéhi-wu' })
+    expect(out.map(c => c.entry.id)).toEqual(['L1', 'L2'])
+    expect(out.map(c => c.matchKind)).toEqual(['exact', 'norm'])
   })
   it('returns nothing on error, on blank text and on garbage rows', async () => {
     expect(await findCandidates(fake(vi.fn().mockResolvedValue({ data: null, error: { message: 'x' } })), { text: 'a' })).toEqual([])

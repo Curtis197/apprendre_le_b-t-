@@ -21,7 +21,7 @@ export default async function WordUsagesPage({ params }: { params: Promise<{ id:
   if (!word) notFound()
   // The entry's own examples are already on its page: leave them out, so this list matches the
   // "Voir tous les usages (N)" count on the entry page.
-  const { rows, total, error } = await findUsages(supabase, { q: word, limit: PAGE_SIZE, excludeRef: id })
+  const { rows, total, error } = await findUsages(supabase, { q: word, limit: PAGE_SIZE, excludeRef: id, exactOnly: true })
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-10 space-y-6">
@@ -31,7 +31,7 @@ export default async function WordUsagesPage({ params }: { params: Promise<{ id:
       <h1 className="font-heading text-2xl font-bold">Usages de « {word} »</h1>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {!error && rows.length === 0 && <p className="text-sm text-muted-foreground">Aucun usage trouvé pour ce mot.</p>}
-      <UsageList initialRows={rows} total={total} q={word} side="bete" pageSize={PAGE_SIZE} excludeRef={id} />
+      <UsageList initialRows={rows} total={total} q={word} side="bete" pageSize={PAGE_SIZE} excludeRef={id} exactOnly />
     </main>
   )
 }

@@ -32,19 +32,41 @@ export interface FindUsagesOptions {
   offset?: number
   /** A lexicon entry whose own examples are left out (its page already lists them) and not counted. */
   excludeRef?: string
+  /** Leave out the spelling variants (words a letter away, which are often different words). */
+  exactOnly?: boolean
+}
+
+/** Postgres / PostgREST codes for « no such function with these arguments »: the database is not updated yet. */
+const MISSING_FUNCTION = new Set(['PGRST202', '42883'])
+
+/**
+ * Keeps the exact rows of a page that mixes exact and variant rows. The database sorts exact rows first,
+ * so when the page reaches a variant no exact row can follow, and the exact total is known; otherwise the
+ * total is an upper bound.
+ */
+export function keepExactRows(rows: UsageRow[], offset: number): { rows: UsageRow[]; total: number } {
+  const exact = rows.filter(r => r.match_kind === 'exact')
+  const reachedVariants = rows.some(r => r.match_kind !== 'exact')
+  return { rows: exact, total: reachedVariants ? offset + exact.length : rows[0]?.total_count ?? exact.length }
 }
 
 export async function findUsages(
   client: SupabaseClient,
-  { q, side = 'bete', limit = 5, offset = 0, excludeRef }: FindUsagesOptions,
+  { q, side = 'bete', limit = 5, offset = 0, excludeRef, exactOnly = false }: FindUsagesOptions,
 ): Promise<{ rows: UsageRow[]; total: number; error: string | null }> {
   const text = q.trim()
   if (!text) return { rows: [], total: 0, error: null }
 
-  const { data, error } = await client.rpc('find_usages', {
+  const args = {
     q: text, p_side: side, p_limit: limit, p_offset: offset,
     ...(excludeRef ? { p_exclude_ref: excludeRef } : {}),
-  })
+  }
+  let { data, error } = await client.rpc('find_usages', exactOnly ? { ...args, p_exact_only: true } : args)
+  if (error && exactOnly && MISSING_FUNCTION.has((error as { code?: string }).code ?? '')) {
+    // The database does not know p_exact_only yet (migration not applied): ask the old way, drop the variants here.
+    ;({ data, error } = await client.rpc('find_usages', args))
+    if (!error) return { ...keepExactRows((data ?? []) as UsageRow[], offset), error: null }
+  }
   if (error) return { rows: [], total: 0, error: 'La recherche a échoué. Veuillez réessayer.' }
   const rows = (data ?? []) as UsageRow[]
   return { rows, total: rows[0]?.total_count ?? 0, error: null }

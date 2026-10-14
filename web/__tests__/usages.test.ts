@@ -33,6 +33,39 @@ describe('findUsages', () => {
     expect(rpc).toHaveBeenLastCalledWith('find_usages', { q: 'kaba', p_side: 'bete', p_limit: 5, p_offset: 0 })
   })
 
+  it('asks for exact matches only when told to, and only then', async () => {
+    const { client, rpc } = fake({ data: [], error: null })
+    await findUsages(client, { q: 'kaba', exactOnly: true })
+    expect(rpc).toHaveBeenLastCalledWith('find_usages', { q: 'kaba', p_side: 'bete', p_limit: 5, p_offset: 0, p_exact_only: true })
+    await findUsages(client, { q: 'kaba', exactOnly: false })
+    expect(rpc).toHaveBeenLastCalledWith('find_usages', { q: 'kaba', p_side: 'bete', p_limit: 5, p_offset: 0 })
+  })
+
+  it('still works when the database function does not know p_exact_only yet: it asks again and keeps the exact rows', async () => {
+    const rows = [
+      { line_id: 'a', match_kind: 'exact', total_count: 4 },
+      { line_id: 'b', match_kind: 'exact', total_count: 4 },
+      { line_id: 'c', match_kind: 'variant', total_count: 4 },
+      { line_id: 'd', match_kind: 'variant', total_count: 4 },
+    ]
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: null, error: { message: 'Could not find the function', code: 'PGRST202' } })
+      .mockResolvedValueOnce({ data: rows, error: null })
+    const res = await findUsages({ rpc } as unknown as SupabaseClient, { q: 'kaba', exactOnly: true })
+    expect(rpc).toHaveBeenCalledTimes(2)
+    expect(rpc.mock.calls[1][1]).not.toHaveProperty('p_exact_only')
+    expect(res.rows.map(r => r.line_id)).toEqual(['a', 'b'])
+    expect(res.total).toBe(2)   // the page reached the variants, so no exact usage can follow
+    expect(res.error).toBeNull()
+  })
+
+  it('does not retry on another kind of error', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'boom', code: 'XX000' } })
+    const res = await findUsages({ rpc } as unknown as SupabaseClient, { q: 'kaba', exactOnly: true })
+    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(res.error).toBe('La recherche a échoué. Veuillez réessayer.')
+  })
+
   it('returns the rows and the total from the first row', async () => {
     const { client } = fake({ data: [{ line_id: 'a', total_count: 9 }, { line_id: 'b', total_count: 9 }], error: null })
     const res = await findUsages(client, { q: 'kaba' })
