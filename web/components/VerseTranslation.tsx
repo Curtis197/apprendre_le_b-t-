@@ -178,7 +178,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
   const [showLiteral, setShowLiteral] = useState(defaultShowLiteral)
   const [mode, setMode] = useWordMode()
   const ipaVerses = useMemo(() => alignIpa(original, ipa), [original, ipa])
-  const ipaUsable = hasIpa(ipaVerses) && (alignment.kind === 'verses' || alignment.kind === 'single')
+  const ipaUsable = hasIpa(ipaVerses) && (alignment.kind === 'single' || (alignment.kind === 'verses' && alignment.unit === 'line'))
   const [script, setScript] = useScript(defaultScript)
   const scriptNow: Script = ipaUsable ? script : 'latin'
   const glossOriginal = scriptNow === 'ipa' && ipa?.trim() ? ipa : original
@@ -196,7 +196,18 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
 
   if (alignment.kind === 'single') {
     const w = wordsFor(1, original)
-    if (!w) return <InterlinearGloss original={glossOriginal} literal={literal} final={french} variant="card" />
+    if (!w) {
+      const card = <InterlinearGloss original={glossOriginal} literal={literal} final={french} variant="card" />
+      if (!ipaUsable) return card
+      return (
+        <div className="space-y-2">
+          <div className="flex justify-end">
+            <ScriptToggle script={script} onChange={setScript} />
+          </div>
+          {card}
+        </div>
+      )
+    }
     return (
       <section className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-border pb-3">

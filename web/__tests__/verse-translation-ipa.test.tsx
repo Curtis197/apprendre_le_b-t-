@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { VerseTranslation } from '../components/VerseTranslation'
 import type { VerseWords as VerseData } from '../lib/word-blocks'
+import { alignVerses } from '../lib/verses'
 
 const decode = (s: string) => s.replace(/&#x27;/g, "'")
 const LATIN = "Sê a'a tatini a yii\nKaba nunu"
@@ -44,5 +45,29 @@ describe('VerseTranslation with an IPA text', () => {
     ))
     expect(html).toContain('tatini')          // the word view stays in Latin
     expect(html).toContain('ne correspond')    // and says why
+  })
+})
+
+describe('VerseTranslation IPA switch on the plain card and by line only', () => {
+  it('offers the switch on the single-line card, which can reach the IPA text', () => {
+    const latin = decode(renderToStaticMarkup(<VerseTranslation original="Sê a" ipa="Sɛ a" />))
+    expect(latin).toContain('API')
+    expect(latin).toContain('Latin')
+    expect(latin).toContain('Sê a')
+    const api = decode(renderToStaticMarkup(<VerseTranslation original="Sê a" ipa="Sɛ a" defaultScript="ipa" />))
+    expect(api).toContain('Sɛ a')
+    expect(api).not.toContain('Sê a')
+  })
+
+  it('keeps Latin and shows no switch for sentence-by-sentence texts', () => {
+    const original = 'Sê a. Kaba nunu.'
+    const french = 'Comme nous. Kaba mange.'
+    expect(alignVerses(original, null, french)).toMatchObject({ kind: 'verses', unit: 'sentence' })
+    const html = decode(renderToStaticMarkup(
+      <VerseTranslation original={original} french={french} ipa="Sɛ a. Kaba nʋnʋ." defaultScript="ipa" />,
+    ))
+    expect(html).not.toContain('API')
+    expect(html).not.toContain('Pas d’API')
+    expect(html).toContain('Sê a')
   })
 })
