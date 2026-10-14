@@ -53,7 +53,7 @@ describe('submitCommunityText', () => {
     expect(calls).toHaveLength(0)
   })
 
-  it('publishes in the signed-in user\'s name, trimmed', async () => {
+  it('publishes in the signed-in user’s name, trimmed', async () => {
     const { client, calls } = fakeClient(ok({ id: 'r1' }))
     const res = await submitCommunityText(client, { ...input, title: '  Chant  ' })
     expect(res).toEqual({ data: { id: 'r1' }, error: null })
@@ -67,7 +67,7 @@ describe('submitCommunityText', () => {
 })
 
 describe('updateCommunityText', () => {
-  it('only touches the caller\'s own row', async () => {
+  it('only touches the caller’s own row', async () => {
     const { client, calls } = fakeClient(ok({ id: 'r1' }))
     const res = await updateCommunityText(client, 'r1', { ...input, region: 'Gagnoa' })
     expect(res.error).toBeNull()
@@ -136,7 +136,7 @@ describe('resource comments', () => {
     expect(calls[0].payload).toEqual({ resource_id: 'r1', user_id: 'u1', body: 'À corriger' })
   })
 
-  it('edits only the caller\'s own comment', async () => {
+  it('edits only the caller’s own comment', async () => {
     const { client, calls } = fakeClient(ok([{ id: 'c1' }]))
     expect((await updateResourceComment(client, 'c1', 'Nouveau texte')).error).toBeNull()
     expect(calls[0].filters).toEqual([['id', 'c1'], ['user_id', 'u1']])
@@ -160,8 +160,8 @@ describe('content_ipa', () => {
 
   it('is stored in NFC, trimmed, and keeps its lines', async () => {
     const { client, calls } = fakeClient(ok({ id: 'r1' }))
-    await submitCommunityText(client, { ...input, content_ipa: '  gö a\n\nb̈  ' })
-    expect(calls[0].payload?.content_ipa).toBe('gö a\n\nb̈')
+    await submitCommunityText(client, { ...input, content_ipa: '  go\u0308 a\n\nb\u0308  ' })
+    expect(calls[0].payload?.content_ipa).toBe('g\u00F6 a\n\nb\u0308')
   })
 
   it('writes null for a blank value, so a filled field can be cleared on edit', async () => {

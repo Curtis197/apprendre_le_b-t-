@@ -5,8 +5,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { submitCommunityText, updateCommunityText } from '@/lib/community-mutations'
 import { extractYouTubeId } from '@/lib/utils'
 import { alignVerses, describeAlignment, describeGap, findFirstGap } from '@/lib/verses'
-import { alignIpa, describeIpa } from '@/lib/ipa-alignment'
-import { nonEmptyLines } from '@/lib/word-blocks'
+import { alignIpa, describeIpa, ipaLines } from '@/lib/ipa-alignment'
 import { RESOURCE_REGIONS } from '@/lib/regions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,7 +56,7 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
   }, [contentBete, contentLiteral, contentFrench])
 
   const ipaHint = useMemo(
-    () => describeIpa(alignIpa(contentBete, contentIpa), nonEmptyLines(contentIpa).length),
+    () => describeIpa(alignIpa(contentBete, contentIpa), ipaLines(contentIpa).length),
     [contentBete, contentIpa],
   )
 

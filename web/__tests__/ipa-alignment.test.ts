@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { alignIpa, describeIpa, hasIpa } from '@/lib/ipa-alignment'
+import { alignIpa, describeIpa, hasIpa, ipaLines } from '@/lib/ipa-alignment'
 
 const LATIN = "Sê a'a tatini a yii\nKaba nunu"
 
@@ -88,5 +88,19 @@ describe('describeIpa', () => {
     expect(d?.ok).toBe(false)
     expect(d?.message).toContain('Le texte API a 3 lignes, le texte latin en a 2')
     expect(d?.message).toContain('ligne 1 : 2 mots en latin, 1 en API')
+  })
+})
+
+describe('ipaLines', () => {
+  it('counts a line of only Unicode spaces as empty, like the form gutter', () => {
+    expect(ipaLines('a\n\u00A0\nb')).toEqual(['a', 'b'])
+    expect(ipaLines(null)).toEqual([])
+  })
+
+  it('keeps the verses aligned after a non-breaking-space line', () => {
+    const v = alignIpa('x\ny', 'X\n\u00A0\nY')
+    expect(v).toHaveLength(2)
+    expect(v.map(x => x.status)).toEqual(['ok', 'ok'])
+    expect(v[1].line).toBe('Y')
   })
 })

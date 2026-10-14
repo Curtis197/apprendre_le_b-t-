@@ -71,3 +71,12 @@ describe('VerseTranslation IPA switch on the plain card and by line only', () =>
     expect(html).toContain('Sê a')
   })
 })
+
+describe('VerseTranslation plain card with a longer IPA text', () => {
+  it('shows only the IPA line of the verse, not the whole IPA text', () => {
+    const api = decode(renderToStaticMarkup(<VerseTranslation original="Sê a" ipa={'Sɛ a\nde trop'} defaultScript="ipa" />))
+    expect(api).toContain('Sɛ a')
+    expect(api).not.toContain('de trop')
+    expect(api).not.toContain('Sê a')
+  })
+})

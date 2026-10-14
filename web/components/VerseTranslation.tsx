@@ -181,7 +181,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
   const ipaUsable = hasIpa(ipaVerses) && (alignment.kind === 'single' || (alignment.kind === 'verses' && alignment.unit === 'line'))
   const [script, setScript] = useScript(defaultScript)
   const scriptNow: Script = ipaUsable ? script : 'latin'
-  const glossOriginal = scriptNow === 'ipa' && ipa?.trim() ? ipa : original
+  const glossOriginal = scriptNow === 'ipa' && ipaVerses[0]?.line ? ipaVerses[0].line : original
   const usable = useMemo(
     () => new Map((words ?? []).filter(w => !w.stale && w.blocks.length > 0).map(w => [w.verse_no, w])),
     [words],

@@ -17,10 +17,15 @@ export interface IpaVerse {
   ipaWords: number
 }
 
+/** The non-empty lines of an IPA text, numbered like the form gutter: a line of only Unicode spaces is empty. */
+export function ipaLines(text: string | null | undefined): string[] {
+  return nonEmptyLines(text ?? '').filter(l => l.trim() !== '')
+}
+
 export function alignIpa(beteText: string, ipaText?: string | null): IpaVerse[] {
   const bete = nonEmptyLines(beteText)
   const used = Boolean(ipaText && ipaText.trim() !== '')
-  const ipa = used ? nonEmptyLines(ipaText as string) : []
+  const ipa = used ? ipaLines(ipaText) : []
   return bete.map((b, i): IpaVerse => {
     const beteWords = splitWords(b).length
     const base = { no: i + 1, beteWords }
