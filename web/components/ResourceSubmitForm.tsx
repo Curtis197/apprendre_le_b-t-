@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase-browser'
 import { submitCommunityText, updateCommunityText } from '@/lib/community-mutations'
 import { extractYouTubeId } from '@/lib/utils'
 import { alignVerses, describeAlignment, describeGap, findFirstGap } from '@/lib/verses'
+import { alignIpa, describeIpa } from '@/lib/ipa-alignment'
+import { nonEmptyLines } from '@/lib/word-blocks'
 import { RESOURCE_REGIONS } from '@/lib/regions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,9 +34,11 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
   const { dialect } = useDialect()
   const beteRef = useRef<HTMLTextAreaElement>(null)
   const literalRef = useRef<HTMLTextAreaElement>(null)
+  const ipaRef = useRef<HTMLTextAreaElement>(null)
   const [title, setTitle]               = useState(resource?.title ?? '')
   const [type, setType]                 = useState<ContentType>(resource?.type ?? 'proverb')
   const [contentBete, setContentBete]   = useState(resource?.content_bete ?? '')
+  const [contentIpa, setContentIpa] = useState(resource?.content_ipa ?? '')
   const [contentLiteral, setContentLiteral] = useState(resource?.content_literal ?? '')
   const [contentFrench, setContentFrench] = useState(resource?.content_french ?? '')
   const [videoUrl, setVideoUrl]         = useState(resource?.video_url ?? '')
@@ -52,6 +56,11 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
     return gap ? { ...hint, message: `${hint.message} ${describeGap(gap)}` } : hint
   }, [contentBete, contentLiteral, contentFrench])
 
+  const ipaHint = useMemo(
+    () => describeIpa(alignIpa(contentBete, contentIpa), nonEmptyLines(contentIpa).length),
+    [contentBete, contentIpa],
+  )
+
   const videoId = videoUrl.trim() ? extractYouTubeId(videoUrl.trim()) : null
   const videoInvalid = videoUrl.trim() !== '' && videoId === null
 
@@ -64,6 +73,8 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
     const input = {
       title, type, content_bete: contentBete,
       content_literal: contentLiteral || undefined,
+      // Never sent for a resource that never had one: the column may not exist yet in production.
+      ...(contentIpa.trim() || resource?.content_ipa ? { content_ipa: contentIpa } : {}),
       content_french: contentFrench || undefined,
       video_url: videoUrl.trim() || undefined,
       author_name: authorName || undefined,
@@ -124,6 +135,27 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
           le vers 3 du bhété doit correspondre au vers 3 de la traduction. Elle s&apos;affichera alors
           vers par vers, en face du texte.
         </p>
+      </div>
+      <div className="space-y-1.5">
+        <NumberedTextarea
+          aria-label="Texte en API / orthographe africaine"
+          placeholder="Texte en API / orthographe africaine (optionnel)"
+          value={contentIpa}
+          onChange={setContentIpa}
+          rows={4}
+          className="phonetic"
+          textareaRef={ipaRef}
+        />
+        <SymbolPicker target={ipaRef} dialect={dialect} />
+        <p className="text-xs text-muted-foreground">
+          Le même texte écrit avec les lettres ɛ ɔ ɩ ʋ ŋ… Même nombre de lignes et de mots que le texte en bhété
+          ci-dessus : chaque mot sera alors relié à son mot latin, et les lecteurs pourront choisir l’écriture.
+        </p>
+        {ipaHint && (
+          <p role="status" className={`text-xs ${ipaHint.ok ? 'text-emerald-600' : 'text-amber-700'}`}>
+            {ipaHint.message}
+          </p>
+        )}
       </div>
       <div className="space-y-1.5">
         <NumberedTextarea
