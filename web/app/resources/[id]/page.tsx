@@ -160,6 +160,7 @@ export default async function ResourceDetailPage({
         french={text.content_french}
         words={words}
         canEditMarkers={Boolean(user)}
+        ipa={text.content_ipa}
       />
 
       <CorrectionBox

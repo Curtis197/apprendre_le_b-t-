@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { alignIpa, hasIpa, type IpaVerse } from '@/lib/ipa-alignment'
 import { alignVerses, type Verse } from '@/lib/verses'
 import type { VerseWords as VerseWordsData } from '@/lib/word-blocks'
 import { InterlinearGloss } from './InterlinearGloss'
@@ -15,7 +16,12 @@ interface Props {
   /** Word blocks of the resource (get_resource_words). A verse without usable blocks renders as before. */
   words?: VerseWordsData[]
   canEditMarkers?: boolean
+  /** The IPA / African-orthography version of the text, line by line like the Latin one. */
+  ipa?: string | null
+  defaultScript?: Script
 }
+
+type Script = 'latin' | 'ipa'
 
 const MODE_KEY = 'word-reader-mode'
 
@@ -40,6 +46,52 @@ function useWordMode(): [WordMode, (m: WordMode) => void] {
     }
   }
   return [mode, choose]
+}
+
+const SCRIPT_KEY = 'word-reader-script'
+
+function useScript(initial: Script): [Script, (s: Script) => void] {
+  const [script, setScript] = useState<Script>(initial)
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(SCRIPT_KEY)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- read once after hydration (localStorage is client-only)
+      if (v === 'latin' || v === 'ipa') setScript(v)
+    } catch {
+      // storage unavailable (private window): keep the default
+    }
+  }, [])
+  const choose = (s: Script) => {
+    setScript(s)
+    try {
+      localStorage.setItem(SCRIPT_KEY, s)
+    } catch {
+      // ignore
+    }
+  }
+  return [script, choose]
+}
+
+function ScriptToggle({ script, onChange }: { script: Script; onChange: (s: Script) => void }) {
+  const pill = (s: Script, label: string) => (
+    <button
+      type="button"
+      aria-pressed={script === s}
+      onClick={() => onChange(s)}
+      className={cn(
+        'shrink-0 text-xs font-medium rounded-full border px-3 py-1 transition-colors',
+        script === s ? 'bg-primary/10 border-primary/30 text-primary' : 'border-border text-muted-foreground hover:bg-muted',
+      )}
+    >
+      {label}
+    </button>
+  )
+  return (
+    <div className="flex gap-1.5" role="group" aria-label="Écriture">
+      {pill('latin', 'Latin')}
+      {pill('ipa', 'API')}
+    </div>
+  )
 }
 
 function Lines({ children, className }: { children: string; className?: string }) {
@@ -74,20 +126,34 @@ function VerseRow({
   words,
   mode,
   canEditMarkers,
+  ipaVerse,
+  script,
 }: {
   verse: Verse
   showLiteral: boolean
   words?: VerseWordsData
   mode: WordMode
   canEditMarkers?: boolean
+  ipaVerse?: IpaVerse
+  script: Script
 }) {
+  const showIpa = script === 'ipa'
+  const plain = showIpa && ipaVerse?.line ? ipaVerse.line : verse.original
+  const note = !showIpa || !ipaVerse
+    ? null
+    : !ipaVerse.line
+      ? 'Pas d’API pour ce vers.'
+      : words && ipaVerse.status === 'words-differ'
+        ? 'Le nombre de mots en API ne correspond pas au latin : lecture mot à mot en latin.'
+        : null
   return (
     <div className="space-y-0.5">
       {words ? (
-        <VerseWords verse={words} mode={mode} canEditMarkers={canEditMarkers} />
+        <VerseWords verse={words} mode={mode} canEditMarkers={canEditMarkers} script={script} ipaWords={ipaVerse?.words ?? null} />
       ) : (
-        <Lines className="font-semibold text-foreground leading-relaxed">{verse.original}</Lines>
+        <Lines className={cn('font-semibold text-foreground leading-relaxed', showIpa && ipaVerse?.line && 'phonetic')}>{plain}</Lines>
       )}
+      {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
       {showLiteral && verse.literal && (
         <Lines className="text-xs md:text-sm italic text-primary/80 leading-relaxed">{`« ${verse.literal} »`}</Lines>
       )}
@@ -106,11 +172,16 @@ function VerseRow({
  * Verses that have word blocks (see lib/word-blocks.ts) show their words tappable; a verse is
  * numbered like the gutter of the entry form (n-th non-empty line), which is what the blocks use.
  */
-export function VerseTranslation({ original, literal, french, defaultShowLiteral = false, words, canEditMarkers = false }: Props) {
+export function VerseTranslation({ original, literal, french, defaultShowLiteral = false, words, canEditMarkers = false, ipa, defaultScript = 'latin' }: Props) {
   const alignment = useMemo(() => alignVerses(original, literal, french), [original, literal, french])
   const hasLiteral = Boolean(literal?.trim())
   const [showLiteral, setShowLiteral] = useState(defaultShowLiteral)
   const [mode, setMode] = useWordMode()
+  const ipaVerses = useMemo(() => alignIpa(original, ipa), [original, ipa])
+  const ipaUsable = hasIpa(ipaVerses) && (alignment.kind === 'verses' || alignment.kind === 'single')
+  const [script, setScript] = useScript(defaultScript)
+  const scriptNow: Script = ipaUsable ? script : 'latin'
+  const glossOriginal = scriptNow === 'ipa' && ipa?.trim() ? ipa : original
   const usable = useMemo(
     () => new Map((words ?? []).filter(w => !w.stale && w.blocks.length > 0).map(w => [w.verse_no, w])),
     [words],
@@ -125,12 +196,15 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
 
   if (alignment.kind === 'single') {
     const w = wordsFor(1, original)
-    if (!w) return <InterlinearGloss original={original} literal={literal} final={french} variant="card" />
+    if (!w) return <InterlinearGloss original={glossOriginal} literal={literal} final={french} variant="card" />
     return (
       <section className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
           <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Texte et traduction</h2>
-          <ModeToggle mode={mode} onChange={setMode} />
+          <div className="flex items-center gap-2">
+            {ipaUsable && <ScriptToggle script={script} onChange={setScript} />}
+            <ModeToggle mode={mode} onChange={setMode} />
+          </div>
         </div>
         <VerseRow
           verse={{ original, literal: literal ?? undefined, french: french ?? undefined }}
@@ -138,13 +212,15 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
           words={w}
           mode={mode}
           canEditMarkers={canEditMarkers}
+          ipaVerse={ipaVerses[0]}
+          script={scriptNow}
         />
       </section>
     )
   }
 
   if (alignment.kind === 'misaligned') {
-    return <InterlinearGloss original={original} literal={literal} final={french} variant="card" />
+    return <InterlinearGloss original={glossOriginal} literal={literal} final={french} variant="card" />
   }
 
   // Verse numbers, counted over all stanzas like the gutter does.
@@ -172,6 +248,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
               : 'Texte et traduction'}
         </h2>
         <div className="flex items-center gap-2">
+          {ipaUsable && <ScriptToggle script={script} onChange={setScript} />}
           {wordsApply && <ModeToggle mode={mode} onChange={setMode} />}
           {hasLiteral && !allLinked && (
             <button
@@ -203,6 +280,8 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
                   words={wordsApply ? wordsFor(no, verse.original) : undefined}
                   mode={mode}
                   canEditMarkers={canEditMarkers}
+                  ipaVerse={ipaVerses[no - 1]}
+                  script={scriptNow}
                 />
               ))}
             </div>
@@ -212,7 +291,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
         <div className="space-y-6">
           {alignment.stanzas.map((stanza, i) => (
             <div key={i} className="space-y-2 border-l-2 border-primary/20 pl-4">
-              <VerseRow verse={stanza} showLiteral={showLiteral} mode={mode} />
+              <VerseRow verse={stanza} showLiteral={showLiteral} mode={mode} script="latin" />
             </div>
           ))}
         </div>

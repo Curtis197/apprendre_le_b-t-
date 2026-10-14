@@ -174,3 +174,31 @@ describe('VerseWords', () => {
 })
 
 
+
+describe('VerseWords in the IPA script', () => {
+  const ipa = ['Sɛ', "a'a", 'tatɩnɩ', 'a', 'yɩɩ']
+
+  it('shows the IPA words in both modes, in the original sentence order', () => {
+    expect(buttons(renderToStaticMarkup(<VerseWords verse={VERSE} mode="B" script="ipa" ipaWords={ipa} />)))
+      .toEqual(['Sɛ', "a'a", 'tatɩnɩ', 'a', 'yɩɩ'])
+    const a = renderToStaticMarkup(<VerseWords verse={VERSE} mode="A" script="ipa" ipaWords={ipa} />)
+    const words = [...a.matchAll(/<span class="[^"]*font-semibold[^"]*">([^<]*)<\/span>/g)].map(m => decode(m[1]))
+    expect(words).toEqual(['Sɛ', "a'a", 'tatɩnɩ', 'a', 'yɩɩ'])
+  })
+
+  it('keeps the Latin words when the script is Latin, or when the IPA words do not line up', () => {
+    expect(buttons(renderToStaticMarkup(<VerseWords verse={VERSE} mode="B" script="latin" ipaWords={ipa} />)))
+      .toEqual(['Sê', "a'a", 'tatini', 'a', 'yii'])
+    expect(buttons(renderToStaticMarkup(<VerseWords verse={VERSE} mode="B" script="ipa" ipaWords={ipa.slice(0, 4)} />)))
+      .toEqual(['Sê', "a'a", 'tatini', 'a', 'yii'])
+    expect(buttons(renderToStaticMarkup(<VerseWords verse={VERSE} mode="B" script="ipa" ipaWords={null} />)))
+      .toEqual(['Sê', "a'a", 'tatini', 'a', 'yii'])
+  })
+
+  it('the detail of a word shows both forms', () => {
+    const html = renderToStaticMarkup(<VerseWords verse={VERSE} mode="B" script="ipa" ipaWords={ipa} initialOpen={2} />)
+    expect(decode(html)).toContain('tatini')
+    expect(decode(html)).toContain('API')
+    expect(decode(html)).toContain('tatɩnɩ … yɩɩ')   // words that are apart are joined by " … " (labelOf)
+  })
+})

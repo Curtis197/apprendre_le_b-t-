@@ -206,3 +206,28 @@ describe('readerTokens', () => {
     expect(readerTokens(verse)[3].composition).toBe('a (x) + a (y)')
   })
 })
+
+describe('readerTokens with IPA words', () => {
+  const verse = {
+    verse_no: 1, stale: false,
+    bete_line: 'Sê a tatini yii', literal_line: 'Comme nous laissons',
+    blocks: [
+      { position: 1, bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, note: null, composition: null, marker: null },
+      { position: 2, bete_idx: [1], gloss_idx: [1], is_marker: false, solo: false, note: null, composition: null, marker: null },
+      { position: 3, bete_idx: [2, 3], gloss_idx: [2], is_marker: false, solo: false, note: null, composition: null, marker: null },
+    ],
+  }
+
+  it('gives each piece the IPA words at the same positions', () => {
+    const t = readerTokens(verse, ['Sɛ', 'a', 'tatɩnɩ', 'yii'])
+    expect(t.map(x => x.ipa)).toEqual(['Sɛ', 'a', 'tatɩnɩ yii'])
+    expect(t[2].wholeIpa).toBe('tatɩnɩ yii')
+    expect(t.map(x => x.t)).toEqual(['Sê', 'a', 'tatini yii'])   // the Latin text is never rewritten
+  })
+
+  it('gives null for IPA when there are no IPA words, or when the counts differ', () => {
+    expect(readerTokens(verse).every(x => x.ipa === null && x.wholeIpa === null)).toBe(true)
+    expect(readerTokens(verse, ['Sɛ', 'a', 'tatɩnɩ']).every(x => x.ipa === null)).toBe(true)
+    expect(readerTokens(verse, ['Sɛ', 'a', 'tatɩnɩ', 'yii', 'de trop']).every(x => x.ipa === null)).toBe(true)
+  })
+})

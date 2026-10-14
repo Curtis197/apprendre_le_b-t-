@@ -260,6 +260,9 @@ export interface ReaderToken {
   t: string
   /** Text of the whole block: "tatini … yii" when its words are apart. */
   whole: string
+  /** IPA text of this piece / of the whole block, when the IPA words line up with the Latin words; else null. */
+  ipa: string | null
+  wholeIpa: string | null
   gloss: string | null
   note: string | null
   composition: string | null
@@ -273,13 +276,16 @@ export interface ReaderToken {
  * One token per word place, in the original sentence order. A block whose words are apart gives
  * several tokens sharing the same `bid`, so the reader can link them. The text is never rewritten.
  */
-export function readerTokens(verse: VerseWords): ReaderToken[] {
+export function readerTokens(verse: VerseWords, ipaWords?: string[] | null): ReaderToken[] {
   const bw = splitWords(verse.bete_line)
   const gw = splitWords(verse.literal_line)
+  // IPA words are used only when they line up one to one with the Latin words.
+  const iw = ipaWords && ipaWords.length === bw.length ? ipaWords : null
   const out: ReaderToken[] = []
   for (const b of verse.blocks) {
     const runs = splitRuns(b.bete_idx)
     const names = runs.map(r => r.map(i => bw[i] ?? '').join(' '))
+    const ipaNames = iw ? runs.map(r => r.map(i => iw[i] ?? '').join(' ')) : null
     runs.forEach((r, k) =>
       out.push({
         start: r[0],
@@ -288,6 +294,8 @@ export function readerTokens(verse: VerseWords): ReaderToken[] {
         bid: `${verse.verse_no}:${b.position}`,
         t: names[k],
         whole: labelOf(bw, b.bete_idx),
+        ipa: ipaNames ? ipaNames[k] : null,
+        wholeIpa: iw ? labelOf(iw, b.bete_idx) : null,
         gloss: b.gloss_idx.length ? labelOf(gw, b.gloss_idx) : null,
         note: b.note,
         composition: b.composition,

@@ -16,6 +16,8 @@ interface Props {
   /** Index of the token shown open on first render (tests only; pages never pass it). */
   initialOpen?: number | null
   canEditMarkers?: boolean
+  ipaWords?: string[] | null
+  script?: 'latin' | 'ipa'
 }
 
 const POS_LABELS: Record<string, string> = {
@@ -156,6 +158,11 @@ function WordDetail({
         <span className="text-muted-foreground">→</span>
         <strong>{tk.gloss ?? (tk.isMarker ? `⟨${mk?.meaning || 'à préciser'}⟩` : 'sens à préciser')}</strong>
       </div>
+      {tk.wholeIpa && tk.wholeIpa !== tk.whole && (
+        <p className="text-xs text-muted-foreground">
+          En latin : <span className="phonetic">{tk.whole}</span> · En API : <span className="phonetic">{tk.wholeIpa}</span>
+        </p>
+      )}
       {partners.length > 0 && (
         <p className="flex flex-wrap items-center gap-1.5">
           Lié à :
@@ -206,10 +213,11 @@ function WordDetail({
   )
 }
 
-export function VerseWords({ verse, mode, initialOpen = null, canEditMarkers }: Props) {
-  const tokens = readerTokens(verse)
+export function VerseWords({ verse, mode, initialOpen = null, canEditMarkers, ipaWords = null, script = 'latin' }: Props) {
+  const tokens = readerTokens(verse, ipaWords)
   const [open, setOpen] = useState<number | null>(initialOpen)
   const toggle = (i: number) => setOpen(open === i ? null : i)
+  const shown = (tk: ReaderToken) => (script === 'ipa' && tk.ipa ? tk.ipa : tk.t)
   const tied = (tk: ReaderToken) => open != null && tokens[open] != null && tk.runs.length > 1 && tokens[open].bid === tk.bid
 
   if (tokens.length === 0) return null
@@ -232,7 +240,7 @@ export function VerseWords({ verse, mode, initialOpen = null, canEditMarkers }: 
                 tk.isMarker && 'border-dashed',
               )}
             >
-              <span className="phonetic text-sm font-semibold text-foreground">{tk.t}</span>
+              <span className="phonetic text-sm font-semibold text-foreground">{shown(tk)}</span>
               <span className="text-xs italic text-primary">{tk.k > 0 ? `↔ ${tk.runs[0]}` : glossOf(tk)}</span>
               {tk.k === 0 && tk.runs.length > 1 && (
                 <span className="text-[10px] text-muted-foreground">↔ {tk.runs.slice(1).join(', ')}</span>
@@ -264,7 +272,7 @@ export function VerseWords({ verse, mode, initialOpen = null, canEditMarkers }: 
                 !tk.gloss && !tk.isMarker && 'border-amber-500',
               )}
             >
-              {tk.t}
+              {shown(tk)}
             </button>{' '}
           </span>
         ))}
