@@ -91,9 +91,9 @@ export interface EntryForm {
   useExample: boolean
 }
 
-export function emptyEntryForm(spelling: string, gloss: string, dialect: Dialect): EntryForm {
+export function emptyEntryForm(spelling: string, gloss: string, dialect: Dialect, ipa = ''): EntryForm {
   return {
-    spelling, ipa: '', dialect, category: '', description: '', notes: '', synonyms: '', lemma: '',
+    spelling, ipa, dialect, category: '', description: '', notes: '', synonyms: '', lemma: '',
     senses: [{ french: senseSeed(gloss), context: '' }], useExample: false,
   }
 }

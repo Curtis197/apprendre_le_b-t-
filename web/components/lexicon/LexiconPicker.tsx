@@ -90,6 +90,8 @@ interface Props {
   spelling: string
   gloss: string
   dialect: Dialect
+  /** IPA form of the word, to prefill the transcription of a new entry. */
+  ipa?: string
   signedIn: boolean
   debounceMs?: number
   canUseExample: boolean
@@ -113,7 +115,7 @@ interface Props {
  * It decides nothing about what picking or creating does: the parent (resource editor, contribution form) does.
  */
 export function LexiconPicker({
-  client, kind, spelling, gloss, dialect, signedIn, debounceMs = 0, canUseExample, chooseSense,
+  client, kind, spelling, gloss, dialect, ipa = '', signedIn, debounceMs = 0, canUseExample, chooseSense,
   exactLabel, variantLabel, createLabel = 'Mot différent : créer l’entrée', submitLabel,
   busy, error, onChoose, onChooseVariant, onCreate, onCreatingChange, footer, formExtra,
 }: Props) {
@@ -144,7 +146,7 @@ export function LexiconPicker({
     return (
       <EntryForm
         kind={kind}
-        initial={emptyEntryForm(spelling, gloss, dialect)}
+        initial={emptyEntryForm(spelling, gloss, dialect, ipa)}
         canUseExample={canUseExample}
         busy={busy}
         error={error}

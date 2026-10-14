@@ -18,6 +18,8 @@ interface Props {
   /** Entries the editor has seen (candidates created or linked here, or loaded with the verse), by id. */
   entries: Record<string, LexSummary>
   dialect: Dialect
+  /** The IPA words of the verse, or null when there is no IPA text for it. */
+  ipaWords?: string[] | null
   /** The verse as an example sentence, or null when the French line is not available. */
   example: { bete: string; french: string; literal: string } | null
   signedIn: boolean
@@ -95,7 +97,7 @@ function WordTools({
 }
 
 export function BlockPanel({
-  client, draft, focus, entries, dialect, example, signedIn, onEntry, onChange, onFocus,
+  client, draft, focus, entries, dialect, ipaWords = null, example, signedIn, onEntry, onChange, onFocus,
 }: Props) {
   const r = derive(draft)
   if (!focus) {
@@ -112,6 +114,8 @@ export function BlockPanel({
   const key = b ? blockKey(b) : null
   const meta = key ? draft.meta[key] : undefined
   const bWords = b ? blockWords(r.bw, b.idx) : ''
+  // The IPA form of the selected block, only when the IPA line lines up with the (possibly edited) Latin words.
+  const ipaOfBlock = b && ipaWords && ipaWords.length === r.bw.length ? blockWords(ipaWords, b.idx) : ''
 
   const apply = (next: VerseDraft) => onChange(next)
 
@@ -185,12 +189,13 @@ export function BlockPanel({
           </div>
 
           <LexiconPanel
-            key={`${key}:${meta?.isMarker ? 'm' : 'w'}:${bWords}`}
+            key={`${key}:${meta?.isMarker ? 'm' : 'w'}:${bWords}:${ipaOfBlock}`}
             client={client}
             kind={meta?.isMarker ? 'marker' : 'word'}
             words={bWords}
             gloss={pair?.g ? blockWords(r.gw, pair.g.idx) : ''}
             dialect={dialect}
+            ipa={ipaOfBlock}
             meta={meta ?? EMPTY_META}
             entry={meta?.lexiconId ? (entries[meta.lexiconId] ?? null) : null}
             example={example}

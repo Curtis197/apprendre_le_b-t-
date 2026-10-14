@@ -78,3 +78,12 @@ describe('entry form', () => {
     expect(checkEntryForm({ ...f, spelling: 's'.repeat(101) }, 'word')).toMatch(/100/)
   })
 })
+
+describe('emptyEntryForm with an IPA word', () => {
+  it('prefills the transcription, and leaves it empty by default', () => {
+    expect(emptyEntryForm('tatini', 'laissons', 'western').ipa).toBe('')
+    const f = emptyEntryForm('tatini', 'laissons', 'western', 'tatɩnɩ')
+    expect(f.ipa).toBe('tatɩnɩ')
+    expect(f.spelling).toBe('tatini')
+  })
+})

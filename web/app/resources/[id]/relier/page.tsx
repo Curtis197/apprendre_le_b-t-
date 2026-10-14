@@ -73,6 +73,7 @@ export default async function LinkWordsPage({ params }: { params: Promise<{ id: 
                 saved={saved}
                 region={text.region ?? null}
                 frenchLines={frenchLines && frenchLines.length === beteLines.length ? frenchLines : null}
+                ipaLines={text.content_ipa?.trim() ? nonEmptyLines(text.content_ipa) : null}
                 signedIn
               />
             )

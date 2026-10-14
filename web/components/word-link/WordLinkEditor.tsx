@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { cn } from '@/lib/utils'
 import { saveVerse } from '@/lib/word-blocks-data'
-import { type VerseWords, type LexSummary } from '@/lib/word-blocks'
+import { splitWords, type VerseWords, type LexSummary } from '@/lib/word-blocks'
 import {
   afterSave, derive, initDraft, markSaved, reconcileDraft,
   staleVerseNumbers, toSave, unlinkedMarkers, verseStatus, type VerseDraft, type VerseStatus,
@@ -23,6 +23,8 @@ interface Props {
   saved: VerseWords[]
   region: string | null
   frenchLines: string[] | null
+  /** The non-empty IPA lines, same numbering as beteLines, or null when the resource has no IPA text. */
+  ipaLines?: string[] | null
   signedIn: boolean
 }
 
@@ -47,7 +49,7 @@ function readStored(resourceId: string, verseNo: number): VerseDraft | null {
 }
 
 export function WordLinkEditor({
-  resourceId, beteLines, literalLines, saved, region, frenchLines, signedIn,
+  resourceId, beteLines, literalLines, saved, region, frenchLines, ipaLines = null, signedIn,
 }: Props) {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -255,6 +257,7 @@ export function WordLinkEditor({
         focus={focus}
         entries={entries}
         dialect={dialectForRegion(region)}
+        ipaWords={ipaLines?.[cur] ? splitWords(ipaLines[cur]) : null}
         example={frenchLines ? { bete: draft.bete, french: frenchLines[cur] ?? '', literal: draft.literal } : null}
         signedIn={signedIn}
         onEntry={e => setLocalEntries(m => ({ ...m, [e.id]: e }))}

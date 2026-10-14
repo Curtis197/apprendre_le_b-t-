@@ -19,6 +19,7 @@ interface Props {
   words: string            // the block's Bété words ("ghèhi-wu")
   gloss: string            // the block's mot à mot ("au ciel"), '' for a solo marker
   dialect: Dialect         // default dialect of the resource
+  ipa?: string             // the block's IPA word(s), prefilled in the transcription of a new entry
   meta: BlockMeta
   entry: LexSummary | null // the linked entry (from the editor cache)
   example: { bete: string; french: string; literal: string } | null
@@ -31,7 +32,7 @@ const inputClass = 'w-full rounded-md border border-input bg-background px-2.5 p
 const btn = 'rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors'
 
 export function LexiconPanel({
-  client, kind, words, gloss, dialect, meta, entry, example, signedIn, onLink, onUnlink,
+  client, kind, words, gloss, dialect, ipa = '', meta, entry, example, signedIn, onLink, onUnlink,
 }: Props) {
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -178,7 +179,7 @@ export function LexiconPanel({
   async function handleCreateFast() {
     setBusy(true)
     setError('')
-    const res = await createEntry(client, { form: emptyEntryForm(words, gloss, dialect), kind: 'word' })
+    const res = await createEntry(client, { form: emptyEntryForm(words, gloss, dialect, ipa), kind: 'word' })
     setBusy(false)
     finishCreate(res, 'word')
   }
@@ -186,7 +187,7 @@ export function LexiconPanel({
   async function handleCreateMarkerImmediate() {
     setBusy(true)
     setError('')
-    const res = await createEntry(client, { form: emptyEntryForm(words, '', dialect), kind: 'marker' })
+    const res = await createEntry(client, { form: emptyEntryForm(words, '', dialect, ipa), kind: 'marker' })
     setBusy(false)
     finishCreate(res, 'marker')
   }
@@ -370,6 +371,7 @@ export function LexiconPanel({
           spelling={words}
           gloss={gloss}
           dialect={dialect}
+          ipa={ipa}
           signedIn={signedIn}
           canUseExample={example !== null}
           chooseSense
