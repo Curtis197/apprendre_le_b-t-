@@ -39,7 +39,7 @@ describe('alignIpa', () => {
   })
 
   it('treats a hyphenated tone mark as part of its word', () => {
-    expect(alignIpa("‑nyɛ Davidɩ", "‑nyɛ Davidɩ")[0].words).toEqual(['‑nyɛ', 'Davidɩ'])
+    expect(alignIpa("‑nyɛ Davidɩ", "‑nyɛ Davidɩ")[0].words).toEqual(['\u2011nyɛ', 'Davidɩ'])
   })
 })
 
@@ -69,7 +69,24 @@ describe('describeIpa', () => {
   })
 
   it('says how many lines are missing or extra', () => {
-    expect(describeIpa(alignIpa(LATIN, "Sɛ a'a tatɩnɩ a yii"), 1)?.message).toContain('Le texte API a 1 ligne, le texte latin en a 2')
+    expect(describeIpa(alignIpa(LATIN, 'Sɛ a\u2019a tatɩnɩ a yii'), 1)?.message).toContain('Le texte API a 1 ligne, le texte latin en a 2')
     expect(describeIpa(alignIpa(LATIN, 'a\nb\nc'), 3)?.message).toContain('Le texte API a 3 lignes, le texte latin en a 2')
+  })
+
+  it('summarises more than three mismatching lines', () => {
+    const latin = 'a b\nc d\ne f\ng h\ni j'
+    const d = describeIpa(alignIpa(latin, 'a\nc\ne\ng\ni'), 5)
+    expect(d?.ok).toBe(false)
+    expect(d?.message).toContain('ligne 1 : 2 mots en latin, 1 en API')
+    expect(d?.message).toContain('ligne 3 : 2 mots en latin, 1 en API')
+    expect(d?.message).not.toContain('ligne 4')
+    expect(d?.message).toContain('… et 2 autres lignes.')
+  })
+
+  it('reports extra lines and mismatching lines together', () => {
+    const d = describeIpa(alignIpa('a b\nc d', 'a\nc d\ne'), 3)
+    expect(d?.ok).toBe(false)
+    expect(d?.message).toContain('Le texte API a 3 lignes, le texte latin en a 2')
+    expect(d?.message).toContain('ligne 1 : 2 mots en latin, 1 en API')
   })
 })
