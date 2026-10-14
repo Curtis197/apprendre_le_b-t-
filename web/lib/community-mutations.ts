@@ -105,6 +105,9 @@ function resourceColumns(input: CreateCommunityTextInput, region: string | null)
     type:            input.type,
     content_bete:    toStoredForm(input.content_bete.trim()),
     content_literal: input.content_literal?.trim() ? toStoredForm(input.content_literal.trim()) : null,
+    ...(input.content_ipa !== undefined
+      ? { content_ipa: input.content_ipa.trim() ? toStoredForm(input.content_ipa.trim()) : null }
+      : {}),
     content_french:  input.content_french?.trim() || null,
     video_url:       input.video_url?.trim() || null,
     region,

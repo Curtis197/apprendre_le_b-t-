@@ -109,6 +109,7 @@ export interface CommunityText {
   type: ContentType
   content_bete: string
   content_literal: string | null  // word-for-word (mot à mot) reading
+  content_ipa: string | null      // the same text in IPA / African orthography (optional)
   content_french: string | null
   video_url: string | null
   author_name: string | null
@@ -148,6 +149,8 @@ export interface CreateCommunityTextInput {
   type: ContentType
   content_bete: string
   content_literal?: string
+  /** undefined: leave it alone; '' (or blanks): clear it. */
+  content_ipa?: string
   content_french?: string
   video_url?: string
   author_name?: string

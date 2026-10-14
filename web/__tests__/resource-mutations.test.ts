@@ -53,7 +53,7 @@ describe('submitCommunityText', () => {
     expect(calls).toHaveLength(0)
   })
 
-  it('publishes in the signed-in user’s name, trimmed', async () => {
+  it('publishes in the signed-in user\'s name, trimmed', async () => {
     const { client, calls } = fakeClient(ok({ id: 'r1' }))
     const res = await submitCommunityText(client, { ...input, title: '  Chant  ' })
     expect(res).toEqual({ data: { id: 'r1' }, error: null })
@@ -67,7 +67,7 @@ describe('submitCommunityText', () => {
 })
 
 describe('updateCommunityText', () => {
-  it('only touches the caller’s own row', async () => {
+  it('only touches the caller\'s own row', async () => {
     const { client, calls } = fakeClient(ok({ id: 'r1' }))
     const res = await updateCommunityText(client, 'r1', { ...input, region: 'Gagnoa' })
     expect(res.error).toBeNull()
@@ -136,7 +136,7 @@ describe('resource comments', () => {
     expect(calls[0].payload).toEqual({ resource_id: 'r1', user_id: 'u1', body: 'À corriger' })
   })
 
-  it('edits only the caller’s own comment', async () => {
+  it('edits only the caller\'s own comment', async () => {
     const { client, calls } = fakeClient(ok([{ id: 'c1' }]))
     expect((await updateResourceComment(client, 'c1', 'Nouveau texte')).error).toBeNull()
     expect(calls[0].filters).toEqual([['id', 'c1'], ['user_id', 'u1']])
@@ -148,5 +148,25 @@ describe('resource comments', () => {
   it('deletes only when a row was removed', async () => {
     expect((await deleteResourceComment(fakeClient(ok([{ id: 'c1' }])).client, 'c1')).error).toBeNull()
     expect((await deleteResourceComment(fakeClient(ok([])).client, 'c1')).error).toContain('impossible')
+  })
+})
+
+describe('content_ipa', () => {
+  it('is not sent when the field was never used (the column may not exist yet)', async () => {
+    const { client, calls } = fakeClient(ok({ id: 'r1' }))
+    await submitCommunityText(client, input)
+    expect(calls[0].payload).not.toHaveProperty('content_ipa')
+  })
+
+  it('is stored in NFC, trimmed, and keeps its lines', async () => {
+    const { client, calls } = fakeClient(ok({ id: 'r1' }))
+    await submitCommunityText(client, { ...input, content_ipa: '  gö a\n\nb̈  ' })
+    expect(calls[0].payload?.content_ipa).toBe('gö a\n\nb̈')
+  })
+
+  it('writes null for a blank value, so a filled field can be cleared on edit', async () => {
+    const { client, calls } = fakeClient(ok({ id: 'r1' }))
+    await updateCommunityText(client, 'r1', { ...input, content_ipa: '   ' })
+    expect(calls[0].payload?.content_ipa).toBeNull()
   })
 })
