@@ -75,7 +75,7 @@ export function initDraft(
       composition: b.composition ?? '',
       lexiconId: b.lex?.id ?? null,
       translationId: b.lex?.senseId ?? null,
-      ...(!saved.ipa_stale && b.ipa_idx?.length ? { ipaIdx: b.ipa_idx } : {}),
+      ...(!saved.ipa_stale && ipa && b.ipa_idx?.length ? { ipaIdx: b.ipa_idx } : {}),
     }
   }
   return withAutoIpa({ ...base, attB, attG, meta })
@@ -226,7 +226,7 @@ export function ipaChips(d: VerseDraft, key: string): IpaChip[] {
 export function ipaStatus(d: VerseDraft): { words: number; linked: number; unlinked: number } {
   const words = ipaWordsOf(d).length
   const keys = new Set(derive(d).bu.map(blockKey))
-  const linked = new Set(Object.entries(d.meta).filter(([k]) => keys.has(k)).flatMap(([, m]) => m.ipaIdx ?? [])).size
+  const linked = new Set(Object.entries(d.meta).filter(([k]) => keys.has(k)).flatMap(([, m]) => m.ipaIdx ?? []).filter(i => i >= 0 && i < words)).size
   return { words, linked, unlinked: words - linked }
 }
 
@@ -236,6 +236,19 @@ export function ipaStatus(d: VerseDraft): { words: number; linked: number; unlin
  */
 export function syncIpa(d: VerseDraft, initial: VerseDraft): VerseDraft {
   if (d.ipa === undefined && initial.ipa === undefined) return d
+  if (initial.ipa === undefined) {
+    // The resource no longer has an IPA line for this verse: forget everything about IPA.
+    const rest: VerseDraft = { ...d }
+    delete rest.ipa
+    delete rest.baseIpa
+    const meta: Record<string, BlockMeta> = {}
+    for (const [k, m] of Object.entries(d.meta)) {
+      const copy: BlockMeta = { ...m }
+      delete copy.ipaIdx
+      meta[k] = copy
+    }
+    return { ...rest, meta }
+  }
   if ((d.baseIpa ?? '') === (initial.baseIpa ?? '')) return { ...d, ipa: initial.ipa, baseIpa: initial.baseIpa }
   const meta = Object.fromEntries(Object.entries(d.meta).map(([k, m]) => [k, { ...m, ipaIdx: [] }]))
   return autoLinkIpa({ ...d, meta, ipa: initial.ipa, baseIpa: initial.baseIpa })

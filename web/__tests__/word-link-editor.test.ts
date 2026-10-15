@@ -476,7 +476,7 @@ describe('IPA links in the editor state', () => {
     const saved = (stale: boolean) => ({
       verse_no: 1, stale: false, ipa_stale: stale, bete_line: "Sê a'a tatini yii", literal_line: 'Comme nous laissons nos',
       blocks: [0, 1, 2, 3].map(i => ({
-        position: i + 1, bete_idx: [i], gloss_idx: [i], is_marker: false, solo: false, note: null, composition: null,
+        position: i + 1, bete_idx: [i], gloss_idx: [i], is_marker: false, solo: false, note: null, composition: null, marker: null,
         ...(i === 2 ? { ipa_idx: [2, 3] } : i === 3 ? {} : { ipa_idx: [i] }),
       })),
     })
