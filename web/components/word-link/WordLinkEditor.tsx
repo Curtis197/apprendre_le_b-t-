@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { cn } from '@/lib/utils'
 import { saveVerse } from '@/lib/word-blocks-data'
-import { splitWords, type VerseWords, type LexSummary } from '@/lib/word-blocks'
+import { type VerseWords, type LexSummary } from '@/lib/word-blocks'
 import {
-  afterSave, derive, initDraft, markSaved, reconcileDraft,
+  afterSave, derive, initDraft, ipaStatus, markSaved, reconcileDraft, syncIpa,
   staleVerseNumbers, toSave, unlinkedMarkers, verseStatus, type VerseDraft, type VerseStatus,
 } from '@/lib/word-link-editor'
 import { dialectForRegion } from '@/lib/lexicon-links'
@@ -54,8 +54,8 @@ export function WordLinkEditor({
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const initial = useMemo(
-    () => beteLines.map((b, i) => initDraft(i + 1, b, literalLines[i] ?? '', saved.find(v => v.verse_no === i + 1))),
-    [beteLines, literalLines, saved],
+    () => beteLines.map((b, i) => initDraft(i + 1, b, literalLines[i] ?? '', saved.find(v => v.verse_no === i + 1), ipaLines?.[i])),
+    [beteLines, literalLines, saved, ipaLines],
   )
 
   // Entries known to the editor (loaded with the saved verses, or created/linked here), by id.
@@ -88,7 +88,7 @@ export function WordLinkEditor({
   // Restore the drafts kept in this browser (after hydration, so the first render matches the server).
   useEffect(() => {
     const next = initial.map((d, i) =>
-      reconcileDraft(d, draftsRef.current[i], baselineRef.current[i], readStored(resourceId, d.verseNo)),
+      syncIpa(reconcileDraft(d, draftsRef.current[i], baselineRef.current[i], readStored(resourceId, d.verseNo)), d),
     )
     setDrafts(next)
     setBaseline(initial.map(d => JSON.stringify(d)))
@@ -161,6 +161,7 @@ export function WordLinkEditor({
       beteLine: payload.beteLine,
       literalLine: payload.literalLine,
       blocks: payload.blocks,
+      ipaBase: payload.ipaBase,
     })
     setBusy(false)
     if (res.error) {
@@ -251,13 +252,27 @@ export function WordLinkEditor({
 
       <PairStrip pairs={r.pairs} bw={r.bw} gw={r.gw} meta={draft.meta} focus={focus} onFocus={setFocus} />
 
+      {draft.ipa && (() => {
+        const s = ipaStatus(draft)
+        const staleSaved = saved.find(v => v.verse_no === draft.verseNo)?.ipa_stale === true && !savedNos.includes(draft.verseNo)
+        return (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              API : {s.words} mot{s.words > 1 ? 's' : ''}, {s.linked} relié{s.linked > 1 ? 's' : ''}{s.unlinked > 0 ? `, ${s.unlinked} non relié${s.unlinked > 1 ? 's' : ''}` : ''}.
+            </p>
+            {staleSaved && (
+              <p className="text-xs text-amber-700">Le texte API de ce vers a changé depuis l’enregistrement : les anciens liens API sont ignorés. Reliez-les de nouveau puis enregistrez.</p>
+            )}
+          </div>
+        )
+      })()}
+
       <BlockPanel
         client={supabase}
         draft={draft}
         focus={focus}
         entries={entries}
         dialect={dialectForRegion(region)}
-        ipaWords={ipaLines?.[cur] ? splitWords(ipaLines[cur]) : null}
         example={frenchLines ? { bete: draft.bete, french: frenchLines[cur] ?? '', literal: draft.literal } : null}
         signedIn={signedIn}
         onEntry={e => setLocalEntries(m => ({ ...m, [e.id]: e }))}
