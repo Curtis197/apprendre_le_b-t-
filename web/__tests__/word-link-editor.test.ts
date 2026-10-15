@@ -386,3 +386,115 @@ describe('links in the draft', () => {
     void derive
   })
 })
+
+describe('IPA links in the editor state', () => {
+  // Latin: "Sê a'a tatini yii" (4 words, one block each); IPA: "Sɛ a'a tatɩnɩ yɩɩ" (4 words)
+  const mk = (ipa?: string) => initDraft(1, "Sê a'a tatini yii", 'Comme nous laissons nos', undefined, ipa)
+  const keys = (d: VerseDraft) => derive(d).bu.map(blockKey)
+
+  it('keeps a draft without IPA text exactly as before', () => {
+    const d = mk()
+    expect(d).not.toHaveProperty('ipa')
+    expect(d).not.toHaveProperty('baseIpa')
+    expect(JSON.stringify(d.meta)).not.toContain('ipaIdx')
+    const p = toSave(d)
+    expect(p).not.toHaveProperty('ipaBase')
+    expect(p.blocks.every(b => !('ipa_idx' in b))).toBe(true)
+  })
+
+  it('links by position at the start when both lines have the same number of words', () => {
+    const d = mk("Sɛ a'a tatɩnɩ yɩɩ")
+    expect(d.ipa).toBe("Sɛ a'a tatɩnɩ yɩɩ")
+    expect(d.baseIpa).toBe("Sɛ a'a tatɩnɩ yɩɩ")
+    expect(keys(d).map(k => d.meta[k]?.ipaIdx)).toEqual([[0], [1], [2], [3]])
+  })
+
+  it('links nothing when the counts differ (the contributor links by hand)', () => {
+    const d = mk("Sɛ a'a tatɩ nɩ yɩɩ")
+    expect(keys(d).every(k => !d.meta[k]?.ipaIdx?.length)).toBe(true)
+  })
+
+  it('autoLinkIpa does nothing when the counts differ and overwrites when they match', () => {
+    const odd = mk("Sɛ a'a tatɩ nɩ yɩɩ")
+    expect(autoLinkIpa(odd)).toBe(odd)
+    const d = toggleIpaWord(mk("Sɛ a'a tatɩnɩ yɩɩ"), keys(mk())[0], 3)
+    expect(autoLinkIpa(d).meta[keys(d)[0]].ipaIdx).toEqual([0])
+  })
+
+  it('toggleIpaWord links, unlinks and moves a word from another block', () => {
+    let d = mk("Sɛ a'a tatɩ nɩ yɩɩ")
+    const [k0, k1] = keys(d)
+    d = toggleIpaWord(d, k0, 0)
+    d = toggleIpaWord(d, k0, 1)
+    expect(d.meta[k0].ipaIdx).toEqual([0, 1])
+    d = toggleIpaWord(d, k1, 1)                       // moved: a word belongs to one block only
+    expect(d.meta[k0].ipaIdx).toEqual([0])
+    expect(d.meta[k1].ipaIdx).toEqual([1])
+    d = toggleIpaWord(d, k1, 1)                       // unlinked
+    expect(d.meta[k1].ipaIdx).toEqual([])
+    expect(toggleIpaWord(d, k0, 99)).toBe(d)          // out of range: nothing
+  })
+
+  it('ipaChips tells which words are mine, another block’s, or free', () => {
+    let d = mk("Sɛ a'a tatɩ nɩ yɩɩ")
+    const [k0, k1] = keys(d)
+    d = toggleIpaWord(toggleIpaWord(d, k0, 0), k1, 2)
+    const chips = ipaChips(d, k0)
+    expect(chips.map(c => c.state)).toEqual(['mine', 'free', 'other', 'free', 'free'])
+    expect(chips[2]).toMatchObject({ word: 'tatɩ', ownerWords: "a'a" })
+  })
+
+  it('ipaStatus counts linked and unlinked IPA words', () => {
+    const d = toggleIpaWord(mk("Sɛ a'a tatɩ nɩ yɩɩ"), keys(mk())[0], 0)
+    expect(ipaStatus(d)).toEqual({ words: 5, linked: 1, unlinked: 4 })
+    expect(ipaStatus(mk())).toEqual({ words: 0, linked: 0, unlinked: 0 })
+  })
+
+  it('merging two blocks pools their IPA links; splitting leaves them with the first word', () => {
+    const d = mk("Sɛ a'a tatɩnɩ yɩɩ")                 // [0] [1] [2] [3]
+    const merged = attachUnits(d, 'b', 2, 3)          // block "tatini yii"
+    expect(derive(merged).bu.map(u => merged.meta[blockKey(u)]?.ipaIdx)).toEqual([[0], [1], [2, 3]])
+    const back = splitUnit(merged, 'b', 3)
+    expect(derive(back).bu.map(u => back.meta[blockKey(u)]?.ipaIdx)).toEqual([[0], [1], [2, 3], undefined])
+  })
+
+  it('correcting Latin words does not move IPA links', () => {
+    const d = mk("Sɛ a'a tatɩnɩ yɩɩ")
+    const unit = derive(d).bu[1]
+    const res = editWords(d, 'b', unit, ["a'a", 'ni'])
+    if ('error' in res) throw new Error(res.error)
+    expect(Object.values(res.draft.meta).flatMap(m => m.ipaIdx ?? []).sort()).toEqual([0, 1, 2, 3])
+  })
+
+  it('toSave sends ipa_idx for linked blocks and the IPA base line', () => {
+    const p = toSave(mk("Sɛ a'a tatɩnɩ yɩɩ"))
+    expect(p.ipaBase).toBe("Sɛ a'a tatɩnɩ yɩɩ")
+    expect(p.blocks.map(b => b.ipa_idx)).toEqual([[0], [1], [2], [3]])
+  })
+
+  it('a saved verse brings its links back, unless they are stale', () => {
+    const saved = (stale: boolean) => ({
+      verse_no: 1, stale: false, ipa_stale: stale, bete_line: "Sê a'a tatini yii", literal_line: 'Comme nous laissons nos',
+      blocks: [0, 1, 2, 3].map(i => ({
+        position: i + 1, bete_idx: [i], gloss_idx: [i], is_marker: false, solo: false, note: null, composition: null,
+        ...(i === 2 ? { ipa_idx: [2, 3] } : i === 3 ? {} : { ipa_idx: [i] }),
+      })),
+    })
+    const fresh = initDraft(1, "Sê a'a tatini yii", 'Comme nous laissons nos', saved(false), "Sɛ a'a tatɩnɩ yɩɩ")
+    expect(derive(fresh).bu.map(u => fresh.meta[blockKey(u)]?.ipaIdx ?? [])).toEqual([[0], [1], [2, 3], []])
+    const stale = initDraft(1, "Sê a'a tatini yii", 'Comme nous laissons nos', saved(true), "Sɛ a'a tatɩnɩ yɩɩ")
+    expect(derive(stale).bu.map(u => stale.meta[blockKey(u)]?.ipaIdx ?? [])).toEqual([[0], [1], [2], [3]])  // redone by position
+  })
+
+  it('syncIpa takes the server’s IPA line and drops links made on an older line', () => {
+    const initial = mk("Sɛ a'a tatɩnɩ yɩɩ")
+    const sameBase = syncIpa({ ...initial, ipa: 'old' }, initial)
+    expect(sameBase.ipa).toBe("Sɛ a'a tatɩnɩ yɩɩ")
+    const older = { ...toggleIpaWord(initial, keys(initial)[0], 3), baseIpa: 'an older line' }
+    const synced = syncIpa(older, initial)
+    expect(synced.baseIpa).toBe("Sɛ a'a tatɩnɩ yɩɩ")
+    expect(derive(synced).bu.map(u => synced.meta[blockKey(u)]?.ipaIdx)).toEqual([[0], [1], [2], [3]])
+    const noIpa = mk()
+    expect(syncIpa(noIpa, noIpa)).toBe(noIpa)
+  })
+})
