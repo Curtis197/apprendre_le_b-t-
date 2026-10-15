@@ -17,6 +17,8 @@ interface Props {
   initialOpen?: number | null
   canEditMarkers?: boolean
   ipaWords?: string[] | null
+  /** Every word of the IPA line, for the explicit word links. */
+  ipaAll?: string[] | null
   script?: 'latin' | 'ipa'
 }
 
@@ -213,8 +215,8 @@ function WordDetail({
   )
 }
 
-export function VerseWords({ verse, mode, initialOpen = null, canEditMarkers, ipaWords = null, script = 'latin' }: Props) {
-  const tokens = readerTokens(verse, ipaWords)
+export function VerseWords({ verse, mode, initialOpen = null, canEditMarkers, ipaWords = null, ipaAll = null, script = 'latin' }: Props) {
+  const tokens = readerTokens(verse, ipaWords, ipaAll)
   const [open, setOpen] = useState<number | null>(initialOpen)
   const toggle = (i: number) => setOpen(open === i ? null : i)
   const shown = (tk: ReaderToken) => (script === 'ipa' && tk.ipa ? tk.ipa : tk.t)

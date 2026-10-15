@@ -15,6 +15,8 @@ export interface IpaVerse {
   words: string[] | null
   beteWords: number
   ipaWords: number
+  /** Every word of the IPA line (empty when the verse has no IPA line). */
+  all: string[]
 }
 
 /** The non-empty lines of an IPA text, numbered like the form gutter: a line of only Unicode spaces is empty. */
@@ -29,13 +31,13 @@ export function alignIpa(beteText: string, ipaText?: string | null): IpaVerse[] 
   return bete.map((b, i): IpaVerse => {
     const beteWords = splitWords(b).length
     const base = { no: i + 1, beteWords }
-    if (!used) return { ...base, status: 'none', line: null, words: null, ipaWords: 0 }
+    if (!used) return { ...base, status: 'none', line: null, words: null, ipaWords: 0, all: [] }
     const line = ipa[i]
-    if (line === undefined) return { ...base, status: 'line-missing', line: null, words: null, ipaWords: 0 }
+    if (line === undefined) return { ...base, status: 'line-missing', line: null, words: null, ipaWords: 0, all: [] }
     const words = splitWords(line)
     return words.length === beteWords
-      ? { ...base, status: 'ok', line, words, ipaWords: words.length }
-      : { ...base, status: 'words-differ', line, words: null, ipaWords: words.length }
+      ? { ...base, status: 'ok', line, words, ipaWords: words.length, all: words }
+      : { ...base, status: 'words-differ', line, words: null, ipaWords: words.length, all: words }
   })
 }
 

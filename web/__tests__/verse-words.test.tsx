@@ -202,3 +202,17 @@ describe('VerseWords in the IPA script', () => {
     expect(decode(html)).toContain('tatɩnɩ … yɩɩ')   // words that are apart are joined by " … " (labelOf)
   })
 })
+
+describe('VerseWords with explicit IPA links', () => {
+  it('shows the explicit IPA words of a block whose Latin and IPA counts differ', () => {
+    const verse: VerseData = {
+      verse_no: 4, stale: false, bete_line: 'Sê a tatini yii', literal_line: 'Comme nous laissons',
+      blocks: [block(1, [0], [0], { ipa_idx: [0] }), block(2, [1], [1], { ipa_idx: [1] }), block(3, [2, 3], [2], { ipa_idx: [2, 3, 4] })],
+    }
+    const ipaAll = ['Sɛ', 'a', 'ta', 'tɩnɩ', 'yɩɩ']
+    expect(buttons(renderToStaticMarkup(<VerseWords verse={verse} mode="B" script="ipa" ipaAll={ipaAll} />)))
+      .toEqual(['Sɛ', 'a', 'ta tɩnɩ yɩɩ'])
+    expect(buttons(renderToStaticMarkup(<VerseWords verse={verse} mode="B" script="latin" ipaAll={ipaAll} />)))
+      .toEqual(['Sê', 'a', 'tatini yii'])
+  })
+})

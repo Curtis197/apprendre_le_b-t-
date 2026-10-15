@@ -80,3 +80,29 @@ describe('VerseTranslation plain card with a longer IPA text', () => {
     expect(api).not.toContain('Sê a')
   })
 })
+
+describe('VerseTranslation with explicit IPA links', () => {
+  const verse = (extra = {}): VerseData => ({
+    verse_no: 1, stale: false, bete_line: "Sê a'a tatini a yii", literal_line: 'Comme nous laissons nos',
+    blocks: [0, 1, 2, 3, 4].map(i => ({
+      position: i + 1, bete_idx: [i], gloss_idx: [i % 4], is_marker: false, solo: false, note: null, composition: null, marker: null,
+      ipa_idx: i < 4 ? [i] : [3],
+    })),
+    ...extra,
+  })
+  const render = (v: VerseData) => decode(renderToStaticMarkup(
+    <VerseTranslation original="Sê a'a tatini a yii" literal="Comme nous laissons nos" ipa="Sɛ a'a tatɩnɩ yɩɩ" words={[v]} defaultScript="ipa" />,
+  ))
+
+  it('reads the explicit IPA words and drops the mismatch note', () => {
+    const html = render(verse())
+    expect(html).toContain('tatɩnɩ')
+    expect(html).not.toContain('ne correspond')
+  })
+
+  it('a stale IPA line shows the Latin words and the note', () => {
+    const html = render(verse({ ipa_stale: true }))
+    expect(html).toContain('tatini')
+    expect(html).toContain('ne correspond')
+  })
+})

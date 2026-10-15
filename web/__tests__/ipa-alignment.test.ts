@@ -104,3 +104,13 @@ describe('ipaLines', () => {
     expect(v[1].line).toBe('Y')
   })
 })
+
+describe('IpaVerse.all', () => {
+  it('lists every IPA word of the line, even when the counts differ', () => {
+    const v = alignIpa('a b c', 'x y')
+    expect(v[0]).toMatchObject({ status: 'words-differ', words: null, all: ['x', 'y'] })
+    expect(alignIpa('a b', 'x y')[0].all).toEqual(['x', 'y'])
+    expect(alignIpa('a b', null)[0].all).toEqual([])
+    expect(alignIpa('a b\nc', 'x y')[1].all).toEqual([])
+  })
+})

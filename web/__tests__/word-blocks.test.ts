@@ -231,3 +231,52 @@ describe('readerTokens with IPA words', () => {
     expect(readerTokens(verse, ['Sɛ', 'a', 'tatɩnɩ', 'yii', 'de trop']).every(x => x.ipa === null)).toBe(true)
   })
 })
+
+describe('readerTokens with explicit IPA links', () => {
+  const blk = (position: number, bete: number[], gloss: number[], ipa?: number[]) => ({
+    position, bete_idx: bete, gloss_idx: gloss, is_marker: false, solo: false, note: null, composition: null, marker: null,
+    ...(ipa ? { ipa_idx: ipa } : {}),
+  })
+  const verse = (blocks: ReturnType<typeof blk>[], extra = {}): VerseWords => ({
+    verse_no: 1, stale: false, bete_line: 'Sê a tatini yii', literal_line: 'Comme nous laissons', blocks, ...extra,
+  })
+  const IPA = ['Sɛ', 'a', 'ta', 'tɩnɩ', 'yɩɩ']   // 5 IPA words for 4 Latin words: positions do not line up
+
+  it('uses the explicit links when the counts differ', () => {
+    const t = readerTokens(verse([blk(1, [0], [0], [0]), blk(2, [1], [1], [1]), blk(3, [2, 3], [2], [2, 3, 4])]), null, IPA)
+    expect(t.map(x => x.ipa)).toEqual(['Sɛ', 'a', 'ta tɩnɩ yɩɩ'])
+    expect(t[2].wholeIpa).toBe('ta tɩnɩ yɩɩ')
+  })
+
+  it('ignores explicit links of a stale IPA line and falls back to position, then to nothing', () => {
+    const blocks = [blk(1, [0], [0], [0]), blk(2, [1], [1], [1]), blk(3, [2, 3], [2], [2, 3, 4])]
+    const stale = readerTokens(verse(blocks, { ipa_stale: true }), null, IPA)
+    expect(stale.every(x => x.ipa === null)).toBe(true)
+    const positional = readerTokens(verse(blocks, { ipa_stale: true }), ['A', 'B', 'C', 'D'], IPA)
+    expect(positional.map(x => x.ipa)).toEqual(['A', 'B', 'C D'])
+  })
+
+  it('ignores a link that points past the IPA words', () => {
+    const t = readerTokens(verse([blk(1, [0], [0], [9]), blk(2, [1], [1]), blk(3, [2, 3], [2])]), null, IPA)
+    expect(t.every(x => x.ipa === null)).toBe(true)
+  })
+
+  it('a block without links uses the position fallback when the counts are equal', () => {
+    const t = readerTokens(verse([blk(1, [0], [0], [0]), blk(2, [1], [1]), blk(3, [2, 3], [2])]), ['A', 'B', 'C', 'D'], ['A', 'B', 'C', 'D'])
+    expect(t.map(x => x.ipa)).toEqual(['A', 'B', 'C D'])
+  })
+
+  it('for a block whose Latin words are apart: run by run when the run counts are equal, else all on the first piece', () => {
+    const apart = (ipa: number[]) => readerTokens(
+      {
+        verse_no: 1, stale: false, bete_line: 'a b c d e', literal_line: 'x y z w',
+        blocks: [blk(1, [0], [0]), blk(2, [1], [1]), blk(3, [2, 4], [2], ipa), blk(4, [3], [3])],
+      },
+      null, ['I0', 'I1', 'I2', 'I3', 'I4', 'I5'],
+    )
+    const equalRuns = apart([2, 5])         // two Latin pieces [2] and [4]; two IPA runs [2] and [5]
+    expect(equalRuns.filter(x => x.bid === '1:3').map(x => x.ipa)).toEqual(['I2', 'I5'])
+    const unequal = apart([2, 3, 4])        // one IPA run of three words for two Latin pieces
+    expect(unequal.filter(x => x.bid === '1:3').map(x => x.ipa)).toEqual(['I2 I3 I4', '…'])
+  })
+})

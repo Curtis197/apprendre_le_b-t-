@@ -281,16 +281,30 @@ export interface ReaderToken {
  * One token per word place, in the original sentence order. A block whose words are apart gives
  * several tokens sharing the same `bid`, so the reader can link them. The text is never rewritten.
  */
-export function readerTokens(verse: VerseWords, ipaWords?: string[] | null): ReaderToken[] {
+export function readerTokens(verse: VerseWords, ipaWords?: string[] | null, ipaAll?: string[] | null): ReaderToken[] {
   const bw = splitWords(verse.bete_line)
   const gw = splitWords(verse.literal_line)
-  // IPA words are used only when they line up one to one with the Latin words.
+  // Positional IPA words only when they line up one to one with the Latin words.
   const iw = ipaWords && ipaWords.length === bw.length ? ipaWords : null
+  // Explicit links only while the IPA line is the one they were made on.
+  const all = verse.ipa_stale ? null : ipaAll ?? null
   const out: ReaderToken[] = []
   for (const b of verse.blocks) {
     const runs = splitRuns(b.bete_idx)
     const names = runs.map(r => r.map(i => bw[i] ?? '').join(' '))
-    const ipaNames = iw ? runs.map(r => r.map(i => iw[i] ?? '').join(' ')) : null
+    const link = b.ipa_idx ?? []
+    let ipaNames: string[] | null = null
+    let wholeIpa: string | null = null
+    if (all && link.length > 0 && link.every(i => i >= 0 && i < all.length)) {
+      const ipaRuns = splitRuns(link)
+      ipaNames = ipaRuns.length === runs.length
+        ? ipaRuns.map(r => r.map(i => all[i]).join(' '))
+        : runs.map((_, k) => (k === 0 ? link.map(i => all[i]).join(' ') : '…'))
+      wholeIpa = labelOf(all, link)
+    } else if (iw) {
+      ipaNames = runs.map(r => r.map(i => iw[i] ?? '').join(' '))
+      wholeIpa = labelOf(iw, b.bete_idx)
+    }
     runs.forEach((r, k) =>
       out.push({
         start: r[0],
@@ -300,7 +314,7 @@ export function readerTokens(verse: VerseWords, ipaWords?: string[] | null): Rea
         t: names[k],
         whole: labelOf(bw, b.bete_idx),
         ipa: ipaNames ? ipaNames[k] : null,
-        wholeIpa: iw ? labelOf(iw, b.bete_idx) : null,
+        wholeIpa,
         gloss: b.gloss_idx.length ? labelOf(gw, b.gloss_idx) : null,
         note: b.note,
         composition: b.composition,

@@ -138,18 +138,19 @@ function VerseRow({
   script: Script
 }) {
   const showIpa = script === 'ipa'
+  const explicit = Boolean(words && !words.ipa_stale && words.blocks.some(b => b.ipa_idx?.length))
   const plain = showIpa && ipaVerse?.line ? ipaVerse.line : verse.original
   const note = !showIpa || !ipaVerse
     ? null
     : !ipaVerse.line
       ? 'Pas d’API pour ce vers.'
-      : words && ipaVerse.status === 'words-differ'
+      : words && ipaVerse.status === 'words-differ' && !explicit
         ? 'Le nombre de mots en API ne correspond pas au latin : lecture mot à mot en latin.'
         : null
   return (
     <div className="space-y-0.5">
       {words ? (
-        <VerseWords verse={words} mode={mode} canEditMarkers={canEditMarkers} script={script} ipaWords={ipaVerse?.words ?? null} />
+        <VerseWords verse={words} mode={mode} canEditMarkers={canEditMarkers} script={script} ipaWords={ipaVerse?.words ?? null} ipaAll={ipaVerse?.all?.length ? ipaVerse.all : null} />
       ) : (
         <Lines className={cn('font-semibold text-foreground leading-relaxed', showIpa && ipaVerse?.line && 'phonetic')}>{plain}</Lines>
       )}
