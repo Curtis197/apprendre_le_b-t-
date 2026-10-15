@@ -261,9 +261,14 @@ describe('readerTokens with explicit IPA links', () => {
     expect(t.every(x => x.ipa === null)).toBe(true)
   })
 
-  it('a block without links uses the position fallback when the counts are equal', () => {
-    const t = readerTokens(verse([blk(1, [0], [0], [0]), blk(2, [1], [1]), blk(3, [2, 3], [2])]), ['A', 'B', 'C', 'D'], ['A', 'B', 'C', 'D'])
+  it('with no linked block, every block uses the position fallback when the counts are equal', () => {
+    const t = readerTokens(verse([blk(1, [0], [0]), blk(2, [1], [1]), blk(3, [2, 3], [2])]), ['A', 'B', 'C', 'D'], ['A', 'B', 'C', 'D'])
     expect(t.map(x => x.ipa)).toEqual(['A', 'B', 'C D'])
+  })
+
+  it('once one block is linked, a block without links shows no IPA (no position fallback)', () => {
+    const t = readerTokens(verse([blk(1, [0], [0], [0]), blk(2, [1], [1]), blk(3, [2, 3], [2])]), ['A', 'B', 'C', 'D'], ['A', 'B', 'C', 'D'])
+    expect(t.map(x => x.ipa)).toEqual(['A', null, null])
   })
 
   it('for a block whose Latin words are apart: run by run when the run counts are equal, else all on the first piece', () => {

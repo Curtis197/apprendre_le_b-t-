@@ -113,13 +113,15 @@ export function BlockPanel({
   const key = b ? blockKey(b) : null
   const meta = key ? draft.meta[key] : undefined
   const bWords = b ? blockWords(r.bw, b.idx) : ''
-  // The IPA form of the selected block: its explicit links, else the same position when the counts are equal.
+  // The IPA form of the selected block: its explicit links, else the same position when the counts are equal and
+  // no block of the verse has explicit links (a deliberate unlink must not be refilled by position).
+  const anyIpaLinked = Object.values(draft.meta).some(m => m.ipaIdx?.length)
   const ipaWords = splitWords(draft.ipa ?? '')
   const ipaOfBlock = !b
     ? ''
     : meta?.ipaIdx?.length
       ? blockWords(ipaWords, meta.ipaIdx)
-      : ipaWords.length > 0 && ipaWords.length === r.bw.length ? blockWords(ipaWords, b.idx) : ''
+      : !anyIpaLinked && ipaWords.length > 0 && ipaWords.length === r.bw.length ? blockWords(ipaWords, b.idx) : ''
 
   const apply = (next: VerseDraft) => onChange(next)
 
@@ -195,7 +197,7 @@ export function BlockPanel({
           <IpaWordsPanel draft={draft} blockKey={key} onChange={apply} />
 
           <LexiconPanel
-            key={`${key}:${meta?.isMarker ? 'm' : 'w'}:${bWords}:${ipaOfBlock}`}
+            key={`${key}:${meta?.isMarker ? 'm' : 'w'}:${bWords}`}
             client={client}
             kind={meta?.isMarker ? 'marker' : 'word'}
             words={bWords}

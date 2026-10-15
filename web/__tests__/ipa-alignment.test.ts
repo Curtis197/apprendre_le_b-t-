@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { alignIpa, describeIpa, hasIpa, ipaLines } from '@/lib/ipa-alignment'
+import { nonEmptyLines } from '@/lib/word-blocks'
+import { alignIpa, describeIpa, hasIpa, ipaEditorLines, ipaLines } from '@/lib/ipa-alignment'
 
 const LATIN = "Sê a'a tatini a yii\nKaba nunu"
 
@@ -112,5 +113,14 @@ describe('IpaVerse.all', () => {
     expect(alignIpa('a b', 'x y')[0].all).toEqual(['x', 'y'])
     expect(alignIpa('a b', null)[0].all).toEqual([])
     expect(alignIpa('a b\nc', 'x y')[1].all).toEqual([])
+  })
+})
+
+describe('ipaEditorLines', () => {
+  it('numbers lines like the Latin text and the SQL verse_line: a non-breaking-space line still counts', () => {
+    const text = 'a\n\u00A0\nb'
+    expect(ipaEditorLines(text)).toEqual(['a', '\u00A0', 'b'])
+    expect(ipaEditorLines(text)).toEqual(nonEmptyLines(text))   // same numbering as the Latin lines
+    expect(ipaEditorLines(null)).toEqual([])
   })
 })

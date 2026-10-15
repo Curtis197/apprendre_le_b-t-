@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase-server'
 import { getCommunityText } from '@/lib/community'
 import { getResourceWords } from '@/lib/word-blocks-data'
 import { nonEmptyLines } from '@/lib/word-blocks'
-import { ipaLines } from '@/lib/ipa-alignment'
+import { ipaEditorLines } from '@/lib/ipa-alignment'
 import { readerWillShowWords, readiness, readinessMessage } from '@/lib/word-link-editor'
 import { ResourceSteps } from '@/components/ResourceSteps'
 import { WordLinkEditor } from '@/components/word-link/WordLinkEditor'
@@ -74,7 +74,7 @@ export default async function LinkWordsPage({ params }: { params: Promise<{ id: 
                 saved={saved}
                 region={text.region ?? null}
                 frenchLines={frenchLines && frenchLines.length === beteLines.length ? frenchLines : null}
-                ipaLines={text.content_ipa?.trim() ? ipaLines(text.content_ipa) : null}
+                ipaLines={text.content_ipa?.trim() ? ipaEditorLines(text.content_ipa) : null}
                 signedIn
               />
             )

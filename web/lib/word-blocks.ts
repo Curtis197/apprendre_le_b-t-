@@ -288,6 +288,8 @@ export function readerTokens(verse: VerseWords, ipaWords?: string[] | null, ipaA
   const iw = ipaWords && ipaWords.length === bw.length ? ipaWords : null
   // Explicit links only while the IPA line is the one they were made on.
   const all = verse.ipa_stale ? null : ipaAll ?? null
+  // The positional fallback only when no block has explicit links (else a moved word would show twice).
+  const anyLinked = Boolean(all) && verse.blocks.some(b => (b.ipa_idx ?? []).length > 0)
   const out: ReaderToken[] = []
   for (const b of verse.blocks) {
     const runs = splitRuns(b.bete_idx)
@@ -301,7 +303,7 @@ export function readerTokens(verse: VerseWords, ipaWords?: string[] | null, ipaA
         ? ipaRuns.map(r => r.map(i => all[i]).join(' '))
         : runs.map((_, k) => (k === 0 ? link.map(i => all[i]).join(' ') : '…'))
       wholeIpa = labelOf(all, link)
-    } else if (iw) {
+    } else if (iw && !anyLinked) {
       ipaNames = runs.map(r => r.map(i => iw[i] ?? '').join(' '))
       wholeIpa = labelOf(iw, b.bete_idx)
     }

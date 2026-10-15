@@ -24,6 +24,14 @@ export function ipaLines(text: string | null | undefined): string[] {
   return nonEmptyLines(text ?? '').filter(l => l.trim() !== '')
 }
 
+/**
+ * The IPA lines the editor numbers, exactly like the Latin lines and the SQL verse_line (only spaces and tabs are
+ * stripped), so verse n here is verse n in the database even when a line holds only a non-breaking space.
+ */
+export function ipaEditorLines(text: string | null | undefined): string[] {
+  return nonEmptyLines(text ?? '')
+}
+
 export function alignIpa(beteText: string, ipaText?: string | null): IpaVerse[] {
   const bete = nonEmptyLines(beteText)
   const used = Boolean(ipaText && ipaText.trim() !== '')
