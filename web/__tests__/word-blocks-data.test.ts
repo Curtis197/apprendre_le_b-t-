@@ -109,3 +109,48 @@ describe('saveErrorMessage', () => {
     expect(saveErrorMessage('something odd')).toBe("Erreur lors de l'enregistrement. Veuillez réessayer.")
   })
 })
+
+describe('IPA fields of the reading and saving functions', () => {
+  const rawVerse = {
+    verse_no: 1, stale: false, bete_line: 'a b', literal_line: 'x y',
+    blocks: [{ position: 1, bete_idx: [0], gloss_idx: [0], is_marker: false, solo: false, note: null, composition: null }],
+  }
+
+  it('keeps the old shape when the database sends no IPA fields', () => {
+    const v = parseVerse(rawVerse)
+    expect(v).not.toHaveProperty('ipa_line')
+    expect(v).not.toHaveProperty('ipa_stale')
+    expect(v.blocks[0]).not.toHaveProperty('ipa_idx')
+  })
+
+  it('reads the IPA line, the stale flag and the links of each block', () => {
+    const v = parseVerse({
+      ...rawVerse, ipa_line: '\u025B \u0269', ipa_stale: true,
+      blocks: [{ ...rawVerse.blocks[0], ipa_idx: [0, 1] }, { ...rawVerse.blocks[0], position: 2, ipa_idx: [] }],
+    })
+    expect(v.ipa_line).toBe('\u025B \u0269')
+    expect(v.ipa_stale).toBe(true)
+    expect(v.blocks[0].ipa_idx).toEqual([0, 1])
+    expect(v.blocks[1]).not.toHaveProperty('ipa_idx')
+  })
+
+  it('translates the new database errors', () => {
+    expect(saveErrorMessage('ipa_moved')).toContain('API')
+    expect(saveErrorMessage('ipa_not_based')).toContain('API')
+    expect(saveErrorMessage('ipa_index_out_of_range')).toContain('API')
+    expect(saveErrorMessage('ipa_index_not_increasing')).toContain('API')
+    expect(saveErrorMessage('ipa_word_in_two_blocks')).toContain('API')
+  })
+
+  it('sends p_base_ipa only when an IPA base is given', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { saved: 1, verse_hash: 'h' }, error: null })
+    const client = { rpc } as unknown as SupabaseClient
+    const base = { resourceId: 'R', verseNo: 1, baseBete: 'a', baseLiteral: 'x', beteLine: null, literalLine: null, blocks: [] }
+    await saveVerse(client, base)
+    expect(rpc.mock.calls[0][1]).not.toHaveProperty('p_base_ipa')
+    await saveVerse(client, { ...base, ipaBase: '\u025B \u0269' })
+    expect(rpc.mock.calls[1][1].p_base_ipa).toBe('\u025B \u0269')
+    await saveVerse(client, { ...base, ipaBase: null })
+    expect(rpc.mock.calls[2][1]).not.toHaveProperty('p_base_ipa')
+  })
+})

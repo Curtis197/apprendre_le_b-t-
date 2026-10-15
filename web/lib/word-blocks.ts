@@ -70,6 +70,8 @@ export interface WordBlock {
   composition: string | null
   marker: MarkerInfo | null
   lex?: LexSummary | null
+  /** Positions of the verse's IPA words linked to this block. */
+  ipa_idx?: number[]
 }
 
 /** One verse with its blocks, as returned by get_resource_words. */
@@ -79,6 +81,8 @@ export interface VerseWords {
   bete_line: string
   literal_line: string
   blocks: WordBlock[]
+  ipa_line?: string
+  ipa_stale?: boolean
 }
 
 /** One block as sent to save_resource_verse. */
@@ -91,6 +95,7 @@ export interface BlockInput {
   composition: string | null
   lexicon_id?: string | null
   translation_id?: string | null
+  ipa_idx?: number[]
 }
 
 const EDGE = /^[ \t\u00A0]+|[ \t\u00A0]+$/g

@@ -71,6 +71,7 @@ function parseBlock(raw: Record<string, unknown>): WordBlock {
     composition: text(raw.composition),
     marker: raw.is_marker === true ? parseMarker(raw.marker) : null,
     lex: parseLex(raw.lex),
+    ...(Array.isArray(raw.ipa_idx) && raw.ipa_idx.length > 0 ? { ipa_idx: ints(raw.ipa_idx) } : {}),
   }
 }
 
@@ -82,6 +83,8 @@ export function parseVerse(raw: Record<string, unknown>): VerseWords {
     bete_line: typeof raw.bete_line === 'string' ? raw.bete_line : '',
     literal_line: typeof raw.literal_line === 'string' ? raw.literal_line : '',
     blocks: blocks.map(parseBlock),
+    ...(typeof raw.ipa_line === 'string' ? { ipa_line: raw.ipa_line } : {}),
+    ...(raw.ipa_stale === true ? { ipa_stale: true } : {}),
   }
 }
 
@@ -121,6 +124,11 @@ export const SAVE_ERROR_MESSAGES: Record<string, string> = {
   sense_without_entry: 'Un sens est choisi sans entrée du lexique.',
   entry_not_found: 'Cette entrée du lexique n’existe plus : déliez le mot et choisissez-en une autre.',
   bad_link: 'Le lien vers le lexique est invalide.',
+  ipa_moved: 'Le texte API de ce vers a changé depuis l’ouverture de la page. Rechargez la page, puis reprenez.',
+  ipa_not_based: 'Des mots API sont reliés alors que ce vers n’a pas de ligne API.',
+  ipa_index_out_of_range: 'Un bloc désigne un mot API qui n’existe pas.',
+  ipa_index_not_increasing: 'Les mots API d’un bloc sont dans le désordre.',
+  ipa_word_in_two_blocks: 'Un mot API est dans deux blocs.',
 }
 
 const GENERIC_SAVE_ERROR = "Erreur lors de l'enregistrement. Veuillez réessayer."
@@ -141,6 +149,8 @@ export interface SaveVerseArgs {
   beteLine: string | null
   literalLine: string | null
   blocks: BlockInput[]
+  /** The verse's IPA line the editor was built on; omit when the resource has no IPA text. */
+  ipaBase?: string | null
 }
 
 export async function saveVerse(
@@ -155,6 +165,7 @@ export async function saveVerse(
     p_bete_line: a.beteLine === null ? null : toStoredForm(a.beteLine),
     p_literal_line: a.literalLine === null ? null : toStoredForm(a.literalLine),
     p_blocks: a.blocks,
+    ...(a.ipaBase != null ? { p_base_ipa: a.ipaBase } : {}),
   })
   if (error) return { data: null, error: saveErrorMessage(error.message) }
   const d = data as { saved: number; verse_hash: string }
