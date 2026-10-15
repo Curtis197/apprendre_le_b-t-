@@ -82,10 +82,6 @@ export function WordCard({ entry, extraMeanings, matchedFrench, className }: Pro
         <span className="text-xs text-muted-foreground phonetic">
           [{cleanBeteWord(entry.bete_word)}]
         </span>
-        {entry.validated
-          ? <span className="text-xs text-secondary font-semibold">✓ validé</span>
-          : <span className="text-xs text-amber-600 font-medium">⚠ non validé</span>
-        }
       </div>
     </Link>
   )

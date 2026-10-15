@@ -31,7 +31,6 @@ export function LexiconEntry({ entry }: { entry: TLexiconEntry }) {
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            {entry.validated && <Badge variant="secondary">✓ validé</Badge>}
             {posLabel && <Badge variant="outline">{posLabel}</Badge>}
           </div>
         </div>

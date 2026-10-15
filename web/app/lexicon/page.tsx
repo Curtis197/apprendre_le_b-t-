@@ -85,11 +85,6 @@ function ListRow({
           </span>
         )}
       </div>
-      {entry.validated ? (
-        <span className="text-xs text-secondary font-semibold shrink-0">✓</span>
-      ) : (
-        <span className="text-xs text-amber-600 font-medium shrink-0">⚠</span>
-      )}
     </Link>
   )
 }
