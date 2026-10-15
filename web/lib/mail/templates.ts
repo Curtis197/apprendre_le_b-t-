@@ -1,5 +1,6 @@
 import { escapeHtml } from '@/lib/courses/assignment'
 import { emailButton, renderLayout } from './layout'
+import { correctionHref, TARGET_TYPE_LABELS, type CorrectionTargetType } from '@/lib/corrections'
 
 export interface RenderedEmail {
   subject: string
@@ -101,6 +102,48 @@ const RENDERERS: Record<string, (payload: Payload, ctx: RenderContext) => Render
         `Commentaire : ${feedback}`,
         url,
       ],
+    )
+  },
+
+  correction_received(payload, ctx) {
+    const label = oneLine(str(payload, 'label', 'un contenu'))
+    const reporter = oneLine(str(payload, 'reporter_name', 'Un contributeur'))
+    const message = str(payload, 'message')
+    const suggestion = str(payload, 'suggestion')
+    const url = `${ctx.baseUrl}/corrections`
+    const quote = (title: string, text: string) =>
+      `<div style="background:#f4f4f5;border-left:4px solid #7c3aed;padding:12px 16px;margin:16px 0;"><p style="margin:0;font-weight:bold;">${title}</p><p style="margin:8px 0 0;white-space:pre-wrap;">${escapeHtml(text)}</p></div>`
+    return build(
+      ctx,
+      `Nouveau signalement — ${label}`,
+      p(`<strong>${escapeHtml(reporter)}</strong> a signalé une erreur sur « <strong>${escapeHtml(label)}</strong> ».`) +
+        (message ? quote('Ce qui ne va pas :', message) : '') +
+        (suggestion ? quote('Correction proposée :', suggestion) : '') +
+        emailButton(url, 'Traiter le signalement'),
+      [
+        `${reporter} a signalé une erreur sur « ${label} ».`,
+        ...(message ? [`Ce qui ne va pas : ${message}`] : []),
+        ...(suggestion ? [`Correction proposée : ${suggestion}`] : []),
+        url,
+      ],
+    )
+  },
+
+  correction_resolved(payload, ctx) {
+    const label = oneLine(str(payload, 'label', 'un contenu'))
+    const accepted = str(payload, 'outcome') === 'accepted'
+    const type = str(payload, 'target_type') as CorrectionTargetType
+    const ref = typeof payload.ref_id === 'string' ? payload.ref_id : null
+    const href = (type in TARGET_TYPE_LABELS ? correctionHref({ target_type: type, ref_id: ref }) : null) ?? '/corrections'
+    const url = `${ctx.baseUrl}${href}`
+    const sentence = accepted
+      ? `Votre signalement sur « ${label} » a été accepté : le texte a été corrigé. Merci pour votre contribution !`
+      : `Votre signalement sur « ${label} » a été examiné et n’a pas été retenu. Merci d’avoir pris le temps de le faire.`
+    return build(
+      ctx,
+      accepted ? `Signalement accepté — ${label}` : `Signalement examiné — ${label}`,
+      p(escapeHtml(sentence)) + emailButton(url, 'Voir le contenu'),
+      [sentence, url],
     )
   },
 

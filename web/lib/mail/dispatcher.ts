@@ -21,6 +21,7 @@ export interface PreferenceRecord {
   teacher_announcements: boolean
   weekly_progress: boolean
   course_activity: boolean
+  corrections: boolean
 }
 
 export type RowOutcome =

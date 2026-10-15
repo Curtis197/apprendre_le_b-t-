@@ -30,7 +30,7 @@ export function createDispatcherDeps(client: SupabaseClient = createServiceClien
       const rows = must(
         await client
           .from('email_preferences')
-          .select('user_id, unsubscribe_token, teacher_announcements, weekly_progress, course_activity')
+          .select('user_id, unsubscribe_token, teacher_announcements, weekly_progress, course_activity, corrections')
           .in('user_id', userIds),
       ) as Array<PreferenceRecord & { user_id: string }>
       return new Map(rows.map((r) => [r.user_id, r]))

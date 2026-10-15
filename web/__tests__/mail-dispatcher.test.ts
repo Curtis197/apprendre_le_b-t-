@@ -13,6 +13,7 @@ const prefs = (over: Partial<PreferenceRecord> = {}): PreferenceRecord => ({
   teacher_announcements: true,
   weekly_progress: true,
   course_activity: true,
+  corrections: true,
   ...over,
 })
 

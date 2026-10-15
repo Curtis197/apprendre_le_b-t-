@@ -70,3 +70,21 @@ describe('renderTemplate', () => {
     expect(out.html).not.toContain('unsubscribe')
   })
 })
+
+describe('correction emails', () => {
+  it('tells the author about a new report, escaping the reporter text', () => {
+    const r = renderTemplate('correction_received', { label: 'ba', reporter_name: 'Awa', message: '<b>faux</b>', suggestion: 'bà' }, ctx)!
+    expect(r.subject).toBe('Nouveau signalement — ba')
+    expect(r.html).toContain('&lt;b&gt;faux&lt;/b&gt;')
+    expect(r.html).toContain('/corrections')
+    expect(r.text).toContain('Correction proposée : bà')
+  })
+
+  it('tells the reporter the decision and links to the word', () => {
+    const ok = renderTemplate('correction_resolved', { label: 'ba', outcome: 'accepted', target_type: 'word', ref_id: 'abc' }, ctx)!
+    expect(ok.subject).toBe('Signalement accepté — ba')
+    expect(ok.html).toContain('/lexicon/abc')
+    const no = renderTemplate('correction_resolved', { label: 'ba', outcome: 'rejected', target_type: 'word', ref_id: 'abc' }, ctx)!
+    expect(no.subject).toBe('Signalement examiné — ba')
+  })
+})

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { CATEGORY_LABELS, EMAIL_CATEGORIES, type EmailCategory } from '@/lib/mail/categories'
 
 type Prefs = Record<EmailCategory, boolean>
-const DEFAULTS: Prefs = { teacher_announcements: true, weekly_progress: true, course_activity: true }
+const DEFAULTS: Prefs = { teacher_announcements: true, weekly_progress: true, course_activity: true, corrections: true }
 
 export function NotificationPreferences() {
   const supabase = useMemo(() => createClient(), [])
@@ -26,7 +26,7 @@ export function NotificationPreferences() {
       setUserId(auth.user.id)
       const { data } = await supabase
         .from('email_preferences')
-        .select('teacher_announcements, weekly_progress, course_activity')
+        .select('teacher_announcements, weekly_progress, course_activity, corrections')
         .eq('user_id', auth.user.id)
         .maybeSingle()
       if (!cancelled && data) setPrefs(data as Prefs)
