@@ -3,6 +3,7 @@ import {
   addWords, afterSave, attachUnits, buildCells, derive, editWords, initDraft, markSaved, readiness,
   readerWillShowWords, readinessMessage, reconcileDraft, removeWord, setKind, setLink,
   setMeta, splitUnit, staleVerseNumbers, toSave, unitMeta, unlinkedMarkers,
+  autoLinkIpa, toggleIpaWord, ipaChips, ipaStatus, syncIpa,
   type VerseDraft,
 } from '../lib/word-link-editor'
 import { blockKey, labelOf, splitWords, type Unit, type VerseWords } from '../lib/word-blocks'

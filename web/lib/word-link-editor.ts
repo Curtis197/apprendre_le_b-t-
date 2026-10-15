@@ -17,6 +17,8 @@ export interface BlockMeta {
   /** The lexicon entry and the sense (translation) this block uses. */
   lexiconId: string | null
   translationId: string | null
+  /** Positions (0-based) of the verse's IPA words that belong to this block. */
+  ipaIdx?: number[]
 }
 
 export const EMPTY_META: BlockMeta = { isMarker: false, solo: false, note: '', composition: '', lexiconId: null, translationId: null }
@@ -29,6 +31,9 @@ export interface VerseDraft {
   /** Current lines (corrected ones differ from the base). */
   bete: string
   literal: string
+  /** The verse's IPA line (read-only here) and the line the IPA links were made on. */
+  ipa?: string
+  baseIpa?: string
   /** Attachments: member word index -> head word index, per side. */
   attB: Record<number, number>
   attG: Record<number, number>
@@ -51,10 +56,11 @@ export function initDraft(
   bete: string,
   literal: string,
   saved: VerseWords | undefined,
+  ipa?: string,
 ): VerseDraft {
-  const base = { verseNo, baseBete: bete, baseLiteral: literal, bete, literal }
+  const base = { verseNo, baseBete: bete, baseLiteral: literal, bete, literal, ...(ipa ? { ipa, baseIpa: ipa } : {}) }
   if (!saved || saved.stale || saved.blocks.length === 0) {
-    return { ...base, attB: {}, attG: autoGroup(splitWords(literal)), meta: {} }
+    return withAutoIpa({ ...base, attB: {}, attG: autoGroup(splitWords(literal)), meta: {} })
   }
   const attB: Record<number, number> = {}
   const attG: Record<number, number> = {}
@@ -69,9 +75,16 @@ export function initDraft(
       composition: b.composition ?? '',
       lexiconId: b.lex?.id ?? null,
       translationId: b.lex?.senseId ?? null,
+      ...(!saved.ipa_stale && b.ipa_idx?.length ? { ipaIdx: b.ipa_idx } : {}),
     }
   }
-  return { ...base, attB, attG, meta }
+  return withAutoIpa({ ...base, attB, attG, meta })
+}
+
+/** Without explicit IPA links, link by position when the IPA line has as many words as the Latin line. */
+function withAutoIpa(d: VerseDraft): VerseDraft {
+  const linked = Object.values(d.meta).some(m => m.ipaIdx?.length)
+  return d.ipa && !linked ? autoLinkIpa(d) : d
 }
 
 export const unitMeta = (d: VerseDraft, u: Unit): BlockMeta => d.meta[blockKey(u)] ?? EMPTY_META
@@ -96,6 +109,18 @@ function rekeyMeta(before: Unit[], after: Unit[], meta: Record<string, BlockMeta
     const old = firstWordKey.get(u.idx[0])
     const m = old != null ? meta[old] : undefined
     if (m) out[blockKey(u)] = m
+  }
+  // IPA links follow the block that contains the old block's first word: merged blocks pool theirs.
+  const newKeyOfWord = new Map<number, string>()
+  for (const u of after) for (const i of u.idx) newKeyOfWord.set(i, blockKey(u))
+  const pooled: Record<string, number[]> = {}
+  for (const u of before) {
+    const ipa = meta[blockKey(u)]?.ipaIdx
+    const nk = ipa?.length ? newKeyOfWord.get(u.idx[0]) : undefined
+    if (ipa && nk) pooled[nk] = [...(pooled[nk] ?? []), ...ipa]
+  }
+  for (const [nk, ipa] of Object.entries(pooled)) {
+    out[nk] = { ...(out[nk] ?? EMPTY_META), ipaIdx: [...new Set(ipa)].sort((a, b) => a - b) }
   }
   return out
 }
@@ -150,6 +175,70 @@ export function unlinkedMarkers(d: VerseDraft): string[] {
   return bu
     .filter(u => d.meta[blockKey(u)]?.isMarker && !d.meta[blockKey(u)]?.lexiconId)
     .map(u => blockWords(bw, u.idx))
+}
+
+const ipaWordsOf = (d: VerseDraft) => splitWords(d.ipa ?? '')
+
+/** Link every block to the IPA words at the same positions; only when both lines have the same number of words. */
+export function autoLinkIpa(d: VerseDraft): VerseDraft {
+  const ipaWords = ipaWordsOf(d)
+  const { bw, bu } = derive(d)
+  if (ipaWords.length === 0 || ipaWords.length !== bw.length) return d
+  const meta = { ...d.meta }
+  for (const u of bu) {
+    const k = blockKey(u)
+    meta[k] = { ...(meta[k] ?? EMPTY_META), ipaIdx: u.idx.slice() }
+  }
+  return { ...d, meta }
+}
+
+/** Link the IPA word `i` to the block `key`, or unlink it; a word that belongs to another block is moved. */
+export function toggleIpaWord(d: VerseDraft, key: string, i: number): VerseDraft {
+  if (i < 0 || i >= ipaWordsOf(d).length) return d
+  const mine = d.meta[key]?.ipaIdx ?? []
+  const meta: Record<string, BlockMeta> = {}
+  for (const [k, m] of Object.entries(d.meta)) {
+    meta[k] = k !== key && m.ipaIdx?.includes(i) ? { ...m, ipaIdx: m.ipaIdx.filter(x => x !== i) } : m
+  }
+  const next = mine.includes(i) ? mine.filter(x => x !== i) : [...mine, i].sort((a, b) => a - b)
+  meta[key] = { ...(d.meta[key] ?? EMPTY_META), ipaIdx: next }
+  return { ...d, meta }
+}
+
+export interface IpaChip {
+  i: number
+  word: string
+  state: 'mine' | 'other' | 'free'
+  /** The Latin words of the block that owns this IPA word, when it is another block. */
+  ownerWords: string | null
+}
+
+/** The IPA words of the verse with who owns each one, from the point of view of the block `key`. */
+export function ipaChips(d: VerseDraft, key: string): IpaChip[] {
+  const { bw, bu } = derive(d)
+  return ipaWordsOf(d).map((word, i) => {
+    const owner = bu.find(u => d.meta[blockKey(u)]?.ipaIdx?.includes(i))
+    const state = !owner ? 'free' : blockKey(owner) === key ? 'mine' : 'other'
+    return { i, word, state, ownerWords: state === 'other' && owner ? blockWords(bw, owner.idx) : null }
+  })
+}
+
+export function ipaStatus(d: VerseDraft): { words: number; linked: number; unlinked: number } {
+  const words = ipaWordsOf(d).length
+  const keys = new Set(derive(d).bu.map(blockKey))
+  const linked = new Set(Object.entries(d.meta).filter(([k]) => keys.has(k)).flatMap(([, m]) => m.ipaIdx ?? [])).size
+  return { words, linked, unlinked: words - linked }
+}
+
+/**
+ * The IPA line is not editable here: always take the server's. A draft made on an older IPA line has IPA links
+ * that no longer point at the same words: drop them and link by position again when possible.
+ */
+export function syncIpa(d: VerseDraft, initial: VerseDraft): VerseDraft {
+  if (d.ipa === undefined && initial.ipa === undefined) return d
+  if ((d.baseIpa ?? '') === (initial.baseIpa ?? '')) return { ...d, ipa: initial.ipa, baseIpa: initial.baseIpa }
+  const meta = Object.fromEntries(Object.entries(d.meta).map(([k, m]) => [k, { ...m, ipaIdx: [] }]))
+  return autoLinkIpa({ ...d, meta, ipa: initial.ipa, baseIpa: initial.baseIpa })
 }
 
 /** Numbers of the verses saved blocks no longer match (their text changed elsewhere). */
@@ -217,6 +306,8 @@ export interface SavePayload {
   beteLine: string | null
   literalLine: string | null
   blocks: BlockInput[]
+  /** The verse's IPA line the draft was built on; absent when the resource has no IPA text. */
+  ipaBase?: string
 }
 
 export function toSave(d: VerseDraft): SavePayload {
@@ -234,12 +325,14 @@ export function toSave(d: VerseDraft): SavePayload {
         composition: m.composition.trim() || null,
         lexicon_id: m.lexiconId ?? null,
         translation_id: m.translationId ?? null,
+        ...(m.ipaIdx?.length ? { ipa_idx: m.ipaIdx } : {}),
       }
     })
   return {
     beteLine: d.bete !== d.baseBete ? d.bete : null,
     literalLine: d.literal !== d.baseLiteral ? d.literal : null,
     blocks,
+    ...(d.baseIpa ? { ipaBase: d.baseIpa } : {}),
   }
 }
 
