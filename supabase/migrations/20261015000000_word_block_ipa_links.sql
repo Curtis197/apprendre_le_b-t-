@@ -61,7 +61,8 @@ begin
          exists (
            select 1 from resource_word_blocks bb
            where bb.resource_id = p_resource and bb.verse_no = s.verse_no
-             and bb.ipa_hash is not null
+             and cardinality(bb.ipa_idx) > 0
+               and bb.ipa_hash is not null
              and bb.ipa_hash is distinct from md5(coalesce(verse_line(t.content_ipa, s.verse_no), ''))
          )
   from (
@@ -226,7 +227,7 @@ begin
         raise exception 'ipa_not_based';
       end if;
       for v_i in 1 .. cardinality(v_pidx) loop
-        if v_pidx[v_i] < 0 or v_pidx[v_i] >= v_nipa then
+        if v_pidx[v_i] is null or v_pidx[v_i] < 0 or v_pidx[v_i] >= v_nipa then
           raise exception 'ipa_index_out_of_range';
         end if;
         if v_i > 1 and v_pidx[v_i] <= v_pidx[v_i - 1] then
