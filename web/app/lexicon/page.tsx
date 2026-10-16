@@ -59,7 +59,7 @@ function ListRow({
   return (
     <Link
       href={`/lexicon/${entry.id}`}
-      className="flex items-center gap-4 px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
+      className="flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-1 px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-all group"
     >
       <span className="bg-secondary text-white text-xs font-semibold rounded-full px-2.5 py-0.5 shrink-0 w-16 text-center">
         {primaryLabel(entry.pos)}
@@ -70,7 +70,7 @@ function ListRow({
         </span>
         <span className="text-xs phonetic text-muted-foreground">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
       </div>
-      <div className="flex items-center gap-2 shrink-0 max-w-[260px]">
+      <div className="flex items-center gap-2 order-last w-full min-w-0 sm:order-none sm:w-auto sm:shrink-0 sm:max-w-[260px]">
         <span className="text-sm text-muted-foreground italic truncate">
           {entry.top_french}
         </span>

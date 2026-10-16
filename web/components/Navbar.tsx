@@ -115,12 +115,12 @@ export function Navbar() {
         </Link>
 
         {/* Desktop links */}
-        <nav className="hidden lg:flex items-center gap-1 flex-1 ml-4">
+        <nav className="hidden xl:flex items-center gap-1 flex-1 ml-2">
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 isActive(pathname, href)
                   ? 'bg-muted text-foreground'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
@@ -132,21 +132,21 @@ export function Navbar() {
         </nav>
 
         {/* Desktop auth */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0">
+        <div className="hidden xl:flex items-center gap-2 shrink-0">
           {!authReady ? (
             <div className="h-8 w-20 animate-pulse rounded-md bg-muted" />
           ) : displayName ? (
             <>
               <Link
                 href="/profile"
-                className="px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors truncate max-w-[140px]"
+                className="px-2.5 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors truncate max-w-[120px]"
                 title={displayName}
               >
                 {displayName}
               </Link>
               <button
                 onClick={handleSignOut}
-                className="px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                className="px-2.5 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
               >
                 Se déconnecter
               </button>
@@ -155,7 +155,7 @@ export function Navbar() {
             <>
               <Link
                 href="/auth"
-                className="px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                className="px-2.5 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
               >
                 Se connecter
               </Link>
@@ -173,7 +173,7 @@ export function Navbar() {
         <button
           type="button"
           onClick={() => setMenuOpen(o => !o)}
-          className="lg:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          className="xl:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
           aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
@@ -192,7 +192,7 @@ export function Navbar() {
 
       {/* Mobile menu — inside <header>, normal block element, no fixed/absolute positioning */}
       {menuOpen && (
-        <div id="mobile-menu" className="lg:hidden border-t border-border px-4 py-3 space-y-1" style={{ backgroundColor: 'var(--background, #fbf9f5)' }}>
+        <div id="mobile-menu" className="xl:hidden border-t border-border px-4 py-3 space-y-1" style={{ backgroundColor: 'var(--background, #fbf9f5)' }}>
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
