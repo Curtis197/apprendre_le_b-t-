@@ -22,7 +22,7 @@ export function LexiconEntry({ entry }: { entry: TLexiconEntry }) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0 break-words">
             {/* Latin alphabet form as primary display */}
             <CardTitle className="text-2xl phonetic font-semibold">{western || ipa || entry.top_french}</CardTitle>
             {/* Original Bible phonetic notation in brackets */}

@@ -53,7 +53,7 @@ export function ForumReplyForm({ threadId, isAuthed }: { threadId: string; isAut
         </p>
         <a
           href={`/auth?next=/forum/${threadId}`}
-          className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 h-9 rounded-lg hover:bg-primary/90 transition-colors"
+          className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 h-10 md:h-9 rounded-lg hover:bg-primary/90 transition-colors"
         >
           Se connecter
         </a>
@@ -76,6 +76,7 @@ export function ForumReplyForm({ threadId, isAuthed }: { threadId: string; isAut
           value={authorName}
           onChange={e => { setAuthorName(e.target.value); setNameFromProfile(false) }}
           required
+          className="h-10 md:h-8"
         />
         {nameFromProfile && (
           <p className="text-xs text-muted-foreground">Nom récupéré depuis votre profil</p>
@@ -85,6 +86,7 @@ export function ForumReplyForm({ threadId, isAuthed }: { threadId: string; isAut
       <Button
         onClick={handleSubmit}
         disabled={loading || !content.trim() || !authorName.trim()}
+        className="h-10 md:h-8"
       >
         {loading ? 'Envoi…' : 'Répondre'}
       </Button>

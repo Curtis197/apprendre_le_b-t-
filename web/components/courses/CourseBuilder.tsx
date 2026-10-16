@@ -161,11 +161,11 @@ export function CourseBuilder({ course, outline, readOnly }: Props) {
             {section.lessons.map(lesson => (
               <li
                 key={lesson.id}
-                className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2"
+                className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-border bg-background px-3 py-2"
               >
                 <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="flex-1 text-sm truncate">{lesson.title}</span>
-                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                <span className="grow min-w-0 basis-[calc(100%-1.5rem)] sm:basis-0 text-sm truncate">{lesson.title}</span>
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer shrink-0">
                   <input
                     type="checkbox"
                     className="accent-primary"

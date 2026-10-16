@@ -211,9 +211,9 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
     }
     return (
       <section className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border pb-3">
           <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Texte et traduction</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {ipaUsable && <ScriptToggle script={script} onChange={setScript} />}
             <ModeToggle mode={mode} onChange={setMode} />
           </div>
@@ -249,7 +249,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
 
   return (
     <section className="rounded-xl border border-border bg-card p-5 space-y-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border pb-3">
         <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {alignment.kind === 'verses'
             ? alignment.unit === 'sentence'
@@ -259,7 +259,7 @@ export function VerseTranslation({ original, literal, french, defaultShowLiteral
               ? 'Texte et traduction, couplet par couplet'
               : 'Texte et traduction'}
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {ipaUsable && <ScriptToggle script={script} onChange={setScript} />}
           {wordsApply && <ModeToggle mode={mode} onChange={setMode} />}
           {hasLiteral && !allLinked && (

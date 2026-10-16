@@ -49,7 +49,7 @@ export async function ProfileCourses() {
       </section>
 
       <section className="bg-card border border-border rounded-xl p-6 space-y-4">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading font-bold text-base">Mes cours</h2>
           <Link href="/teach" className={primaryLinkClass}>
             Espace enseignant

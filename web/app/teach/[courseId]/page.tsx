@@ -45,7 +45,7 @@ export default async function BuilderPage({ params }: Props) {
         Mes cours
       </Link>
 
-      <h1 className="font-heading text-3xl font-bold">{course.title}</h1>
+      <h1 className="font-heading text-3xl font-bold [overflow-wrap:anywhere]">{course.title}</h1>
 
       <CourseStatusPanel course={course} blocker={publishBlocker(outline)} />
 

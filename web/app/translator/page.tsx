@@ -19,8 +19,8 @@ export default function TranslatorPage() {
       />
 
       <div className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <Languages className="w-6 h-6 text-primary" />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4">
+          <Languages className="w-6 h-6 shrink-0 text-primary" />
           <span className="text-sm font-semibold rounded-full bg-muted px-3 py-1 text-muted-foreground">
             Non disponible pour le moment
           </span>

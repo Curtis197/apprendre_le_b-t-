@@ -55,7 +55,7 @@ export function WordCard({ entry, extraMeanings, matchedFrench, className }: Pro
           ))}
         </div>
       </div>
-      <h3 className="font-heading text-2xl font-bold mb-2 text-foreground">
+      <h3 className="font-heading text-2xl font-bold mb-2 text-foreground break-words">
         {entry.bete_phonetic}
       </h3>
       <div

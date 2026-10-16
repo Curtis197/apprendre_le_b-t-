@@ -19,7 +19,7 @@ interface Props {
   children?: ReactNode
 }
 
-const inputClass = 'w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm'
+const inputClass = 'w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-base md:text-sm'
 const btn = 'rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors'
 
 function Field({ label, children }: { label: string; children: ReactNode }) {

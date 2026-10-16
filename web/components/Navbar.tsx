@@ -192,7 +192,7 @@ export function Navbar() {
 
       {/* Mobile menu — inside <header>, normal block element, no fixed/absolute positioning */}
       {menuOpen && (
-        <div id="mobile-menu" className="xl:hidden border-t border-border px-4 py-3 space-y-1" style={{ backgroundColor: 'var(--background, #fbf9f5)' }}>
+        <div id="mobile-menu" className="xl:hidden border-t border-border px-4 py-3 space-y-1 max-h-[calc(100dvh-4rem)] overflow-y-auto" style={{ backgroundColor: 'var(--background, #fbf9f5)' }}>
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
@@ -216,7 +216,7 @@ export function Navbar() {
                 <Link
                   href="/profile"
                   onClick={() => setMenuOpen(false)}
-                  className="block px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                  className="block truncate px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                 >
                   {displayName}
                 </Link>

@@ -41,7 +41,7 @@ export function AssignmentForm({ lessonId, initialSubmission, readOnly = false }
 
   return (
     <div className="space-y-6 bg-card border border-border rounded-xl p-6">
-      <div className="flex items-center justify-between border-b border-border pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4">
         <h3 className="font-heading text-lg font-semibold flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
           Remise de votre devoir

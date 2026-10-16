@@ -12,24 +12,25 @@ Status: `fixed` | `ok` (computed, passes) | `todo` (not yet computed) | `screene
 | Mobile menu / `MobileSidebar` + `AuthNav` | todo | `AuthNav` has `max-w-[160px]` name |
 | `HeaderSearch` | todo | `max-w-[120px]` right-aligned label, `shrink-0` |
 
-## Pages (35)
-Risk column = what the first grep screening found. Every `todo` still needs the full computation at 360 and at each breakpoint it uses.
+## Pages (35): first full pass 2026-10-16 (six parallel audits, arithmetic only)
+All pages and their components were computed at 360 (mandatory) and 320 (warn only), plus 375, 412, 640, 768, 1024, 1280. Fixes are Tailwind class changes (rows wrap below `sm:`, `min-w-0`, `break-words`, `flex-wrap`, smaller card padding on mobile).
 
-| Page | Status | Risk found by screening |
+| Area | Status | Main failures found and fixed |
 |---|---|---|
-| `/` (app/page.tsx) | todo | hero images `sizes="100vw"` |
-| `/lexicon` | fixed 2026-10-16 (entry row) | row needed pill 64 + gaps 32 + padding 32 + right block up to 260 in 326: long French glosses squeezed the Bhété word; now wraps below `sm:` |
-| `/lexicon/[id]`, `/lexicon/[id]/usages` | todo | forms, interlinear gloss (`min-w-[55px]` cells) |
-| `/grammar`, `/alphabet` | todo | `AlphabetReference` cells `min-w-[84px]`, tab list scrolls |
-| `/translator` | todo | `TranslatorOutput` cards `min-w-[75px]`, dark log table with `whitespace-nowrap` (scrolls) |
-| `/usages` | todo | |
-| `/courses`, `/courses/[slug]`, `/courses/[slug]/learn/[lessonId]` | todo | filter pills scroll horizontally; stats `grid-cols-2 sm:grid-cols-4`; checkout modal `fixed inset-0 p-4` |
-| `/forum`, `/forum/new`, `/forum/[id]` | todo | titles `truncate` |
-| `/resources`, `/resources/new`, `/resources/[id]`, `/resources/[id]/edit`, `/resources/[id]/relier` | todo | word-link editor (block rows), IPA line |
-| `/contribute`, `/contact` | todo | contact: filters wrap; cards `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` |
-| `/auth`, `/profile`, `/corrections`, `/notifications`, `/notifications/unsubscribe` | todo | |
-| `/teach`, `/teach/new`, `/teach/reviews`, `/teach/[courseId]`, `.../lessons/[lessonId]`, `.../learners`, `.../learners/[userId]` | todo | learner tables sit in `overflow-x-auto` (scroll, not overflow); course titles `truncate` |
-| `/admin/courses`, `/admin/reports` | todo | |
+| Shell (Navbar, mobile menu), `/`, `/auth`, `/profile`, `/corrections`, `/notifications`, `/admin/*`, `/contact`, `/contribute` | fixed | mobile menu not scrollable on short phones and long name untruncated; contact card CTA 1% headroom; profile/teacher button rows; contribute level header; form card padding |
+| `/lexicon*`, `/usages`, `/grammar`, `/alphabet`, `/translator` | fixed | pagination 0% headroom; list row; grammar patterns 8%; alphabet tabs 4% and toast; translator badge row 0%; unbroken words |
+| `/resources*`, word-link editor | fixed | verse translation header -63%; resource card meta row -9%; add-spelling row cramped |
+| `/courses*` learner side | fixed | checkout modal buttons -3% and no height cap; fill-in-blank footer -19%; pronunciation/assignment headers -6% |
+| `/teach/*` | fixed | course builder lesson row (29px left for the title); review queue tabs -12%; uploaders; long names/e-mails |
+| `/forum*`, shared UI | fixed | unbounded author names/URLs; tap targets and iOS zoom on forum forms |
+
+Open items (need a decision or a follow-up):
+- `PageHeader` h1 `text-4xl`: "Architecture Grammaticale" overflows by about 3px at 320 (fine at 360). Fix would be `text-3xl sm:text-4xl md:text-5xl` plus `break-words`, a global visual change.
+- `ui/button` default is 32px high (`h-8`), `FilterPills` 38px: below the 40-44px comfortable tap size on phones. A global change (`h-10 md:h-8`) was not applied.
+- Native inputs with `text-sm`/`text-xs` make iOS Safari zoom on focus. The three word-link `inputClass` constants are fixed (`text-base md:text-sm`); still to do: `usages/page.tsx`, `ContributionForm`, `HomeTranslator`, `VerseWords`, `PronunciationList`, `SpellingsList`, contact/profile selects, `CorrectionBox`, `CourseForm`, `DialectSelector`, `ResourceSubmitForm`.
+- `MobileSidebar`, `AuthNav`, `HeaderSearch` are not imported anywhere (dead code); they would overflow at 288px if revived.
+- Lexicon list row at 640px has about 1% headroom but cannot overflow (the Bhete word wraps).
+- Not verifiable by arithmetic: real Lexend/Noto Sans widths, 150-200% text zoom.
 
 ## Content to size for (step 6 of the skill)
 French copy (longer than English), user display names and e-mails, long Bhété words in the phonetic font (Noto Sans is wider than Inter), 150-200% text zoom.

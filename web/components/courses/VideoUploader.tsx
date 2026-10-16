@@ -108,7 +108,7 @@ export function VideoUploader({ lessonId, mediaAsset, videoQuota, disabled = fal
   return (
     <div className="space-y-4">
       {/* Quota meter */}
-      <div className="bg-muted/50 border border-border rounded-lg p-3 flex items-center justify-between text-xs">
+      <div className="bg-muted/50 border border-border rounded-lg p-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
         <span className="font-medium text-muted-foreground">Quota vidéo enseignant :</span>
         <span className="font-mono font-semibold">
           {videoQuota.used_minutes} / {videoQuota.max_minutes} min utilisées
@@ -117,7 +117,7 @@ export function VideoUploader({ lessonId, mediaAsset, videoQuota, disabled = fal
 
       {mediaAsset && mediaAsset.status === 'ready' && (
         <div className="border border-border rounded-xl p-4 bg-card space-y-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Video className="w-4 h-4 text-primary" />
               <span>Vidéo prête ({formatVideoDuration(mediaAsset.duration_seconds)})</span>
@@ -163,7 +163,7 @@ export function VideoUploader({ lessonId, mediaAsset, videoQuota, disabled = fal
       )}
 
       {(!mediaAsset || mediaAsset.status === 'uploading') && (
-        <div className="border-2 border-dashed border-border rounded-xl p-6 text-center space-y-3">
+        <div className="border-2 border-dashed border-border rounded-xl p-4 sm:p-6 text-center space-y-3">
           <p className="text-sm text-muted-foreground">
             Sélectionnez une vidéo (MP4, MOV, 30 min max).
           </p>
@@ -187,6 +187,7 @@ export function VideoUploader({ lessonId, mediaAsset, videoQuota, disabled = fal
             <Button
               type="button"
               variant="outline"
+              className="h-auto min-h-8 py-1.5 whitespace-normal"
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled || uploading}
             >

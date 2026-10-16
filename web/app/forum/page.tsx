@@ -62,7 +62,7 @@ export default async function ForumPage({ searchParams }: Props) {
               <Link
                 key={String(c.value)}
                 href={href}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                className={`px-4 py-2.5 md:py-1.5 rounded-full text-sm font-medium transition-colors border ${
                   active
                     ? 'bg-primary text-white border-primary'
                     : 'border-border hover:bg-muted'
@@ -77,7 +77,7 @@ export default async function ForumPage({ searchParams }: Props) {
         {isAuthed ? (
           <Link
             href="/forum/new"
-            className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 h-9 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
+            className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-4 h-10 md:h-9 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
           >
             <PlusCircle className="w-4 h-4" />
             Nouveau sujet
@@ -85,7 +85,7 @@ export default async function ForumPage({ searchParams }: Props) {
         ) : (
           <Link
             href="/auth?next=/forum/new"
-            className="inline-flex items-center gap-2 border border-primary text-primary text-sm font-semibold px-4 h-9 rounded-lg hover:bg-primary/10 transition-colors shrink-0"
+            className="inline-flex items-center gap-2 border border-primary text-primary text-sm font-semibold px-4 h-10 md:h-9 rounded-lg hover:bg-primary/10 transition-colors shrink-0"
           >
             Connectez-vous pour poster
           </Link>
@@ -98,7 +98,7 @@ export default async function ForumPage({ searchParams }: Props) {
           <p className="text-muted-foreground mb-4">Aucun sujet pour l&apos;instant. Soyez le premier !</p>
           <Link
             href={isAuthed ? '/forum/new' : '/auth?next=/forum/new'}
-            className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 h-9 rounded-lg hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 bg-primary text-white text-sm font-semibold px-5 h-10 md:h-9 rounded-lg hover:bg-primary/90 transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
             {isAuthed ? 'Créer un sujet' : 'Se connecter pour créer un sujet'}
@@ -126,8 +126,8 @@ export default async function ForumPage({ searchParams }: Props) {
                 </div>
                 <MessageCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
               </div>
-              <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-                <span>{thread.author_name ?? 'Anonyme'}</span>
+              <div className="flex items-center gap-x-3 gap-y-1 flex-wrap mt-3 text-xs text-muted-foreground">
+                <span className="min-w-0 break-words">{thread.author_name ?? 'Anonyme'}</span>
                 <span>·</span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />

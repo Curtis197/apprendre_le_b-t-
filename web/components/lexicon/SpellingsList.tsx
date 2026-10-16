@@ -44,8 +44,8 @@ export function SpellingsList({ items, userId, isAdmin, busy, error, notice, sig
           {items.map(s => {
             const canRemove = editMode && (isAdmin || (userId !== null && s.created_by === userId))
             return (
-              <li key={s.id} className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-sm">
-                <span className="phonetic font-medium">{s.spelling}</span>
+              <li key={s.id} className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-sm">
+                <span className="phonetic min-w-0 break-words font-medium">{s.spelling}</span>
                 {canRemove && (
                   <button
                     type="button"

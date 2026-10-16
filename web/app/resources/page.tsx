@@ -55,7 +55,7 @@ function ResourceCard({ text }: { text: CommunityText }) {
           </div>
         </div>
 
-        <h2 className="font-heading font-semibold text-base flex-1">
+        <h2 className="font-heading font-semibold text-base flex-1 break-words">
           <Link
             href={`/resources/${text.id}`}
             className="hover:text-primary transition-colors after:absolute after:inset-0"
@@ -64,7 +64,7 @@ function ResourceCard({ text }: { text: CommunityText }) {
           </Link>
         </h2>
 
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
           {text.author_name && <span>{text.author_name}</span>}
           {text.author_name && text.region && <span>·</span>}
           {text.region && <span>{text.region}</span>}

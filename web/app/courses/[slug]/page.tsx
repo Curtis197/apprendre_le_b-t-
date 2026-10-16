@@ -121,7 +121,7 @@ export default async function CoursePage({ params }: Props) {
             {course.access === 'free' ? 'Gratuit' : 'Payant'}
           </span>
         </div>
-        <h1 className="font-heading text-3xl md:text-4xl font-bold">{course.title}</h1>
+        <h1 className="font-heading text-3xl md:text-4xl font-bold break-words">{course.title}</h1>
         {course.summary && <p className="text-lg text-muted-foreground leading-relaxed">{course.summary}</p>}
         <p className="text-sm text-muted-foreground">
           {flat.length} leçon{flat.length > 1 ? 's' : ''}

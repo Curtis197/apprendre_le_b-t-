@@ -68,7 +68,7 @@ export function LexiconDescription({ lexiconId, initial }: { lexiconId: string; 
           </div>
         </div>
       ) : (
-        <p className="text-sm whitespace-pre-line">{initial}</p>
+        <p className="text-sm whitespace-pre-line break-words">{initial}</p>
       )}
     </section>
   )

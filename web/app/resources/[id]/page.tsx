@@ -126,7 +126,7 @@ export default async function ResourceDetailPage({
             </span>
           )}
         </div>
-        <h1 className="font-heading text-3xl font-bold">{text.title}</h1>
+        <h1 className="font-heading text-3xl font-bold break-words">{text.title}</h1>
         <p className="text-sm text-muted-foreground">{meta.join(' · ')}</p>
         {(isOwner || isAdmin) && (
           <ResourceOwnerActions id={id} canEdit={isOwner} canDelete={isOwner || isAdmin} canLink={isOwner && Boolean(text.content_literal?.trim())} />

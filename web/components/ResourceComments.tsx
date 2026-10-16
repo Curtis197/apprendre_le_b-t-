@@ -60,7 +60,7 @@ export function ResourceComments({ resourceId, comments, currentUserId, isAdmin 
             return (
               <li key={c.id} className="rounded-xl border border-border bg-card px-4 py-3 space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">{c.author_name}</span>
+                  <span className="text-sm font-semibold break-words">{c.author_name}</span>
                   <span className="text-xs text-muted-foreground">
                     {formatDate(c.created_at)}{edited ? ' · modifié' : ''}
                   </span>
@@ -89,7 +89,7 @@ export function ResourceComments({ resourceId, comments, currentUserId, isAdmin 
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{c.body}</p>
+                  <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{c.body}</p>
                 )}
 
                 {editingId !== c.id && (isMine || canDelete) && (

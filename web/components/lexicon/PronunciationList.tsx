@@ -44,7 +44,7 @@ export function PronunciationList({ items, userId, isAdmin, busy, error, notice,
           return (
             <li key={r.id} className="space-y-2 rounded-lg border border-border bg-card p-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-muted-foreground">
-                <span>
+                <span className="min-w-0 break-words">
                   <span className="font-medium text-foreground">{r.author}</span>
                   {formatDate(r.createdAt) && ` · ${formatDate(r.createdAt)}`}
                 </span>

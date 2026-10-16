@@ -92,12 +92,12 @@ export function ContributionComments({ targetTable, targetId }: Props) {
           {comments.map(c => (
             <div key={c.id} className="bg-muted rounded-lg px-3 py-2">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold">{c.author_name}</span>
+                <span className="text-xs font-semibold min-w-0 break-words">{c.author_name}</span>
                 <span className="text-xs text-muted-foreground">
                   {new Date(c.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                 </span>
               </div>
-              <p className="text-sm">{c.content}</p>
+              <p className="text-sm break-words">{c.content}</p>
             </div>
           ))}
           {comments.length === 0 && !loading && (

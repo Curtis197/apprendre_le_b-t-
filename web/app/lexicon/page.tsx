@@ -64,11 +64,11 @@ function ListRow({
       <span className="bg-secondary text-white text-xs font-semibold rounded-full px-2.5 py-0.5 shrink-0 w-16 text-center">
         {primaryLabel(entry.pos)}
       </span>
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className="phonetic font-bold transition-colors text-foreground group-hover:text-primary">
+      <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-2">
+        <span className="phonetic font-bold break-words transition-colors text-foreground group-hover:text-primary">
           {entry.bete_phonetic}
         </span>
-        <span className="text-xs phonetic text-muted-foreground">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
+        <span className="text-xs phonetic text-muted-foreground break-words">[{entry.bete_word.replace(/^_pending_.*/, '')}]</span>
       </div>
       <div className="flex items-center gap-2 order-last w-full min-w-0 sm:order-none sm:w-auto sm:shrink-0 sm:max-w-[260px]">
         <span className="text-sm text-muted-foreground italic truncate">
@@ -323,7 +323,7 @@ export default function LexiconPage() {
       )}
 
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-10">
+        <div className="flex flex-wrap justify-center items-center gap-2 mt-10">
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}

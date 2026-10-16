@@ -52,7 +52,7 @@ export default async function ContributePage() {
     <div className="max-w-7xl mx-auto px-4 md:px-10 py-10">
 
       {/* Hero Header */}
-      <div className="relative bg-primary text-white rounded-xl p-8 md:p-12 mb-8 overflow-hidden">
+      <div className="relative bg-primary text-white rounded-xl p-6 sm:p-8 md:p-12 mb-8 overflow-hidden">
         <div className="pattern-bg absolute inset-0" aria-hidden="true" />
         <div className="relative z-10">
           <h1 className="font-heading text-4xl font-bold max-w-2xl mb-3">
@@ -71,7 +71,7 @@ export default async function ContributePage() {
 
         {/* Contribution Form — col 8 */}
         <div className="lg:col-span-8">
-          <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
+          <div className="bg-card border border-border rounded-xl p-5 sm:p-8 shadow-sm">
             <h2 className="font-heading text-2xl text-primary flex items-center gap-2 mb-6">
               <PenLine className="w-6 h-6" />
               Ajouter une contribution
@@ -116,18 +116,18 @@ export default async function ContributePage() {
 
           {/* Contributor Level */}
           <div className="bg-accent/20 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <h3 className="font-heading text-sm font-bold">Niveau Contributeur</h3>
               <span className="bg-accent/40 text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                 {level.name}
               </span>
             </div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-accent/40 flex items-center justify-center font-heading font-bold text-sm">
+              <div className="w-10 h-10 shrink-0 rounded-full bg-accent/40 flex items-center justify-center font-heading font-bold text-sm">
                 {level.initial}
               </div>
-              <div>
-                <p className="text-sm font-semibold">{user ? displayName : 'Contributeur'}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold break-words">{user ? displayName : 'Contributeur'}</p>
                 <p className="text-xs text-muted-foreground">
                   {validatedCount} contribution{validatedCount !== 1 ? 's' : ''} validée{validatedCount !== 1 ? 's' : ''}
                   {totalCount > validatedCount ? ` · ${totalCount - validatedCount} en attente` : ''}

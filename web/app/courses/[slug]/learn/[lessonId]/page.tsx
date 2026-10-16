@@ -136,7 +136,7 @@ export default async function LessonPage({ params }: Props) {
       </aside>
 
       <article className="order-1 lg:order-2 space-y-8 min-w-0">
-        <h1 className="font-heading text-3xl font-bold">{lesson.title}</h1>
+        <h1 className="font-heading text-3xl font-bold break-words">{lesson.title}</h1>
 
         {lesson.kind === 'text' && (
           <div className="space-y-6">

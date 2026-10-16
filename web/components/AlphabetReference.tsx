@@ -58,7 +58,7 @@ function SymbolCard({ sym, max, onCopy }: { sym: PhoneticSymbol; max: number; on
         ) : (
           <ul className="space-y-0.5 text-sm">
             {sym.examples.map(ex => (
-              <li key={ex.bete}><span className="phonetic font-semibold">{ex.bete}</span> — {ex.french}</li>
+              <li key={ex.bete} className="break-words"><span className="phonetic font-semibold">{ex.bete}</span> — {ex.french}</li>
             ))}
           </ul>
         )}
@@ -94,7 +94,7 @@ export function AlphabetReference() {
               type="button"
               aria-selected={dialect === key}
               onClick={() => setDialect(key)}
-              className={`min-h-9 rounded-md px-3 text-sm font-medium transition-colors ${
+              className={`min-h-9 rounded-md px-2 text-sm sm:px-3 font-medium transition-colors ${
                 dialect === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
               }`}
             >
@@ -123,7 +123,7 @@ export function AlphabetReference() {
         Taper sur un symbole le copie.
       </p>
 
-      <div role="status" className={`fixed bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-foreground px-4 py-2 text-sm text-background transition-opacity ${toast ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
+      <div role="status" className={`fixed bottom-4 left-1/2 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-full text-center bg-foreground px-4 py-2 text-sm text-background transition-opacity ${toast ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
         {toast}
       </div>
     </div>

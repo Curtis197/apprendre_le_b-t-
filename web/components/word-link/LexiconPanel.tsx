@@ -28,7 +28,7 @@ interface Props {
   onUnlink: () => void
 }
 
-const inputClass = 'w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm'
+const inputClass = 'w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-base md:text-sm'
 const btn = 'rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors'
 
 export function LexiconPanel({
@@ -323,9 +323,9 @@ export function LexiconPanel({
 
           {showSpelling && (
             <div className="rounded-md border border-border p-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                 <input
-                  className={inputClass}
+                  className={`${inputClass} sm:min-w-0 sm:flex-1`}
                   placeholder="Nouvelle graphie"
                   value={spellingInput}
                   maxLength={100}

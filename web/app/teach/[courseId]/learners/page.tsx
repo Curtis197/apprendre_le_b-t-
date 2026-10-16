@@ -63,8 +63,8 @@ export default async function LearnersPage({ params, searchParams }: Props) {
         href={`/teach/${course.id}`}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ChevronLeft className="w-4 h-4" />
-        {course.title}
+        <ChevronLeft className="w-4 h-4 shrink-0" />
+        <span className="min-w-0 [overflow-wrap:anywhere]">{course.title}</span>
       </Link>
 
       <h1 className="font-heading text-3xl font-bold">Suivi des apprenants</h1>
@@ -121,7 +121,7 @@ export default async function LearnersPage({ params, searchParams }: Props) {
                 {learners.map(learner => (
                   <tr key={learner.userId} className="border-b border-border last:border-0">
                     <td className="py-2 pr-3">
-                      <Link href={`/teach/${course.id}/learners/${learner.userId}`} className="font-medium hover:underline">
+                      <Link href={`/teach/${course.id}/learners/${learner.userId}`} className="font-medium hover:underline [overflow-wrap:anywhere]">
                         {learner.name}
                       </Link>
                     </td>

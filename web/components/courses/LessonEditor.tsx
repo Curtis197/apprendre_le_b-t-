@@ -129,7 +129,7 @@ export function LessonEditor({
         <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
-            className="w-4 h-4 accent-primary"
+            className="w-4 h-4 shrink-0 accent-primary"
             checked={isPreview}
             onChange={e => setIsPreview(e.target.checked)}
             disabled={readOnly}
@@ -174,7 +174,7 @@ export function LessonEditor({
       {/* Quiz builder section */}
       {kind === 'quiz' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <h3 className="text-lg font-heading font-semibold">Questions du Quiz</h3>
             <p className="text-xs text-muted-foreground">Note de passage minimale : {QUIZ_PASS_PERCENT} %</p>
           </div>
@@ -190,7 +190,7 @@ export function LessonEditor({
 
       {/* Markdown editor (written text, transcription, or quiz instructions) */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <label className="text-sm font-medium" htmlFor="lesson-body">
             {kind === 'audio'
               ? 'Transcription / Notes de cours (Markdown)'
@@ -204,7 +204,7 @@ export function LessonEditor({
               ? 'Consigne et phrase à prononcer (Markdown)'
               : 'Contenu du cours (Markdown)'}
           </label>
-          <div className="flex gap-1 lg:hidden">
+          <div className="flex gap-1 shrink-0 lg:hidden">
             <button type="button" className={tabClass(tab === 'write')} onClick={() => setTab('write')}>
               Écrire
             </button>

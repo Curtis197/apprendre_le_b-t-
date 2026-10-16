@@ -90,7 +90,7 @@ export default async function ThreadPage({ params }: Props) {
       <JsonLd data={jsonLd} />
       <Link
         href="/forum"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground py-2 mb-4 transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
         Retour au forum
@@ -103,10 +103,10 @@ export default async function ThreadPage({ params }: Props) {
             {CATEGORY_LABELS[t.category] ?? t.category}
           </span>
         </div>
-        <h1 className="font-heading text-2xl font-bold mb-4">{t.title}</h1>
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{t.body}</p>
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border/50 text-xs text-muted-foreground">
-          <span>{t.author_name ?? 'Anonyme'}</span>
+        <h1 className="font-heading text-2xl font-bold mb-4 break-words">{t.title}</h1>
+        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{t.body}</p>
+        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-4 pt-4 border-t border-border/50 text-xs text-muted-foreground">
+          <span className="min-w-0 break-words">{t.author_name ?? 'Anonyme'}</span>
           <span>·</span>
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
@@ -134,15 +134,15 @@ export default async function ThreadPage({ params }: Props) {
                     <div className="w-px flex-1 bg-border mt-2" />
                   )}
                 </div>
-                <div className="flex-1 pb-4">
-                  <div className="flex items-center gap-2 mb-1.5 text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">{post.author_name ?? 'Anonyme'}</span>
+                <div className="flex-1 min-w-0 pb-4">
+                  <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 mb-1.5 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground min-w-0 break-words">{post.author_name ?? 'Anonyme'}</span>
                     <span>·</span>
                     <span>
                       {new Date(post.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{post.content}</p>
                 </div>
               </div>
             ))}

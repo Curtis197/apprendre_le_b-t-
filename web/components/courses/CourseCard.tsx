@@ -22,7 +22,7 @@ export function CourseCard({ course }: { course: Course }) {
           {course.access === 'free' ? 'Gratuit' : 'Payant'}
         </span>
       </div>
-      <h2 className="font-heading font-semibold text-base group-hover:text-primary transition-colors">
+      <h2 className="font-heading font-semibold text-base break-words group-hover:text-primary transition-colors">
         {course.title}
       </h2>
       {course.summary && (

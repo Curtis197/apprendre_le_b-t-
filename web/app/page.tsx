@@ -204,7 +204,7 @@ export default function HomePage() {
       </section>
 
       {/* Contribution Form */}
-      <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
+      <div className="bg-card border border-border rounded-xl p-5 sm:p-8 shadow-sm">
         <h2 className="font-heading text-2xl text-primary flex items-center gap-2 mb-2">
           <PenLine className="w-6 h-6" />
           Vous parlez bhété ? Apportez votre premier mot.

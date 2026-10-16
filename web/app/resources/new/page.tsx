@@ -30,7 +30,7 @@ export default function NewResourcePage() {
         </p>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-4 sm:p-6">
         <ResourceSubmitForm />
       </div>
     </div>

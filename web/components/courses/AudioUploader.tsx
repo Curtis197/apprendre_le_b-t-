@@ -75,7 +75,7 @@ export function AudioUploader({ courseOwnerId, lessonId, audioPath, signedAudioU
           )}
         </div>
       ) : (
-        <div className="border-2 border-dashed border-border rounded-xl p-6 text-center space-y-3">
+        <div className="border-2 border-dashed border-border rounded-xl p-4 sm:p-6 text-center space-y-3">
           <p className="text-sm text-muted-foreground">
             Ajoutez un enregistrement pour cette leçon (format MP3 ou M4A, 10 Mo max).
           </p>
@@ -90,6 +90,7 @@ export function AudioUploader({ courseOwnerId, lessonId, audioPath, signedAudioU
           <Button
             type="button"
             variant="outline"
+            className="h-auto min-h-8 py-1.5 whitespace-normal"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading}
           >

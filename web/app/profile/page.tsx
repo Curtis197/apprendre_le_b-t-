@@ -352,7 +352,7 @@ export default function ProfilePage() {
                   Créez des cours et gérez vos parcours d’apprentissage.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href="/teach/new"
                   className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"

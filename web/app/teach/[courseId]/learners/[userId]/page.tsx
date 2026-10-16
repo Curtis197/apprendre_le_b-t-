@@ -56,7 +56,7 @@ export default async function LearnerDetailPage({ params }: Props) {
       </Link>
 
       <div className="space-y-2">
-        <h1 className="font-heading text-3xl font-bold">{learner.name}</h1>
+        <h1 className="font-heading text-3xl font-bold [overflow-wrap:anywhere]">{learner.name}</h1>
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <LearnerStatusBadge status={learner.status} />
           <span>Dernière activité : {formatActivity(learner.lastActivityAt)}</span>

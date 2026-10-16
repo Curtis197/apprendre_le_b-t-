@@ -164,7 +164,7 @@ export function CourseForm({ mode, course, disabled = false }: Props) {
       </div>
 
       {access === 'paid' && course && (
-        <div className="text-xs p-3 rounded-lg bg-muted border border-border flex items-center justify-between">
+        <div className="text-xs p-3 rounded-lg bg-muted border border-border flex flex-wrap items-center justify-between gap-2">
           <span className="font-medium text-muted-foreground">Statut de commercialisation :</span>
           <span className={`font-semibold px-2 py-0.5 rounded ${course.paid_approved ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
             {course.paid_approved ? 'Vente approuvée ✓' : 'En attente d’approbation administrateur'}

@@ -37,14 +37,14 @@ export function CandidateCard({ c, variant, kind, seed, sel, chooseSense, namePr
   const hasExactFrench = c.entry.senses.some(s => s.french.toLowerCase() === seed.toLowerCase())
   return (
     <div className="space-y-2 rounded-md border border-border p-2.5">
-      <div className="flex items-baseline justify-between">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2">
         {variant ? (
-          <div>
+          <div className="min-w-0 break-words">
             <span className="text-sm font-bold">{c.entry.spelling}</span>
             <span className="ml-2 text-xs text-muted-foreground">(variante de « {c.matched} »)</span>
           </div>
         ) : (
-          <span className="text-sm font-bold">{c.entry.spelling}</span>
+          <span className="min-w-0 break-words text-sm font-bold">{c.entry.spelling}</span>
         )}
         <span className="text-xs text-muted-foreground">({c.entry.dialect})</span>
       </div>
@@ -58,7 +58,7 @@ export function CandidateCard({ c, variant, kind, seed, sel, chooseSense, namePr
                 checked={sel === s.id}
                 onChange={() => onSelect(s.id)}
               />
-              <span>{s.french}</span>
+              <span className="min-w-0 break-words">{s.french}</span>
             </label>
           ))}
           {seed && !hasExactFrench && (

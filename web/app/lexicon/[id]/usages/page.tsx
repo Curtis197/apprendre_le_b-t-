@@ -28,7 +28,7 @@ export default async function WordUsagesPage({ params }: { params: Promise<{ id:
       <Link href={`/lexicon/${id}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ChevronLeft className="w-4 h-4" /> Retour au mot
       </Link>
-      <h1 className="font-heading text-2xl font-bold">Usages de « {word} »</h1>
+      <h1 className="font-heading text-2xl font-bold break-words">Usages de « {word} »</h1>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {!error && rows.length === 0 && <p className="text-sm text-muted-foreground">Aucun usage trouvé pour ce mot.</p>}
       <UsageList initialRows={rows} total={total} q={word} side="bete" pageSize={PAGE_SIZE} excludeRef={id} exactOnly />

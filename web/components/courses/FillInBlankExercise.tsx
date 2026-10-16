@@ -152,7 +152,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                       setActiveBlankId(blank.id)
                     }}
                     disabled={isEvaluated && isCorrect}
-                    className={`h-9 px-3 rounded-lg border text-sm font-medium transition-all ${
+                    className={`h-9 max-w-full px-3 rounded-lg border text-sm font-medium transition-all ${
                       isEvaluated
                         ? isCorrect
                           ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
@@ -250,7 +250,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
       {/* Evaluation Results Banner */}
       {evaluated && (
         <div
-          className={`p-4 rounded-xl border flex items-center justify-between gap-4 ${
+          className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-4 ${
             evaluated.scorePercent >= FILL_IN_BLANK_PASS_PERCENT
               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
               : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300'
@@ -279,7 +279,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
       )}
 
       {/* Action Footer */}
-      <div className="flex items-center justify-end gap-3 pt-2">
+      <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
         {evaluated && (
           <Button type="button" variant="ghost" onClick={handleReset}>
             Effacer tout

@@ -96,7 +96,7 @@ function renderBlock(block: Block, key: number): ReactNode {
 
 export function LessonMarkdown({ source, className }: { source: string; className?: string }) {
   return (
-    <div className={cn('space-y-4 leading-relaxed', className)}>
+    <div className={cn('space-y-4 leading-relaxed break-words', className)}>
       {parseMarkdown(source).map(renderBlock)}
     </div>
   )

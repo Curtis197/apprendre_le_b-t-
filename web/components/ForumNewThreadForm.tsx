@@ -61,12 +61,12 @@ export function ForumNewThreadForm() {
         placeholder="Titre du sujet"
         value={title}
         onChange={e => setTitle(e.target.value)}
-        className="text-base font-semibold"
+        className="h-10 md:h-8 text-base font-semibold"
       />
       <select
         value={category}
         onChange={e => setCategory(e.target.value as ForumCategory)}
-        className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+        className="w-full h-10 md:h-auto border border-input rounded-md px-3 py-2 text-base md:text-sm bg-background"
       >
         {CATEGORIES.map(c => (
           <option key={c.value} value={c.value}>{c.label}</option>
@@ -84,6 +84,7 @@ export function ForumNewThreadForm() {
           value={authorName}
           onChange={e => { setAuthorName(e.target.value); setNameFromProfile(false) }}
           required
+          className="h-10 md:h-8"
         />
         {nameFromProfile && (
           <p className="text-xs text-muted-foreground">Nom récupéré depuis votre profil</p>
@@ -93,7 +94,7 @@ export function ForumNewThreadForm() {
       <Button
         onClick={handleSubmit}
         disabled={loading || !title.trim() || !body.trim() || !authorName.trim()}
-        className="w-full"
+        className="w-full h-10 md:h-8"
       >
         {loading ? 'Publication…' : 'Publier le sujet'}
       </Button>

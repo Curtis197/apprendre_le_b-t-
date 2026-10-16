@@ -66,7 +66,7 @@ export function InterlinearGloss({
   if (variant === 'compact') {
     return (
       <div className={cn('text-sm space-y-1 p-3 border rounded-lg bg-card/60', className)}>
-        <p className="phonetic font-semibold text-foreground">{original}</p>
+        <p className="phonetic font-semibold text-foreground break-words">{original}</p>
         {literal && (
           <p className="text-xs text-muted-foreground italic flex items-center gap-1.5">
             <span className="font-medium not-italic text-primary/80">Mot à mot :</span>
@@ -110,7 +110,7 @@ export function InterlinearGloss({
         </span>
         <div
           className={cn(
-            'phonetic text-foreground whitespace-pre-wrap',
+            'phonetic text-foreground whitespace-pre-wrap break-words',
             isLong ? 'text-base leading-relaxed' : 'text-lg md:text-xl font-bold tracking-wide',
           )}
         >

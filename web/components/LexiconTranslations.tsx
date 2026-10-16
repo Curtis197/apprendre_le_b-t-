@@ -105,7 +105,7 @@ export function LexiconTranslations({ lexiconId, translations }: Props) {
             {editingId === t.id ? form : (
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className={i === 0 ? 'font-semibold text-lg' : 'font-medium'}>{t.french}</p>
+                  <p className={i === 0 ? 'font-semibold text-lg break-words' : 'font-medium break-words'}>{t.french}</p>
                   {t.context && <p className="text-sm text-muted-foreground italic">{t.context}</p>}
                   {t.author_name && (
                     <p className="text-xs text-muted-foreground mt-1">ajouté par {t.author_name}</p>

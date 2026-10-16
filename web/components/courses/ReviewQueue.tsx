@@ -78,7 +78,7 @@ export function ReviewQueue({ initialItems }: Props) {
   return (
     <div className="space-y-6">
       {/* Filter Tabs */}
-      <div className="flex gap-2 border-b border-border pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-border pb-3">
         <button
           type="button"
           onClick={() => setFilter('pending')}
@@ -128,7 +128,7 @@ export function ReviewQueue({ initialItems }: Props) {
             return (
               <div key={submission.id} className="border border-border rounded-xl p-5 bg-card space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
-                <div>
+                <div className="min-w-0 [overflow-wrap:anywhere]">
                   <span className="text-xs text-muted-foreground">{course.title}</span>
                   <h4 className="font-semibold text-base">{lesson.title}</h4>
                   <p className="text-xs text-muted-foreground">Par : {learner.full_name}</p>
@@ -159,7 +159,7 @@ export function ReviewQueue({ initialItems }: Props) {
               {/* Existing Review or Review Form */}
               {submission.status === 'reviewed' && activeSubmissionId !== submission.id ? (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-lg space-y-2">
-                  <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                     <span>Votre correction</span>
                     <button
                       type="button"
@@ -187,7 +187,7 @@ export function ReviewQueue({ initialItems }: Props) {
                     rows={3}
                   />
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <label className="text-xs font-medium" htmlFor={`grade-${submission.id}`}>Note / 100 (optionnel) :</label>
                       <input
                         id={`grade-${submission.id}`}

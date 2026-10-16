@@ -50,7 +50,7 @@ export default async function GrammarPage() {
 
       {/* Community Grammar Rules */}
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between gap-3 mb-6">
           <div>
             <h2 className="font-heading text-2xl font-bold flex items-center gap-2">
               <PenLine className="w-6 h-6 text-muted-foreground" />
@@ -90,14 +90,14 @@ export default async function GrammarPage() {
                     {CATEGORY_LABELS[rule.category] ?? rule.category}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mb-2 text-sm">
-                  <span className="font-mono bg-muted rounded px-2 py-0.5">{rule.pattern_french}</span>
+                <div className="flex flex-wrap items-center gap-2 mb-2 text-sm">
+                  <span className="font-mono bg-muted rounded px-2 py-0.5 break-words min-w-0">{rule.pattern_french}</span>
                   <span className="text-muted-foreground">→</span>
-                  <span className="font-mono bg-primary/10 text-primary rounded px-2 py-0.5">{rule.pattern_bete}</span>
+                  <span className="font-mono bg-primary/10 text-primary rounded px-2 py-0.5 break-words min-w-0">{rule.pattern_bete}</span>
                 </div>
                 <LessonMarkdown source={rule.description} className="text-sm text-muted-foreground" />
                 {(rule.example_french || rule.example_bete) && (
-                  <div className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground space-y-0.5">
+                  <div className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground space-y-0.5 break-words">
                     {rule.example_french && <p>FR: <em>{rule.example_french}</em></p>}
                     {rule.example_bete && <p>BT: <em>{rule.example_bete}</em></p>}
                   </div>

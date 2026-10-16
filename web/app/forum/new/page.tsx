@@ -20,7 +20,7 @@ export default async function NewThreadPage() {
     <div className="max-w-2xl mx-auto px-4 md:px-10 py-10">
       <Link
         href="/forum"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground py-2 mb-4 transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
         Retour au forum

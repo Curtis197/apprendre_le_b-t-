@@ -48,13 +48,13 @@ export function PaidCheckoutModal({ courseId, courseTitle, priceCents, currency,
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border pb-4">
-          <div>
+      <div className="bg-card border border-border rounded-2xl max-w-md w-full max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 space-y-6 shadow-2xl">
+        <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
+          <div className="min-w-0">
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">Accès payant</span>
             <h3 className="font-heading text-lg font-bold truncate">{courseTitle}</h3>
           </div>
-          <span className="text-lg font-bold font-mono text-primary">{formatCoursePrice(priceCents, currency)}</span>
+          <span className="text-lg font-bold font-mono text-primary shrink-0">{formatCoursePrice(priceCents, currency)}</span>
         </div>
 
         <div className="space-y-3">
@@ -95,7 +95,7 @@ export function PaidCheckoutModal({ courseId, courseTitle, priceCents, currency,
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
             Annuler
           </Button>
