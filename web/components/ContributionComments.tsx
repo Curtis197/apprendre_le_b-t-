@@ -109,7 +109,7 @@ export function ContributionComments({ targetTable, targetId }: Props) {
               placeholder="Votre nom"
               value={authorName}
               onChange={e => setAuthorName(e.target.value)}
-              className="w-full border border-input rounded-md px-3 py-1.5 text-sm bg-background"
+              className="w-full border border-input rounded-md px-3 py-1.5 text-base md:text-sm bg-background"
             />
             <div className="flex gap-2">
               <input
@@ -119,7 +119,7 @@ export function ContributionComments({ targetTable, targetId }: Props) {
                 onChange={e => setText(e.target.value)}
                 maxLength={500}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-                className="flex-1 border border-input rounded-md px-3 py-1.5 text-sm bg-background"
+                className="flex-1 border border-input rounded-md px-3 py-1.5 text-base md:text-sm bg-background"
               />
               <button
                 onClick={handleSend}

@@ -122,7 +122,7 @@ export function DonateForm() {
             placeholder="Ex: 15"
             value={custom}
             onChange={e => { setCustom(e.target.value); setSelected(null) }}
-            className="w-28 border border-border rounded-lg px-3 py-2 text-sm cursor-not-allowed bg-muted"
+            className="w-28 border border-border rounded-lg px-3 py-2 text-base md:text-sm cursor-not-allowed bg-muted"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">€</span>
         </div>

@@ -34,7 +34,7 @@ export default async function UsagesPage({
 
       <form action="/usages" method="get" className="flex flex-col sm:flex-row gap-2">
         <Input name="q" defaultValue={query} placeholder="Un mot…" className="text-base" aria-label="Mot recherché" />
-        <select name="side" defaultValue={side} className="border rounded px-3 py-2 text-sm" aria-label="Langue du mot">
+        <select name="side" defaultValue={side} className="border rounded px-3 py-2 text-base md:text-sm" aria-label="Langue du mot">
           <option value="bete">Bhété</option>
           <option value="fr">Français</option>
         </select>

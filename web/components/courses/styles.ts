@@ -7,4 +7,4 @@ export const secondaryLinkClass =
   'inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors'
 
 export const selectClass =
-  'w-full border border-input rounded-md px-3 py-2 text-sm bg-background'
+  'w-full border border-input rounded-md px-3 py-2 text-base md:text-sm bg-background'

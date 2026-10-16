@@ -152,7 +152,7 @@ export function CourseForm({ mode, course, disabled = false }: Props) {
               <select
                 value={currency}
                 onChange={e => setCurrency(e.target.value)}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                className="h-10 px-3 rounded-md border border-input bg-background text-base md:text-sm"
                 disabled={disabled}
               >
                 <option value="eur">EUR (€)</option>

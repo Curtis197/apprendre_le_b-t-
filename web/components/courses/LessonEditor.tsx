@@ -113,7 +113,7 @@ export function LessonEditor({
               value={kind}
               onChange={e => setKind(e.target.value as Lesson['kind'])}
               disabled={readOnly}
-              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="w-full h-10 px-3 rounded-md border border-input bg-background text-base md:text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="text">Texte (cours écrit avec mise en forme)</option>
               <option value="audio">Audio (enregistrement avec transcription ou notes)</option>

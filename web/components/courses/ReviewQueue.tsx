@@ -199,7 +199,7 @@ export function ReviewQueue({ initialItems }: Props) {
                           setActiveSubmissionId(submission.id)
                           setGrade(e.target.value)
                         }}
-                        className="w-20 h-8 px-2 rounded border border-input text-sm text-center font-mono"
+                        className="w-20 h-8 px-2 rounded border border-input text-base md:text-sm text-center font-mono"
                       />
                     </div>
                     <Button

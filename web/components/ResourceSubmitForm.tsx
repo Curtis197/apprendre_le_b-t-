@@ -95,7 +95,7 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
         <select
           value={type}
           onChange={e => setType(e.target.value as ContentType)}
-          className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+          className="w-full border border-input rounded-md px-3 py-2 text-base md:text-sm bg-background"
         >
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
@@ -192,7 +192,7 @@ export function ResourceSubmitForm({ resource }: { resource?: CommunityText }) {
           aria-label="Région"
           value={region}
           onChange={e => setRegion(e.target.value)}
-          className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+          className="w-full border border-input rounded-md px-3 py-2 text-base md:text-sm bg-background"
         >
           <option value="">Région (optionnel)</option>
           {RESOURCE_REGIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}

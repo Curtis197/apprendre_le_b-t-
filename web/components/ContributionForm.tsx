@@ -226,7 +226,7 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
               </label>
               <select
                 id="contribution-dialect"
-                className="w-full border rounded px-3 py-2 text-sm"
+                className="w-full border rounded px-3 py-2 text-base md:text-sm"
                 value={dialect}
                 onChange={e => setDialect(e.target.value as DialectKey)}
               >
@@ -325,7 +325,7 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
             onChange={e => setFrPhrase(e.target.value)}
           />
           <select
-            className="w-full border rounded px-3 py-2 text-sm"
+            className="w-full border rounded px-3 py-2 text-base md:text-sm"
             value={exprType}
             onChange={e => setExprType(e.target.value as typeof exprType)}
           >
@@ -337,7 +337,7 @@ export function ContributionForm({ initialWord, initialType }: ContributionFormP
       ) : (
         <div className="space-y-3">
           <select
-            className="w-full border rounded px-3 py-2 text-sm"
+            className="w-full border rounded px-3 py-2 text-base md:text-sm"
             value={category}
             onChange={e => setCategory(e.target.value)}
           >

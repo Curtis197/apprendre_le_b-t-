@@ -66,7 +66,7 @@ export function HomeTranslator() {
       <div className="grid md:grid-cols-2 gap-4 mb-4">
         <div className="relative">
           <textarea
-            className="w-full h-40 bg-muted rounded-lg p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="w-full h-40 bg-muted rounded-lg p-4 text-base md:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
             placeholder="Entrez votre texte en français…"
             value={input}
             onChange={e => setInput(e.target.value)}

@@ -18,7 +18,7 @@ export function PageHeader({ badge, title, subtitle, className }: Props) {
             {badge}
           </span>
         )}
-        <h1 className="font-heading text-4xl md:text-5xl font-bold mb-3">{title}</h1>
+        <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold mb-3 break-words">{title}</h1>
         {subtitle && (
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">{subtitle}</p>
         )}

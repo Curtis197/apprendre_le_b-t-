@@ -24,13 +24,13 @@ All pages and their components were computed at 360 (mandatory) and 320 (warn on
 | `/teach/*` | fixed | course builder lesson row (29px left for the title); review queue tabs -12%; uploaders; long names/e-mails |
 | `/forum*`, shared UI | fixed | unbounded author names/URLs; tap targets and iOS zoom on forum forms |
 
-Open items (need a decision or a follow-up):
-- `PageHeader` h1 `text-4xl`: "Architecture Grammaticale" overflows by about 3px at 320 (fine at 360). Fix would be `text-3xl sm:text-4xl md:text-5xl` plus `break-words`, a global visual change.
-- `ui/button` default is 32px high (`h-8`), `FilterPills` 38px: below the 40-44px comfortable tap size on phones. A global change (`h-10 md:h-8`) was not applied.
-- Native inputs with `text-sm`/`text-xs` make iOS Safari zoom on focus. The three word-link `inputClass` constants are fixed (`text-base md:text-sm`); still to do: `usages/page.tsx`, `ContributionForm`, `HomeTranslator`, `VerseWords`, `PronunciationList`, `SpellingsList`, contact/profile selects, `CorrectionBox`, `CourseForm`, `DialectSelector`, `ResourceSubmitForm`.
-- `MobileSidebar`, `AuthNav`, `HeaderSearch` are not imported anywhere (dead code); they would overflow at 288px if revived.
+Decisions applied 2026-10-16 (second pass):
+- `PageHeader` h1 is `text-3xl sm:text-4xl md:text-5xl` with `break-words` (fixes the 320 overflow).
+- `ui/button`: `default` h-10 / `sm` h-9 / `lg` h-11 below `md:`, original heights from `md:` (text buttons only; icon buttons keep their size). `FilterPills` and the courses pills are `py-2.5` below `md:` (about 42px). No caller overrides the height of a `Button`, so the `md:` height cannot win over a caller's `h-*`.
+- Every native input/select/textarea outside `components/ui` now uses `text-base md:text-sm` (16px on phones, no iOS Safari zoom on focus); `components/ui/input|textarea` were already safe. Rule for new code: a native control that can be focused on a phone must not be below 16px.
+- Dead code deleted: `MobileSidebar`, `AuthNav`, `HeaderSearch`.
 - Lexicon list row at 640px has about 1% headroom but cannot overflow (the Bhete word wraps).
-- Not verifiable by arithmetic: real Lexend/Noto Sans widths, 150-200% text zoom.
+- Not verifiable by arithmetic: real Lexend/Noto Sans widths, 150-200% text zoom. Icon-only buttons (32px) are still below 40px.
 
 ## Content to size for (step 6 of the skill)
 French copy (longer than English), user display names and e-mails, long Bhété words in the phonetic font (Noto Sans is wider than Inter), 150-200% text zoom.

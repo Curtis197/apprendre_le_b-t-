@@ -152,7 +152,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                       setActiveBlankId(blank.id)
                     }}
                     disabled={isEvaluated && isCorrect}
-                    className={`h-9 max-w-full px-3 rounded-lg border text-sm font-medium transition-all ${
+                    className={`h-9 max-w-full px-3 rounded-lg border text-base md:text-sm font-medium transition-all ${
                       isEvaluated
                         ? isCorrect
                           ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
@@ -179,7 +179,7 @@ export function FillInBlankExercise({ lessonId, bodyMd, isAuthed, onComplete }: 
                     }}
                     placeholder="…"
                     disabled={isEvaluated && isCorrect}
-                    className={`h-9 px-3 rounded-lg border text-sm font-medium w-28 md:w-36 transition-all outline-none ${
+                    className={`h-9 px-3 rounded-lg border text-base md:text-sm font-medium w-28 md:w-36 transition-all outline-none ${
                       isEvaluated
                         ? isCorrect
                           ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'

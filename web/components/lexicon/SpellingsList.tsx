@@ -75,7 +75,7 @@ export function SpellingsList({ items, userId, isAdmin, busy, error, notice, sig
           }}
         >
           <input
-            className="min-w-[12rem] flex-1 rounded-md border border-input bg-background px-2.5 py-1.5 text-sm"
+            className="min-w-[12rem] flex-1 rounded-md border border-input bg-background px-2.5 py-1.5 text-base md:text-sm"
             placeholder="Proposer une autre graphie"
             aria-label="Proposer une autre graphie"
             value={value}

@@ -152,7 +152,7 @@ export function CorrectionBox({ targetType, targetId, fields, ownerId, startOpen
                 aria-label="Champ concerné"
                 value={field}
                 onChange={e => chooseField(e.target.value)}
-                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+                className="w-full border border-input rounded-md px-3 py-2 text-base md:text-sm bg-background"
               >
                 {available.map(f => <option key={f.field} value={f.field}>{f.label}</option>)}
               </select>
@@ -161,7 +161,7 @@ export function CorrectionBox({ targetType, targetId, fields, ownerId, startOpen
               aria-label="Type de problème"
               value={kind}
               onChange={e => setKind(e.target.value as CorrectionKind)}
-              className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+              className="w-full border border-input rounded-md px-3 py-2 text-base md:text-sm bg-background"
             >
               {CORRECTION_KINDS.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
             </select>

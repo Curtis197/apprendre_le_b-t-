@@ -113,7 +113,7 @@ export default function ContactPage() {
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="appearance-none bg-background border-2 border-primary rounded-lg px-3 py-1.5 text-sm font-semibold text-primary cursor-pointer outline-none focus:ring-2 focus:ring-primary/30"
+            className="appearance-none bg-background border-2 border-primary rounded-lg px-3 py-1.5 text-base md:text-sm font-semibold text-primary cursor-pointer outline-none focus:ring-2 focus:ring-primary/30"
           >
             {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -123,7 +123,7 @@ export default function ContactPage() {
           <select
             value={canalFilter}
             onChange={e => setCanalFilter(e.target.value)}
-            className="appearance-none bg-background border-2 border-border rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground cursor-pointer outline-none focus:ring-2 focus:ring-primary/30"
+            className="appearance-none bg-background border-2 border-border rounded-lg px-3 py-1.5 text-base md:text-sm font-semibold text-foreground cursor-pointer outline-none focus:ring-2 focus:ring-primary/30"
           >
             {CANAL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>

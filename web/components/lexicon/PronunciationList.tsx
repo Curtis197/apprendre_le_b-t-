@@ -72,7 +72,7 @@ export function PronunciationList({ items, userId, isAdmin, busy, error, notice,
               {reporting === r.id && (
                 <div className="space-y-2">
                   <textarea
-                    className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm"
+                    className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-base md:text-sm"
                     rows={2}
                     maxLength={1000}
                     placeholder="Qu’est-ce qui ne va pas ? (bruit, mauvais mot…)"

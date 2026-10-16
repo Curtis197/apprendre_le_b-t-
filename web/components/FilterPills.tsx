@@ -17,7 +17,7 @@ export function FilterPills({ options, value, onChange, className }: Props) {
           key={opt}
           onClick={() => onChange(opt)}
           className={cn(
-            'rounded-full px-4 py-2 text-sm whitespace-nowrap border transition-colors shrink-0',
+            'rounded-full px-4 py-2.5 md:py-2 text-sm whitespace-nowrap border transition-colors shrink-0',
             value === opt
               ? 'bg-primary text-white border-primary'
               : 'bg-muted border-transparent hover:border-primary'

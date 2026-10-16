@@ -115,7 +115,7 @@ function MarkerForm({ lexId }: { lexId: string }) {
     <label className="block space-y-1 text-xs text-muted-foreground">
       <span>{label}</span>
       <input
-        className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground"
+        className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-base md:text-sm text-foreground"
         value={v[k]}
         maxLength={max}
         onChange={e => setV({ ...v, [k]: e.target.value })}

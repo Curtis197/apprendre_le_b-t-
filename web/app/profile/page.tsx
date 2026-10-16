@@ -318,7 +318,7 @@ export default function ProfilePage() {
                 setType(e.target.value as ProfileType)
                 if (e.target.value === 'member') setIsPublic(false)
               }}
-              className="w-full appearance-none bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full appearance-none bg-background border border-border rounded-lg px-3 py-2 text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/30"
             >
               {(Object.entries(TYPE_LABELS) as [ProfileType, string][]).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
@@ -381,7 +381,7 @@ export default function ProfilePage() {
               <select
                 value={canal}
                 onChange={e => setCanal(e.target.value as Canal)}
-                className="w-full appearance-none bg-background border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full appearance-none bg-background border border-border rounded-lg px-3 py-2 text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {(Object.entries(CANAL_LABELS) as [Canal, string][]).map(([v, l]) => (
                   <option key={v} value={v}>{l}</option>
